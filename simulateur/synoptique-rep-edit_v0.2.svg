@@ -1,0 +1,838 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" class="process-svg" viewBox="0 0 1200 800" role="img" aria-labelledby="synTitle synDesc">
+  <style>
+
+    :root {
+      --ink: #1d2730;
+      --muted: #65727d;
+      --line: #d7dde2;
+      --paper: #ffffff;
+      --page: #eef1f3;
+      --accent: #c84f2e;
+      --accent-soft: #f6e4de;
+      --primary: #e7522d;
+      --secondary: #2f76bc;
+      --water: #0f9d8c;
+      --ok: #18875c;
+      --warn: #b36b00;
+      --danger: #b32828;
+      --shadow: 0 10px 30px rgba(30, 42, 52, .11);
+    }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: light; }
+    body {
+      margin: 0;
+      min-width: 1080px;
+      color: var(--ink);
+      background: var(--page);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .appbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      min-height: 66px;
+      padding: 0 24px;
+      color: #fff;
+      background: #18242d;
+      border-bottom: 1px solid #34424d;
+      box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      font-size: 21px;
+      background: #4a2b25;
+      color: #ff7b55;
+    }
+    .brand strong { display: block; font-size: 17px; }
+    .brand span { display: block; margin-top: 2px; color: #afbac2; font-size: 12px; }
+
+    .tabs { display: flex; align-self: stretch; gap: 4px; }
+    .tab {
+      min-width: 118px;
+      padding: 0 14px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      color: #b8c3ca;
+      background: transparent;
+      font-weight: 650;
+    }
+    .tab:hover { color: #fff; background: rgba(255,255,255,.04); }
+    .tab.active { color: #fff; border-bottom-color: #ff7652; }
+
+    .runbar { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .clock {
+      min-width: 82px;
+      padding: 8px 10px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      border: 1px solid #45535d;
+      border-radius: 7px;
+      background: #101a21;
+    }
+    .speed-select {
+      padding: 8px 28px 8px 10px;
+      color: #fff;
+      border: 1px solid #45535d;
+      border-radius: 7px;
+      background: #101a21;
+    }
+    .btn {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid #cfd6db;
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 700;
+    }
+    .btn:hover { background: #f5f7f8; }
+    .btn.primary { color: #fff; border-color: #d85d3b; background: #d85d3b; }
+    .btn.primary:hover { background: #c94f2f; }
+    .btn.dark { color: #fff; border-color: #586670; background: #2d3a43; }
+
+    main { padding: 18px 22px 32px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 1976px;
+      margin: 0 auto 12px;
+      padding: 10px 14px;
+      border: 1px solid #e3c983;
+      border-radius: 10px;
+      background: #fff8df;
+      color: #604c17;
+      font-size: 13px;
+    }
+    .notice strong { white-space: nowrap; }
+
+    .process-layout {
+      display: grid;
+      grid-template-columns: minmax(720px, 3fr) minmax(340px, 1fr);
+      align-items: start;
+      gap: 16px;
+      max-width: 1976px;
+      margin: 0 auto;
+    }
+    .diagram-shell,
+    .instrument-board {
+      overflow: hidden;
+      border: 1px solid #cfd5da;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .surface-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 46px;
+      padding: 0 15px;
+      border-bottom: 1px solid #e0e4e7;
+    }
+    .surface-title h2 { margin: 0; font-size: 16px; }
+    .surface-title span { color: var(--muted); font-size: 12px; }
+    .surface-title-meta { display: flex; align-items: center; gap: 12px; }
+    .surface-title-meta a { font-size: 12px; font-weight: 750; text-decoration: none; }
+    .diagram-crop {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1200 / 800;
+      overflow: hidden;
+      background: #edf2f4;
+    }
+    .process-svg { display: block; width: 100%; height: 100%; }
+    .process-svg text { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+    .zone { fill: #f8fafb; stroke: #cfd8dd; stroke-width: 1.5; }
+    .zone.secondary-zone { fill: #f5f9fc; }
+    .zone-title { fill: #63717b; font-size: 17px; font-weight: 800; letter-spacing: 1.4px; }
+    .equipment-body { fill: #e8eef1; stroke: #526570; stroke-width: 4; }
+    .equipment-inner { fill: #f9fbfc; stroke: #94a4ad; stroke-width: 2; }
+    .equipment-label { fill: #26343d; font-size: 19px; font-weight: 800; text-anchor: middle; }
+    .equipment-note { fill: #65757f; font-size: 12px; font-weight: 650; text-anchor: middle; }
+    .branch-label { fill: #8e3b25; font-size: 13px; font-weight: 850; }
+    .pipe-primary, .pipe-steam, .pipe-feed, .pipe-cooling {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 17;
+    }
+    .pipe-primary { stroke: #e8643f; }
+    .pipe-steam { stroke: #5aaad2; }
+    .pipe-feed { stroke: #35a995; }
+    .pipe-cooling { stroke: #4988c6; }
+    .pipe-outline { fill: none; stroke: #41545f; stroke-width: 24; stroke-linecap: round; stroke-linejoin: round; opacity: .12; }
+    .flow-arrow { fill: #fff; opacity: .9; }
+    .core-fill { fill: #ef6b48; }
+    .control-rods {
+      transform: translateY(37.5px);
+      transform-box: view-box;
+      transform-origin: 0 0;
+      transition: transform .35s ease-out;
+      will-change: transform;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .control-rods { transition: none; }
+    }
+    .secondary-fill { fill: #63b9d9; opacity: .22; }
+    .press-liquid { fill: #e96642; opacity: .82; transition: y .25s linear, height .25s linear; }
+    .spray-jet { fill: none; stroke: #4799ca; stroke-width: 4; stroke-linecap: round; }
+    .heater-coil { fill: none; stroke: #dc532f; stroke-width: 5; stroke-linecap: round; }
+    .u-tube { fill: none; stroke: #e8643f; stroke-width: 5; stroke-linecap: round; }
+    .water-wave { fill: none; stroke: #4d96cd; stroke-width: 5; stroke-linecap: round; }
+    .pump-ring { fill: #e8eef1; stroke: #526570; stroke-width: 5; }
+    .pump-blade { fill: none; stroke: #526570; stroke-width: 4; stroke-linecap: round; }
+    .network-line { stroke: #536670; stroke-width: 4; }
+    .sensor-box { fill: #fff; stroke: #b8c4ca; stroke-width: 1.5; }
+    .sensor-tag { fill: #66757f; font-size: 10px; font-weight: 850; letter-spacing: .7px; }
+    .sensor-value { fill: #17242c; font-size: 15px; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .actuator-box { fill: #f5f0f7; stroke: #aa96b2; stroke-width: 1.5; }
+    .actuator-tag { fill: #72547e; font-size: 10px; font-weight: 850; letter-spacing: .6px; }
+    .actuator-value { fill: #2c2131; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .var-name { font-weight: 900; font-style: normal; }
+    .var-meaning { font-weight: 550; font-style: italic; letter-spacing: 0; }
+    .fixed-box { fill: #eef3f5; stroke: #9eabb2; stroke-width: 1.5; }
+    .leader { fill: none; stroke: #98a6ad; stroke-width: 1.5; }
+    .gv-head { fill: #d7e0e4; stroke: #526570; stroke-width: 4; }
+    .gv-divider { stroke: #526570; stroke-width: 4; }
+    .valve-body { fill: #fff; stroke: #697984; stroke-width: 3; }
+    .valve-active .valve-body { fill: #ffd8cb; stroke: #c44325; }
+    .relief-line { fill: none; stroke: #758690; stroke-width: 7; stroke-linecap: round; }
+    .relief-line.active { stroke: #cf4e2c; }
+
+    .alarm-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 1976px;
+      min-height: 42px;
+      margin: 0 auto 12px;
+      padding: 8px 14px;
+      border: 1px solid #b8d8c9;
+      border-radius: 10px;
+      color: #155c40;
+      background: #edf8f2;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .alarm-lamp { width: 13px; height: 13px; flex: 0 0 auto; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px rgba(24,135,92,.12); }
+    .alarm-strip.alarm-warning { color: #684500; border-color: #e5bc4e; background: #fff5d4; }
+    .alarm-strip.alarm-warning .alarm-lamp { background: #e69a00; box-shadow: 0 0 0 4px rgba(230,154,0,.16); }
+    .alarm-strip.alarm-danger { color: #761f1f; border-color: #dc7777; background: #fde5e5; }
+    .alarm-strip.alarm-danger .alarm-lamp { background: var(--danger); box-shadow: 0 0 0 4px rgba(179,40,40,.16); }
+
+    .instrument.alarm-warning { border-left-color: #e69a00; background: #fff4cf; }
+    .instrument.alarm-danger { border-left-color: var(--danger); background: #fde0e0; }
+    .svg-sensor.alarm-warning .sensor-box { fill: #fff2c4; stroke: #d99100; stroke-width: 2.5; }
+    .svg-sensor.alarm-danger .sensor-box { fill: #ffd9d9; stroke: #b32828; stroke-width: 3; }
+    @keyframes alarm-blink-warning { 50% { opacity: .32; } }
+    @keyframes alarm-blink-danger { 50% { opacity: .08; } }
+    .instrument.alarm-warning output,
+    .svg-sensor.alarm-warning .sensor-value { animation: alarm-blink-warning 1.15s step-end infinite; }
+    .instrument.alarm-danger output,
+    .svg-sensor.alarm-danger .sensor-value { animation: alarm-blink-danger .62s step-end infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .instrument.alarm-warning output, .svg-sensor.alarm-warning .sensor-value,
+      .instrument.alarm-danger output, .svg-sensor.alarm-danger .sensor-value { animation: none; }
+    }
+
+    .instrument-board { padding-bottom: 10px; }
+    .instrument-section { padding: 11px 14px 5px; }
+    .instrument-section + .instrument-section { border-top: 1px solid #e3e7ea; }
+    .instrument-section h3 {
+      margin: 0 0 7px;
+      color: #44515b;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .instrument-subhead {
+      margin: 8px 0 4px;
+      color: #7a858d;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .instrument-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+    .instrument {
+      min-width: 0;
+      padding: 7px 8px;
+      border-left: 3px solid #a9b3ba;
+      background: #f5f7f8;
+    }
+    .instrument.primary { border-left-color: var(--primary); }
+    .instrument.secondary { border-left-color: var(--secondary); }
+    .instrument.action { border-left-color: #8a5d9d; }
+    .instrument.info { border-left-color: var(--water); }
+    .instrument .tag {
+      display: block;
+      margin-bottom: 2px;
+      color: #69757e;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .instrument .tag strong { font-weight: 900; }
+    .instrument .tag em {
+      font-weight: 500;
+      font-style: italic;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .instrument .tag strong + em::before { content: " · "; }
+    .instrument output {
+      display: block;
+      overflow: hidden;
+      color: #18242d;
+      font-size: 14px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .plant-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 2%;
+      padding: 2.2%;
+      border-radius: 5px;
+      color: #fff;
+      background: var(--ok);
+      font-size: clamp(7px, .69vw, 13px);
+      font-weight: 850;
+      text-align: center;
+    }
+    .plant-state.warn { background: var(--warn); }
+    .plant-state.danger { background: var(--danger); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(620px, 1.55fr) minmax(390px, .8fr);
+      gap: 16px;
+      max-width: 1976px;
+      margin: 16px auto 0;
+    }
+    .card {
+      border: 1px solid #d1d8dd;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 5px 17px rgba(33,45,54,.06);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 47px;
+      padding: 0 15px;
+      border-bottom: 1px solid #e0e4e7;
+    }
+    .card-head h2 { margin: 0; font-size: 16px; }
+    .card-head span { color: var(--muted); font-size: 12px; }
+
+    .trace-toolbar { display: flex; align-items: center; gap: 10px; }
+    .trace-toolbar label { color: #59656e; font-size: 12px; font-weight: 750; }
+    .trace-toolbar select {
+      min-width: 190px;
+      padding: 7px 30px 7px 9px;
+      border: 1px solid #c9d1d6;
+      border-radius: 7px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .chart-stack { padding: 8px 12px 12px; }
+    .chart-wrap { height: 220px; }
+    .reactivity-wrap { height: 118px; margin-top: 4px; border-top: 1px solid #e1e5e8; }
+    .trace-label { margin: 7px 0 0 43px; color: #65727d; font-size: 11px; font-weight: 750; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 12px; color: #56636d; }
+    .legend i { display: inline-block; width: 16px; height: 3px; margin: 0 5px 3px 0; border-radius: 2px; }
+
+    .controls { padding: 13px 15px 16px; }
+    .control {
+      display: grid;
+      grid-template-columns: 180px minmax(130px,1fr) 84px;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      border-bottom: 1px solid #eceff1;
+    }
+    .control:last-child { border-bottom: 0; }
+    .control label { font-size: 13px; font-weight: 750; }
+    .control label &gt; strong { font-weight: 900; }
+    .control label &gt; em { font-weight: 500; }
+    .control small { display: block; margin-top: 2px; color: #7a858d; font-weight: 400; }
+    .control output {
+      padding: 5px 7px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      border-radius: 5px;
+      background: #f1f3f5;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .switch-line { display: flex; align-items: center; gap: 9px; }
+    .switch {
+      position: relative;
+      width: 45px;
+      height: 25px;
+      flex: 0 0 auto;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch span { position: absolute; inset: 0; border-radius: 20px; background: #aeb7bd; transition: .15s; }
+    .switch span::after {
+      content: "";
+      position: absolute;
+      width: 19px;
+      height: 19px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+      transition: .15s;
+    }
+    .switch input:checked + span { background: var(--secondary); }
+    .switch input:checked + span::after { transform: translateX(20px); }
+
+    .model-shell { max-width: 1360px; margin: 0 auto; }
+    .model-title { margin: 4px 0 16px; }
+    .model-title h1 { margin: 0 0 5px; font-size: 27px; }
+    .model-title p { margin: 0; color: var(--muted); }
+    .model-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .model-card { padding: 18px 20px; }
+    .model-card.wide { grid-column: 1 / -1; }
+    .model-card h2 { margin: 0 0 12px; font-size: 18px; }
+    .equation {
+      margin: 9px 0;
+      padding: 10px 12px;
+      overflow-x: auto;
+      border-left: 4px solid #d45c3a;
+      background: #f6f7f8;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .model-card p, .model-card li { font-size: 13px; line-height: 1.55; }
+    .model-card ul { margin: 8px 0 0; padding-left: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #e1e5e8; }
+    th { color: #4d5961; background: #f4f6f7; font-size: 12px; letter-spacing: .03em; }
+    td:last-child { font-variant-numeric: tabular-nums; }
+    a { color: #1f65a7; }
+    .badge {
+      display: inline-block;
+      margin-right: 5px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      color: #fff;
+      background: #566570;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .04em;
+    }
+
+    .feature-shell { max-width: 1550px; margin: 0 auto; }
+    .feature-title { margin: 4px 0 16px; }
+    .feature-title h1 { margin: 0 0 5px; font-size: 27px; }
+    .feature-title p { margin: 0; color: var(--muted); }
+    .load-layout { display: grid; grid-template-columns: 430px minmax(620px, 1fr); gap: 16px; }
+    .scenario-list { display: grid; gap: 10px; padding: 14px; }
+    .scenario-choice {
+      width: 100%;
+      padding: 13px 14px;
+      text-align: left;
+      border: 1px solid #d5dce0;
+      border-radius: 9px;
+      color: var(--ink);
+      background: #f8fafb;
+    }
+    .scenario-choice:hover { border-color: #9eabb3; background: #f2f5f6; }
+    .scenario-choice.active { border-color: #c84f2e; background: #fff1ec; box-shadow: inset 4px 0 0 #c84f2e; }
+    .scenario-choice strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .scenario-choice span { display: block; color: #63717a; font-size: 12px; line-height: 1.4; }
+    .scenario-actions { display: flex; gap: 9px; padding: 0 14px 14px; }
+    .scenario-actions .btn { flex: 1; }
+    .program-panel { padding: 14px; }
+    .program-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .program-stat { padding: 10px 12px; border-left: 3px solid #c84f2e; background: #f5f7f8; }
+    .program-stat span { display: block; color: #69757e; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+    .program-stat strong { display: block; margin-top: 3px; font-size: 16px; font-variant-numeric: tabular-nums; }
+    .program-chart { height: 360px; }
+    .program-note { margin: 10px 0 0; color: #64717a; font-size: 12px; line-height: 1.45; }
+
+    .reg-layout { display: grid; grid-template-columns: 250px minmax(720px, 1fr); gap: 16px; }
+    .reg-palette { padding: 13px; }
+    .reg-palette h2 { margin: 0 0 11px; font-size: 16px; }
+    .palette-group { margin-top: 13px; }
+    .palette-group h3 { margin: 0 0 6px; color: #69757e; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
+    .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .palette-item {
+      min-height: 42px;
+      padding: 6px;
+      border: 1px solid #d1d8dd;
+      border-radius: 7px;
+      color: #33414a;
+      background: #f8fafb;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .palette-item:hover { border-color: #9ba8b0; background: #eef3f5; }
+    .reg-main { min-width: 0; }
+    .reg-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid #e0e4e7; }
+    .reg-toolbar .status { margin-left: auto; color: #5e6b74; font-size: 12px; }
+    .logic-canvas {
+      position: relative;
+      height: 900px;
+      overflow: auto;
+      background-color: #f9fbfc;
+      background-image: radial-gradient(#cbd4d9 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .logic-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .logic-links path { fill: none; stroke: #4e80b4; stroke-width: 2; }
+    .logic-links text { fill: #45545e; font-size: 13px; font-weight: 850; paint-order: stroke; stroke: #f9fbfc; stroke-width: 4px; }
+    .logic-node {
+      position: absolute;
+      width: 144px;
+      min-height: 62px;
+      padding: 9px 14px;
+      border: 2px solid #637885;
+      border-radius: 9px;
+      color: #21303a;
+      background: #fff;
+      box-shadow: 0 3px 9px rgba(43,58,67,.12);
+      user-select: none;
+      touch-action: none;
+    }
+    .logic-node.sensor { border-color: #3d7ebc; background: #eef6fd; }
+    .logic-node.operator { border-color: #ad6d24; background: #fff7e9; }
+    .logic-node.actuator { border-color: #80528e; background: #f7eef9; }
+    .logic-node.selected { box-shadow: 0 0 0 3px rgba(200,79,46,.24); border-color: #c84f2e; }
+    .logic-node strong { display: block; font-size: 13px; }
+    .logic-node em { display: block; margin-top: 3px; color: #66737c; font-size: 10px; line-height: 1.25; }
+    .logic-port {
+      position: absolute;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      transform: translateY(-50%);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: #4e80b4;
+      box-shadow: 0 0 0 1px #4e80b4;
+    }
+    .logic-port.input { left: -8px; }
+    .logic-port.output { right: -8px; }
+    .logic-port.pending { background: #c84f2e; box-shadow: 0 0 0 2px #c84f2e; }
+    .reg-footer { display: grid; grid-template-columns: 1fr 1.25fr; gap: 14px; padding: 14px; border-top: 1px solid #e0e4e7; }
+    .reg-live { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-content: start; }
+    .reg-live div { padding: 9px 10px; border-left: 3px solid #2f76bc; background: #f5f7f8; }
+    .reg-live span { display: block; color: #6b7780; font-size: 10px; font-weight: 800; }
+    .reg-live strong { display: block; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .rod-law { min-width: 0; }
+    .rod-law h3 { margin: 0 0 6px; font-size: 13px; }
+    .rod-law canvas { height: 170px; }
+    .rod-law p { margin: 6px 0 0; color: #65727b; font-size: 11px; line-height: 1.4; }
+
+    @media (max-width: 1280px) {
+      .process-layout { grid-template-columns: 1fr; }
+      .instrument-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .workspace { grid-template-columns: 1fr; }
+      .chart-wrap { height: 230px; }
+      .model-grid { grid-template-columns: 1fr; }
+      .model-card.wide { grid-column: auto; }
+      .load-layout { grid-template-columns: 360px minmax(580px, 1fr); }
+      .reg-layout { grid-template-columns: 220px minmax(720px, 1fr); }
+    }
+  
+</style>
+  <title id="synTitle">Synoptique animé d’un réacteur à eau pressurisée simplifié</title>
+  <desc id="synDesc">Le primaire relie la cuve au bas du générateur de vapeur. La branche chaude entre à gauche de la boîte à eau, traverse un tube en U, puis ressort à droite vers la pompe. Le secondaire alimente latéralement le générateur de vapeur et évacue la vapeur par le haut.</desc>
+  <defs>
+    <filter id="equipmentShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#33444e" flood-opacity=".18"/>
+    </filter>
+    <clipPath id="pressurizerClip">
+      <rect x="329" y="241" width="112" height="188" rx="54"/>
+    </clipPath>
+  </defs>
+  <rect class="zone" x="10" y="10" width="750" height="742.866" rx="16" style=""/>
+  <rect class="zone secondary-zone" x="765.156" y="11.615" width="311.019" height="515.217" rx="16" style=""/>
+  <text class="zone-title" x="27" y="35" style="white-space: pre;">CIRCUIT PRIMAIRE</text>
+  <text class="zone-title" x="787" y="35" style="white-space: pre;">CIRCUIT SECONDAIRE</text>
+  <g transform="matrix(1, 0, 0, 1, -0.807272, -481.130202)">
+    <rect class="sensor-box" width="135.879" height="53" rx="7" x="26.615" y="594.519" style="stroke-width: 1.522;"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;" transform="matrix(1.029383, 0, 0, 1, 26.61455, 594.518817)"><tspan class="var-name">POW1</tspan><tspan class="var-meaning"> · Puiss. nucléaire</tspan></text>
+    <text class="sensor-value" id="svPow1" x="9" y="40" style="white-space: pre;" transform="matrix(1.029383, 0, 0, 1, 26.61455, 594.518817)">100,0 % PN</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 3.22905, -538.446061)">
+    <rect class="sensor-box" width="154.603" height="53" rx="7" x="22.536" y="710.765" style="stroke-width: 1.5;"/>
+    <text class="sensor-tag" x="31.536" y="727.765" style="white-space: pre; stroke-width: 1;"><tspan class="var-name" style="font-size: 10px; word-spacing: 0px; letter-spacing: 0.7px; stroke-width: 1;">PTHC</tspan><tspan class="var-meaning" style="font-size: 10px; word-spacing: 0px; stroke-width: 1;"> · Puiss. thermique cœur</tspan></text>
+    <text class="sensor-value" id="svPthc" x="31.536" y="750.765" style="white-space: pre; stroke-width: 1; font-size: 15px;">3 817 MWth</text>
+  </g>
+  <g class="svg-sensor" data-signal="mp1" transform="matrix(1, 0, 0, 1, 192.019171, 51.229051)">
+    <rect class="sensor-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MP1</tspan><tspan class="var-meaning"> · pression primaire</tspan></text>
+    <text class="sensor-value" id="svMP1" x="9" y="40" style="white-space: pre;">155,0 bar</text>
+  </g>
+  <g class="svg-sensor" data-signal="mn1" transform="matrix(1, 0, 0, 1, 191.976843, 165.860768)">
+    <rect class="sensor-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MN1</tspan><tspan class="var-meaning"> · niveau pressu</tspan></text>
+    <text class="sensor-value" id="svMN1" x="9" y="40" style="white-space: pre;">50,0 %</text>
+  </g>
+  <g class="svg-sensor" data-signal="tpzr" transform="matrix(1, 0, 0, 1, 190.319937, 107.737674)">
+    <rect class="sensor-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">TPZR</tspan><tspan class="var-meaning"> · température</tspan></text>
+    <text class="sensor-value" id="svTpzr" x="9" y="40" style="white-space: pre;">344,79 °C</text>
+  </g>
+  <g class="svg-sensor" data-signal="mt1" transform="matrix(1, 0, 0, 1, 359.207896, 524.549027)">
+    <rect class="sensor-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MT1</tspan><tspan class="var-meaning"> · branche chaude</tspan></text>
+    <text class="sensor-value" id="svMT1" x="9" y="40" style="white-space: pre;">329,1 °C</text>
+  </g>
+  <g class="svg-sensor" data-signal="mt2" transform="matrix(1, 0, 0, 1, 193.676123, 683.580282)">
+    <rect class="sensor-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MT2</tspan><tspan class="var-meaning"> · branche froide</tspan></text>
+    <text class="sensor-value" id="svMT2" x="9" y="40" style="white-space: pre;">282,9 °C</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 25.722476, 45.840551)">
+    <rect class="fixed-box" width="132" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">QPRI</tspan><tspan class="var-meaning"> · débit primaire</tspan></text>
+    <text class="sensor-value" x="9" y="40" style="white-space: pre;">17 588 kg/s</text>
+  </g>
+  <g class="svg-sensor" data-signal="relief" transform="matrix(1, 0, 0, 1, 468.061751, 50.68419)">
+    <rect class="sensor-box" width="170.276" height="53" rx="7" x="0.807" y="-2.422" style=""/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">QSVP</tspan><tspan class="var-meaning"> · débit total 3 tandems</tspan></text>
+    <text class="sensor-value" id="svRelief" x="9" y="40" style="white-space: pre;">0,0 / 150 kg/s</text>
+  </g>
+  <g class="svg-sensor" data-signal="mt3" transform="matrix(1, 0, 0, 1, 502.035232, 111.773967)">
+    <rect class="sensor-box" width="124" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MT3</tspan><tspan class="var-meaning"> · vapeur</tspan></text>
+    <text class="sensor-value" id="svMT3" x="9" y="40" style="white-space: pre;">281,0 °C</text>
+  </g>
+  <g class="svg-sensor" data-signal="mp2" transform="matrix(1, 0, 0, 1, 630.806232, 112.581264)">
+    <rect class="sensor-box" width="124" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MP2</tspan><tspan class="var-meaning"> · pression GV</tspan></text>
+    <text class="sensor-value" id="svMP2" x="9" y="40" style="white-space: pre;">65,1 bar</text>
+  </g>
+  <g class="svg-sensor" data-signal="md1" transform="matrix(1, 0, 0, 1, 779.758934, 50.421796)">
+    <rect class="sensor-box" width="124" height="53" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MD1</tspan><tspan class="var-meaning"> · débit vapeur</tspan></text>
+    <text class="sensor-value" id="svMD1" x="9" y="40" style="white-space: pre;">2,12 t/s</text>
+  </g>
+  <g filter="url(#equipmentShadow)">
+    <rect class="equipment-body" x="74" y="305" width="154" height="285" rx="73"/>
+    <rect class="equipment-inner" x="87" y="324" width="128" height="248" rx="59"/>
+    <rect class="core-fill" x="111" y="421" width="78" height="103" rx="8" opacity=".18"/>
+    <path d="M117 439 V507 M136 439 V507 M155 439 V507 M174 439 V507 M193 439 V507" stroke="#e8643f" stroke-width="9" stroke-linecap="round"/>
+    <g id="controlRods" class="control-rods">
+      <path d="M121 346 V417 M142 346 V417 M163 346 V417 M184 346 V417" stroke="#647985" stroke-width="5" stroke-linecap="round"/>
+    </g>
+  </g>
+  <text class="equipment-label" x="58.971" y="319.255" style="white-space: pre; font-size: 19px;">Cuve</text>
+  <text class="equipment-note" x="149" y="541" style="white-space: pre; font-size: 12px;">cœur et grappes</text>
+  <g filter="url(#equipmentShadow)" transform="matrix(1, 0, 0, 1, -42.785043, -4.036303)">
+    <rect class="equipment-body" x="319" y="230" width="132" height="210" rx="64"/>
+    <rect class="equipment-inner" x="329" y="241" width="112" height="188" rx="54"/>
+    <rect id="pressLiquid" class="press-liquid" x="329" y="335" width="112" height="94" clip-path="url(#pressurizerClip)"/>
+    <path id="pressLevelLine" d="M331 335 H439" stroke="#b33f24" stroke-width="3"/>
+    <path class="spray-jet" d="M385 251 V272 M363 262 L376 278 M407 262 L394 278"/>
+    <path id="heaterCoil" class="heater-coil" d="M 342 399.211 C 349.339 386.263 356.679 386.263 364.018 399.211 C 371.358 412.159 378.697 412.159 386.036 399.211 C 393.376 386.263 400.715 386.263 408.055 399.211 C 415.394 412.159 422.733 412.159 430.073 399.211" style=""/>
+  </g>
+  <text class="equipment-label" x="395.495" y="185.746" style="white-space: pre; font-size: 19px;">Pressuriseur</text>
+  <path id="reliefLine" class="relief-line" d="M 379.83 234.927 L 428.83 234.927 L 428.83 199.614 L 440.83 199.614" style=""/>
+  <g id="reliefValveSymbol" transform="matrix(1, 0, 0, 1, 443.927351, 190.42182)">
+    <polygon class="valve-body" points="0,0 15,10 0,20"/>
+    <polygon class="valve-body" points="30,0 15,10 30,20"/>
+    <text class="equipment-note" x="34" y="15" style="white-space: pre;">×3</text>
+  </g>
+  <path class="equipment-body" d="M 522.385 603.193 C 507.719 590.526 500.385 573.193 500.385 551.193 L 500.385 285.193 C 500.385 258.526 511.719 238.193 534.385 224.193 C 550.385 214.193 569.052 209.193 590.385 209.193 C 611.719 209.193 630.385 214.193 646.385 224.193 C 669.052 238.193 680.385 258.526 680.385 285.193 L 680.385 551.193 C 680.385 573.193 673.052 590.526 658.385 603.193 L 522.385 603.193 Z" filter="url(#equipmentShadow)" style="stroke-width: 4;"/>
+  <path class="secondary-fill" d="M 514.385 363.193 L 666.385 363.193 L 666.385 547.193 C 666.385 560.526 661.719 571.859 652.385 581.193 L 528.385 581.193 C 519.052 571.859 514.385 560.526 514.385 547.193 L 514.385 363.193 Z" filter="url(#equipmentShadow)" style="stroke-width: 1;"/>
+  <path class="water-wave" d="M 524.385 341.193 C 535.052 331.193 545.719 331.193 556.385 341.193 C 567.052 351.193 577.719 351.193 588.385 341.193 C 599.052 331.193 609.719 331.193 620.385 341.193 C 631.052 351.193 641.719 351.193 652.385 341.193" filter="url(#equipmentShadow)" style="stroke-width: 5;"/>
+  <path class="water-wave" d="M 524.385 309.193 C 535.052 299.193 545.719 299.193 556.385 309.193 C 567.052 319.193 577.719 319.193 588.385 309.193 C 599.052 299.193 609.719 299.193 620.385 309.193 C 631.052 319.193 641.719 319.193 652.385 309.193" filter="url(#equipmentShadow)" style="stroke-width: 5;"/>
+  <line x1="519.386" y1="357.193" x2="661.386" y2="357.193" stroke="#82949e" stroke-width="2" filter="url(#equipmentShadow)" style="stroke-width: 2;"/>
+  <path class="gv-head" d="M 500.807 566.157 L 679.963 566.157 L 679.963 617.547 C 679.963 629.463 674.771 635.422 664.385 635.422 L 516.386 635.422 C 506.001 635.422 500.807 629.463 500.807 617.547 L 500.807 566.157 Z" filter="url(#equipmentShadow)" style="stroke-width: 4;"/>
+  <line class="gv-divider" x1="590.385" y1="570.193" x2="590.385" y2="631.194" filter="url(#equipmentShadow)" style="stroke-width: 4;"/>
+  <path class="u-tube" d="M 541.541 594.339 L 541.541 417.375 C 541.541 394.965 558.495 383.761 592.403 383.761 C 626.311 383.761 643.265 394.965 643.265 417.375 L 643.265 594.339" filter="url(#equipmentShadow)" style="stroke-width: 13px;"/>
+  <circle cx="642.385" cy="600.193" r="9" fill="#e8643f" filter="url(#equipmentShadow)" style="stroke-width: 1;" transform="matrix(2.031504, 0, 0, 1.583023, -654.761372, -344.715037)"/>
+  <text class="equipment-label" x="592" y="260" style="white-space: pre;" transform="matrix(0.734174, 0, 0, 1, 154.622029, 5.650846)">Générateur de vapeur</text>
+  <text class="equipment-note" x="592" y="288" style="white-space: pre;">séparateurs</text>
+  <text class="equipment-note" x="592" y="468" style="white-space: pre;">secondaire</text>
+  <text class="equipment-note" x="546" y="628" style="white-space: pre; font-size: 12px;">chaud</text>
+  <text class="equipment-note" x="624" y="627" style="white-space: pre; font-size: 12px;">froid</text>
+  <path class="pipe-primary" d="M 228 462 L 271.752 462 L 271.752 590 L 541.171 590" style=""/>
+  <path class="pipe-primary" d="M 339.709 580.312 L 339.709 430.312" stroke-width="10"/>
+  <path class="pipe-primary" d="M 649.234 612.433 L 681.287 612.433 L 681.287 673.338 L 192.48 673.338 L 192.48 572.363" style=""/>
+  <polygon class="flow-arrow" points="404,581 423,590 404,599"/>
+  <polygon class="flow-arrow" points="354 664 335 673 354 682"/>
+  <text class="branch-label" x="316.815" y="612.134" style="white-space: pre; font-size: 13px;">BC · branche chaude</text>
+  <text class="branch-label" x="286" y="651" style="white-space: pre;">BF · branche froide</text>
+  <g transform="matrix(1, 0, 0, 1, 627.200824, 677.519674)" filter="url(#equipmentShadow)">
+    <circle class="pump-ring" r="37"/>
+    <circle class="equipment-inner" r="23"/>
+    <path class="pump-blade" d="M0 -18 C16 -11 18 4 7 16 M7 16 C-8 22 -21 12 -20 -2 M-20 -2 C-18 -16 -6 -21 0 -18"/>
+  </g>
+  <text class="equipment-label" x="695.964" y="712.458" style="white-space: pre; font-size: 19px;">GMPP</text>
+  <path class="pipe-steam" d="M 592 210 L 592 178 L 828.458 178" style=""/>
+  <polygon class="flow-arrow" points="752,169 771,178 752,187"/>
+  <path class="pipe-feed" d="M 894.087 420.22 L 775.962 420.22 L 775.962 378 L 682 378" style=""/>
+  <polygon class="flow-arrow" points="718,369 699,378 718,387"/>
+  <path class="equipment-body" d="M 823.067 242.88 L 897.078 226.39 L 897.078 183.515 L 823.067 167.025 L 823.067 242.88 Z" filter="url(#equipmentShadow)" style="transform-box: fill-box; transform-origin: 50% 50%;" transform="matrix(-1, 0, 0, -1, -0.000047, 0.000022)"/>
+  <line x1="856" y1="153" x2="856" y2="225" stroke="#82949e" stroke-width="3" filter="url(#equipmentShadow)"/>
+  <line x1="894" y1="159" x2="894" y2="219" stroke="#82949e" stroke-width="3" filter="url(#equipmentShadow)"/>
+  <line x1="930" y1="165" x2="930" y2="213" stroke="#82949e" stroke-width="3" filter="url(#equipmentShadow)"/>
+  <line class="network-line" x1="949" y1="189" x2="986" y2="189" filter="url(#equipmentShadow)"/>
+  <rect class="equipment-body" x="909.31" y="178.145" width="82" height="54" rx="27" filter="url(#equipmentShadow)"/>
+  <line class="network-line" x1="1068" y1="189" x2="1155" y2="189" filter="url(#equipmentShadow)"/>
+  <line class="network-line" x1="1112" y1="164" x2="1112" y2="214" filter="url(#equipmentShadow)"/>
+  <line class="network-line" x1="1132" y1="171" x2="1132" y2="207" filter="url(#equipmentShadow)"/>
+  <text class="equipment-label" x="835" y="258" style="white-space: pre;">Turbine</text>
+  <text class="equipment-note" x="1026.19" y="248.76" style="white-space: pre; font-size: 12px;">alternateur</text>
+  <path class="pipe-steam" d="M 892.265 244.688 L 892.265 294.707" style=""/>
+  <g filter="url(#equipmentShadow)" style="" transform="matrix(0.646821, 0, 0, 0.516669, 262.563179, 93.560412)">
+    <rect class="equipment-body" x="812" y="394" width="336" height="157" rx="42"/>
+    <path class="water-wave" d="M842 430 q18 -15 36 0 t36 0 t36 0 t36 0 t36 0 t36 0 t36 0"/>
+    <line x1="840" y1="481" x2="1120" y2="481" stroke="#4d96cd" stroke-width="7" stroke-linecap="round"/>
+    <line x1="840" y1="510" x2="1120" y2="510" stroke="#4d96cd" stroke-width="7" stroke-linecap="round"/>
+    <g stroke="#4d96cd" stroke-width="3">
+      <line x1="866" y1="463" x2="866" y2="528"/>
+      <line x1="910" y1="463" x2="910" y2="528"/>
+      <line x1="954" y1="463" x2="954" y2="528"/>
+      <line x1="998" y1="463" x2="998" y2="528"/>
+      <line x1="1042" y1="463" x2="1042" y2="528"/>
+      <line x1="1086" y1="463" x2="1086" y2="528"/>
+    </g>
+  </g>
+  <text class="equipment-label" x="967.079" y="288.779" style="white-space: pre; font-size: 19px;">Condenseur</text>
+  <path class="pipe-cooling" d="M 992.197 336.5 L 1024.2 336.5"/>
+  <path class="pipe-cooling" d="M 1023.39 359.041 L 991.391 359.041"/>
+  <polygon class="flow-arrow" points="999.156 326.692 1018.16 335.692 999.156 344.692"/>
+  <polygon class="flow-arrow" points="1015.42 350.041 996.425 359.041 1015.42 368.041"/>
+  <text class="equipment-note" x="1059.2" y="383.696" style="white-space: pre; font-size: 12px; transform-box: fill-box; transform-origin: 50% 50%;" transform="matrix(0.005143, -0.999987, 0.999987, 0.005143, -14.531166, -29.869091)">source froide</text>
+  <path class="pipe-feed" d="M 981.611 379.053 L 981.611 446.053 L 898.93 446.053" style=""/>
+  <g transform="matrix(1, 0, 0, 1, 920.726651, 433.136335)" filter="url(#equipmentShadow)">
+    <circle class="pump-ring" r="32"/>
+    <circle class="equipment-inner" r="20"/>
+    <path class="pump-blade" d="M0 -15 C13 -9 15 3 5 13 M5 13 C-7 18 -17 9 -16 -2 M-16 -2 C-14 -13 -4 -17 0 -15"/>
+  </g>
+  <text class="equipment-note" x="959.475" y="484.595" style="white-space: pre; font-size: 12px;">pompe alimentaire</text>
+  <g class="svg-actuator" transform="matrix(1, 0, 0, 1, 27.421803, 231.531821)">
+    <rect class="actuator-box" width="126" height="48" rx="7"/>
+    <text class="actuator-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">POSG</tspan><tspan class="var-meaning"> · insertion grappes</tspan></text>
+    <text class="actuator-value" id="svRods" x="9" y="38" style="white-space: pre;">50 %</text>
+  </g>
+  <g class="svg-actuator" transform="matrix(1, 0, 0, 1, 333.791178, 52.318807)">
+    <rect class="actuator-box" width="126" height="48" rx="7"/>
+    <text class="actuator-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">QASP</tspan><tspan class="var-meaning"> · débit aspersion</tspan></text>
+    <text class="actuator-value" id="svSpray" x="9" y="38" style="white-space: pre;">102 m³/h</text>
+  </g>
+  <g class="svg-actuator" transform="matrix(1, 0, 0, 1, 331.785105, 111.249301)">
+    <rect class="actuator-box" width="123.204" height="48" rx="7" x="-0.807" y="-1.615" style=""/>
+    <text class="actuator-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">PCHF</tspan><tspan class="var-meaning"> · chaufferettes</tspan></text>
+    <text class="actuator-value" id="svHeater" x="9" y="38" style="white-space: pre;">2 096,9 kW</text>
+  </g>
+  <g class="svg-actuator" transform="matrix(1, 0, 0, 1, 783.088036, 596.030291)">
+    <rect class="actuator-box" width="126" height="48" rx="7"/>
+    <text class="actuator-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">QDEC</tspan><tspan class="var-meaning"> · décharge RCV</tspan></text>
+    <text class="actuator-value" id="svLetdown" x="9" y="38" style="white-space: pre;">15 m³/h</text>
+  </g>
+  <g transform="matrix(1, 0, 0, 1, 781.889244, 650.117329)">
+    <rect class="fixed-box" width="145" height="48" rx="7"/>
+    <text class="actuator-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">QCHA</tspan><tspan class="var-meaning"> · charge RCV fixe</tspan></text>
+    <text class="actuator-value" id="svCharge" x="9" y="38" style="white-space: pre;">15 m³/h</text>
+  </g>
+  <g class="svg-sensor" data-signal="mt4" transform="matrix(1, 0, 0, 1, 773.276634, 440.6136)">
+    <rect class="sensor-box" width="115" height="48" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">MT4</tspan><tspan class="var-meaning"> · eau alim.</tspan></text>
+    <text class="sensor-value" id="svMT4" x="9" y="38" style="white-space: pre;">245,0 °C</text>
+  </g>
+  <rect class="sensor-box" width="175.109" height="48" rx="7" x="780.645" y="110.442" style="stroke-width: 1.5;"/>
+  <g transform="matrix(1, 0, 0, 1, -141.271504, 3.229087)">
+    <text class="sensor-tag" x="930.916" y="124.213" style="white-space: pre; stroke-width: 1;"><tspan class="var-name" style="font-size: 10px; word-spacing: 0px; letter-spacing: 0.7px; stroke-width: 1;">PTUR</tspan><tspan class="var-meaning" style="font-size: 10px; word-spacing: 0px; stroke-width: 1;"> · puissance turbine</tspan></text>
+    <text class="sensor-value" id="svTurbine" x="930.916" y="145.213" style="white-space: pre; stroke-width: 1; font-size: 15px;">100,0 % · 3 817 MWth</text>
+  </g>
+  <g class="svg-sensor" data-signal="pow2" transform="matrix(1, 0, 0, 1, 965.175627, 112.863742)">
+    <rect class="sensor-box" width="96" height="48" rx="7"/>
+    <text class="sensor-tag" x="9" y="17" style="white-space: pre;"><tspan class="var-name">POW2</tspan><tspan class="var-meaning"> · réseau</tspan></text>
+    <text class="sensor-value" id="svPow2" x="9" y="38" style="white-space: pre;">1 300 MWe</text>
+  </g>
+  <circle cx="642.385" cy="600.193" r="9" fill="#e8643f" filter="url(#equipmentShadow)" style="stroke-width: 1;" transform="matrix(2.031504, 0, 0, 1.583023, -766.561729, -361.219249)"/>
+  <rect x="589.304" y="567.911" width="0.807" height="66.196" style="fill: rgb(216, 216, 216); stroke: rgb(0, 0, 0);"/>
+  <rect x="824.218" y="199.991" width="177.599" height="11.302" style="stroke: rgb(83, 101, 112); paint-order: stroke; stroke-width: 7px; fill: rgb(232, 238, 241);"/>
+  <path style="fill: none; stroke: rgb(232, 100, 63); stroke-width: 6px;" d="M 678.91 632.896 L 774.222 632.896"/>
+  <polygon class="flow-arrow" points="762.631 623.282 780.016 632.686 762.631 642.089" style="stroke-width: 1; fill: rgb(232, 100, 63);"/>
+  <path style="fill: none; stroke: rgb(232, 100, 63); stroke-width: 6;" d="M 682.445 663.783 L 777.757 663.783"/>
+  <polygon class="flow-arrow" points="759.911 672.976 778.046 663.572 759.911 654.169" style="stroke-width: 1; fill: rgb(232, 100, 63); transform-box: fill-box; transform-origin: 50% 50%;" transform="matrix(-1, 0, 0, -1, 0.000022, 0.000016)"/>
+  <script type="application/ecmascript"><![CDATA[
+    (() => {
+      function applyState(state) {
+        if (!state || state.type !== "simurep-synoptic-state") return;
+        Object.entries(state.values || {}).forEach(([id, value]) => {
+          const node = document.getElementById(id);
+          if (node) node.textContent = value;
+        });
+        document.querySelectorAll("[data-signal]").forEach(node => {
+          node.classList.remove("alarm-warning", "alarm-danger");
+          const level = (state.alarmLevels || {})[node.dataset.signal];
+          if (level) node.classList.add(`alarm-${level}`);
+        });
+        const level = Math.max(0, Math.min(100, Number(state.level) || 0));
+        const liquidHeight = 188 * level / 100;
+        const liquidY = 429 - liquidHeight;
+        const liquid = document.getElementById("pressLiquid");
+        const levelLine = document.getElementById("pressLevelLine");
+        if (liquid) {
+          liquid.setAttribute("y", liquidY.toFixed(2));
+          liquid.setAttribute("height", liquidHeight.toFixed(2));
+        }
+        if (levelLine) {
+          levelLine.setAttribute("d", `M331 ${liquidY.toFixed(2)} H439`);
+          levelLine.style.display = level <= 0 ? "none" : "";
+        }
+        const heater = document.getElementById("heaterCoil");
+        if (heater) heater.style.opacity = String(0.25 + 0.75 * (Number(state.heaterImmersion) || 0));
+        const rods = document.getElementById("controlRods");
+        if (rods) {
+          const position = Math.max(0, Math.min(100, Number(state.rods) || 0));
+          rods.style.transform = `translateY(${(0.75 * position).toFixed(2)}px)`;
+        }
+        document.querySelectorAll(".spray-jet").forEach(node => {
+          node.style.opacity = state.sprayOpen ? "1" : "0.18";
+        });
+        const reliefLine = document.getElementById("reliefLine");
+        const reliefValve = document.getElementById("reliefValveSymbol");
+        if (reliefLine) reliefLine.classList.toggle("active", Boolean(state.reliefOpen));
+        if (reliefValve) reliefValve.classList.toggle("valve-active", Boolean(state.reliefOpen));
+      }
+
+      window.addEventListener("message", event => applyState(event.data));
+      const announceReady = () => parent.postMessage({ type: "simurep-synoptic-ready" }, "*");
+      announceReady();
+      setTimeout(announceReady, 250);
+      setTimeout(announceReady, 1000);
+    })();
+  ]]></script>
+</svg>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Centurion · Simulateur REP 1300 pédagogique</title>
+  <link rel="stylesheet" href="centurion.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">✳</span><div><strong>CENTURION</strong><small>Simulateur REP 1300 · étude pédagogique</small></div></div>
+    <nav class="tabs" aria-label="Espaces du simulateur">
+      <button class="tab active" data-view="synoptiques">Synoptiques</button>
+      <button class="tab" data-view="graphiques">Graphique</button>
+      <button class="tab" data-view="regulation">CC-RÉGUL</button>
+      <button class="tab" data-view="protection">CC-PROTECT</button>
+      <button class="tab" data-view="initiateurs">Initiateurs</button>
+      <button class="tab" data-view="transitoires">Transitoires</button>
+      <button class="tab" data-view="modele">Modèle</button>
+    </nav>
+    <div class="runbar">
+      <span class="run-indicator" id="runIndicator">EN PAUSE</span>
+      <span class="sim-clock" id="simClock">00:00:00</span>
+      <select id="simSpeed" aria-label="Vitesse"><option value="1">×1</option><option value="5">×5</option><option value="20" selected>×20</option><option value="50">×50</option></select>
+      <button class="button button-primary" id="runButton">Démarrer</button>
+      <button class="button button-quiet" id="resetButton">Réinitialiser</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="view active" id="view-synoptiques">
+      <div class="diagram-toolbar" role="group" aria-label="Choisir un synoptique">
+        <button class="diagram-tab active" data-diagram="rcp">RCP général</button>
+        <button class="diagram-tab" data-diagram="pzr">Pressuriseur</button>
+        <button class="diagram-tab" data-diagram="rods">Grappes</button>
+        <button class="diagram-tab" data-diagram="gv">GV</button>
+        <span class="toolbar-spacer"></span>
+        <label class="gv-picker">Boucle <select id="gvSelect" aria-label="Générateur de vapeur affiché"><option value="1">GV 1</option><option value="2">GV 2</option><option value="3">GV 3</option><option value="4">GV 4</option></select></label>
+      </div>
+      <div class="process-layout">
+        <div class="diagram-frame"><object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object></div>
+        <div class="operations-column">
+        <aside class="instrument-board" aria-label="Tableau de bord" aria-live="polite">
+          <h2>Tableau de bord</h2>
+          <section class="instrument-section"><h3>Capteurs · circuit primaire</h3>
+            <div class="instrument-grid">
+              <div class="instrument primary"><span><strong>POW1</strong> Puissance nucléaire</span><output id="boardPower">100,0 %</output></div>
+              <div class="instrument primary"><span><strong>002MP</strong> Pression primaire</span><output id="boardPressure">155,0 bar</output></div>
+              <div class="instrument primary"><span><strong>003MN</strong> Niveau PZR</span><output id="boardPzrLevel">42,0 %</output></div>
+              <div class="instrument primary"><span><strong>101MT</strong> Branche chaude 1</span><output id="boardHot">326,3 °C</output></div>
+              <div class="instrument primary"><span><strong>102MT</strong> Branche froide 1</span><output id="boardCold">286,8 °C</output></div>
+            </div>
+          </section>
+          <section class="instrument-section"><h3>Capteurs · circuit secondaire</h3>
+            <div class="instrument-grid">
+              <div class="instrument secondary"><span><strong>104MP</strong> Pression GV</span><output id="boardGvPressure">65,0 bar</output></div>
+              <div class="instrument secondary"><span><strong>105MN</strong> Niveau GV</span><output id="boardGvLevel">55,0 %</output></div>
+              <div class="instrument secondary"><span><strong>ARE101MD</strong> Débit ARE</span><output id="boardFeed">530 kg/s</output></div>
+              <div class="instrument secondary"><span><strong>VAP1</strong> Débit vapeur total</span><output id="boardSteam">530 kg/s</output></div>
+              <div class="instrument secondary"><span><strong>POW2</strong> Puissance réseau</span><output id="boardElectric">1 300 MWe</output></div>
+              <div class="instrument secondary"><span><strong>MT3</strong> Vapeur GV</span><output id="boardGvTemp">280,9 °C</output></div>
+              <div class="instrument secondary"><span><strong>MT4</strong> Eau alimentaire</span><output id="boardFeedTemp">245 °C</output></div>
+            </div>
+          </section>
+          <section class="instrument-section"><h3>Informations calculées</h3>
+            <div class="instrument-grid">
+              <div class="instrument info"><span><strong>REAC</strong> Réactivité</span><output id="boardReactivity">0 pcm</output></div>
+              <div class="instrument info"><span><strong>TMOY</strong> Température moyenne</span><output id="boardTavg">306,5 °C</output></div>
+              <div class="instrument info"><span><strong>TREF</strong> Référence température</span><output id="boardTref">306,5 °C</output></div>
+              <div class="instrument info"><span><strong>NREF</strong> Référence niveau PZR</span><output id="boardNref">41,8 %</output></div>
+              <div class="instrument info"><span><strong>PTHC</strong> Puissance thermique</span><output id="boardThermal">3 817 MWth</output></div>
+              <div class="instrument info"><span><strong>PLIN</strong> Puissance linéique</span><output id="boardPline">350 W/cm</output></div>
+              <div class="instrument info"><span><strong>DNBR</strong> Marge critique simplifiée</span><output id="boardDnBr">1,65</output></div>
+              <div class="instrument info"><span><strong>BORE</strong> Concentration primaire</span><output id="boardBoron">1 200 ppm</output></div>
+              <div class="instrument info"><span><strong>PTUR</strong> Puissance turbine</span><output id="boardTurbine">100,0 %</output></div>
+              <div class="instrument info"><span><strong>TPZR</strong> Température PZR</span><output id="boardPzrTemp">344,8 °C</output></div>
+              <div class="instrument info"><span><strong>TCRA</strong> Température à cœur du crayon</span><output id="boardFuel">688 °C</output></div>
+              <div class="instrument info"><span><strong>TSUB</strong> Sous-refroidissement</span><output id="boardSubcool">18,5 °C</output></div>
+              <div class="instrument info"><span><strong>PGV</strong> Puissance quatre GV</span><output id="boardGvPower">3 817 MWth</output></div>
+              <div class="instrument info"><span><strong>QPRI</strong> Débit primaire</span><output id="boardPrimaryFlow">100 %</output></div>
+              <div class="instrument info"><span><strong>QCHA</strong> Charge RCV</span><output id="boardCharge">0 m³/h</output></div>
+              <div class="instrument info"><span><strong>IMCH</strong> Immersion chaufferettes</span><output id="boardImmersion">100 %</output></div>
+              <div class="instrument info"><span><strong>QSVP</strong> Soupapes PZR</span><output id="boardRelief">Non modélisé</output></div>
+            </div>
+          </section>
+          <section class="instrument-section"><h3>Position des actionneurs</h3>
+            <div class="instrument-grid">
+              <div class="instrument action"><span><strong>RGL001MM</strong> Groupe R</span><output id="boardR">220 pas</output></div>
+              <div class="instrument action"><span><strong>G3</strong> Compteur GCP</span><output id="boardG3">780 pas</output></div>
+              <div class="instrument action"><span><strong>ARE</strong> Vanne GV</span><output id="boardAreValve">56 %</output></div>
+              <div class="instrument action"><span><strong>PCHF</strong> Chaufferettes</span><output id="boardHeater">288 kW</output></div>
+              <div class="instrument action"><span><strong>QASP</strong> Débit aspersion</span><output id="boardSpray">0,46 m³/h</output></div>
+              <div class="instrument action"><span><strong>QDEC</strong> Décharge RCV</span><output id="boardLetdown">0 m³/h</output></div>
+            </div>
+          </section>
+        </aside>
+        <section class="card manual-card"><div class="card-head"><h2>Conduite manuelle</h2><div class="manual-actions"><button class="button" id="toggleRegulationSynoptic" aria-pressed="false">Activer régulations</button><button class="button" id="toggleProtectionSynoptic" aria-pressed="true">Désactiver protection</button></div></div>
+          <div class="manual-control-list">
+            <label>PTUR · puissance demandée <output id="demandValue">100 %</output><input id="demandInput" type="range" min="0" max="110" value="100" step="1"></label>
+            <div id="manualRegulatedControls">
+              <details><summary>Grappes</summary>
+                <label>RGL001MM · position groupe R <output id="rManualValue">220 pas extraits</output><input id="rManualInput" data-regulated-control type="range" min="0" max="260" value="220" step="1"></label>
+                <label>Décalibrage GCP <output id="gcpCalibrationValue">+0,0 % PN</output><input id="gcpCalibrationInput" type="range" min="0" max="8" value="0" step="0.1"></label>
+                <div class="manual-line"><span>R <strong id="rActualValue">220</strong> pas · IL <strong id="rLimitValue">186</strong> pas</span><span>G3 <strong id="g3ActualValue">780</strong> / <strong id="g3TargetValue">780</strong></span></div>
+              </details>
+              <details><summary>GV · niveaux et vapeur</summary>
+                <label>Consigne niveau GV <output id="gvSetpointValue">55 %</output><input id="gvSetpoint" data-regulated-control type="range" min="30" max="75" value="55" step="1"></label>
+                <div id="gvFeedControls" class="feed-controls"></div>
+              </details>
+              <details><summary>Pressuriseur</summary>
+                <label>Puissance chaufferettes <output id="heaterValue">288 kW</output><input id="heaterInput" data-regulated-control type="range" min="0" max="2500" value="288" step="1"></label>
+                <label>Aspersion 201VP / 202VP · débit demandé <output id="sprayValue">0 %</output><input id="sprayInput" data-regulated-control type="range" min="0" max="100" value="0" step="0.1"></label>
+                <small>Débit circulant <strong id="sprayActualValue">0,46 m³/h (0,18 %)</strong> · ΔP BF–BC <strong id="sprayDriveValue">3,5 bar</strong></small>
+                <div class="relief-controls" role="group" aria-label="Ouverture manuelle des soupapes"><span>Soupapes PZR</span><label class="inline-check"><input type="checkbox" data-regulated-control data-relief-stage="0"> Étage 1</label><label class="inline-check"><input type="checkbox" data-regulated-control data-relief-stage="1"> Étage 2</label><label class="inline-check"><input type="checkbox" data-regulated-control data-relief-stage="2"> Étage 3</label></div>
+              </details>
+              <details><summary>RCV</summary>
+                <label>QCHARGE · débit de charge <output id="chargeValue">15 m³/h</output><input id="chargeInput" data-regulated-control type="range" min="0" max="30" value="15" step="0.1"></label>
+                <label>CB de charge RCV (ppm)<input id="rcvBoron" type="number" min="0" max="3000" step="50" value="1200"></label>
+                <small>QCHARGE <strong id="rcvFlowValue">15 m³/h</strong> · QDEC fixe <strong id="rcvLetdownValue">15 m³/h</strong> · PZR <strong id="pzrLevelValue">42</strong> % · Tmoy <strong id="tavgValue">306,5</strong> °C</small>
+              </details>
+            </div>
+            <label class="hidden-control">Commande de R <select id="rMode"><option value="manual">Manuel</option><option value="graph">Graphe</option></select></label>
+            <label class="hidden-control">Demi-cycle <select id="halfCycle"><option value="premiere">Première moitié</option><option value="seconde">Deuxième moitié</option></select></label>
+          </div>
+          <div class="manual-state" id="manualModeStatus">Régulations manuelles · protection active</div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view" id="view-graphiques">
+      <div class="panel-head"><div><h1>Graphique</h1><p>Historique commun de la simulation · cinq dernières minutes</p></div></div>
+      <section class="card chart-page"><div class="card-head"><h2>Historique des mesures</h2>
+        <select id="traceSet" aria-label="Jeu de traces"><option value="powers">Puissances</option><option value="temperatures">Températures</option><option value="pressures">Pressions</option><option value="levels">Niveaux</option><option value="flows">Débits</option></select></div>
+        <div class="history-legend" id="historyLegend" aria-label="Légende des courbes"></div>
+        <canvas id="historyChart" width="1200" height="440" aria-label="Historique des mesures"></canvas>
+        <canvas id="reactivityChart" width="1200" height="170" aria-label="Historique de la réactivité"></canvas>
+      </section>
+    </section>
+
+    <section class="view" id="view-regulation">
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul" title="Éditeur CC-RÉGUL"></iframe>
+    </section>
+
+    <section class="view" id="view-protection">
+      <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect" title="Éditeur CC-PROTECT"></iframe>
+      <div id="signalCards" class="signal-grid"></div>
+      <div class="control-grid two-col">
+        <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
+          <label>Bore source (ppm)<input id="risBoron" type="number" min="0" max="4000" step="50" value="2500"></label>
+          <label class="inline-check"><input id="mpA" type="checkbox" checked> MP voie A</label>
+          <label class="inline-check"><input id="mpB" type="checkbox" checked> MP voie B</label>
+          <label class="inline-check"><input id="bpA" type="checkbox" checked> BP voie A</label>
+          <label class="inline-check"><input id="bpB" type="checkbox" checked> BP voie B</label>
+        </div><p class="readout">MP <strong id="mpFlow">0</strong> kg/s · BP <strong id="bpFlow">0</strong> kg/s · accumulateurs <strong id="accFlow">0</strong> kg/s · livré <strong id="risDelivered">0</strong> kg/s</p></section>
+        <section class="card"><h2>Journal des ordres</h2><ol id="eventLog" class="event-log"></ol></section>
+      </div>
+      <div class="hidden-control"><input id="tripPressure" value="130"><input id="risPressure" value="120"><input id="fluxAlarm" value="102"><input id="fluxTrip" value="109"><input id="fluxRateTrip" value="5"></div>
+    </section>
+
+    <section class="view" id="view-initiateurs">
+      <div class="panel-head"><div><h1>Initiateurs d’accidents</h1><p>Déclenchement à la demande, avec chronologie commune aux synoptiques et aux protections.</p></div><span class="badge">Trois familles d’initiateurs</span></div>
+      <div class="scenario-grid">
+        <section class="card scenario"><span class="scenario-icon">◉</span><h2>Brèche primaire</h2><p>Perte d’inventaire sur une boucle et réaction du RIS.</p>
+          <div class="form-row"><label>Section (cm²)<input id="breakArea" type="number" min="0" max="2000" value="300"></label><label>Boucle<select id="breakLoop"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>Branche<select id="breakBranch"><option value="froide">Froide</option><option value="chaude">Chaude</option></select></label></div>
+          <div class="button-row"><button class="button button-danger" id="startBreak">Ouvrir la brèche</button><button class="button" id="isolateBreak">Isoler la brèche</button></div>
+        </section>
+        <section class="card scenario"><span class="scenario-icon">↟</span><h2>Réactivité par grappe</h2><p>Éjection d’une grappe ou remontée intempestive du groupe R.</p>
+          <label>Valeur d’éjection d’étude (pcm)<input id="ejectionWorth" type="number" min="0" max="800" step="25" value="300"></label>
+          <div class="button-row"><button class="button button-danger" id="startEjection">Éjecter une grappe</button><button class="button" id="startWithdrawal">Retrait R intempestif</button></div>
+        </section>
+        <section class="card scenario"><span class="scenario-icon">ϟ</span><h2>Perte électrique totale</h2><p>Chute des débits GMPP et ARE, AAR par manque de tension ; reprise RIS après délai diesel.</p>
+          <div class="button-row"><button class="button button-danger" id="startVoltage">Perdre les alimentations</button></div>
+        </section>
+      </div>
+      <section class="card"><h2>État des initiateurs</h2><div id="accidentStatus" class="accident-status"></div></section>
+    </section>
+
+    <section class="view" id="view-transitoires">
+      <div class="panel-head"><div><h1>Programme de charge réseau</h1></div><span class="badge" id="transientState">Aucun programme</span></div>
+      <div class="program-layout">
+        <aside class="card"><h2>Scénarios préétablis</h2>
+          <div class="program-choices">
+            <button class="program-choice active" data-program="temperature"><strong>1 · Diagnostic température</strong><span>100–50–100 % · rampes 5 % PN/min</span></button>
+            <button class="program-choice" data-program="down"><strong>2 · Niveau et pression</strong><span>100 → 15 % · palier bas</span></button>
+            <button class="program-choice" data-program="step"><strong>3 · Challenge dépassement</strong><span>70 → 100 % en 15 s</span></button>
+            <button class="program-choice" data-program="lowstep"><strong>4 · Îlotage économe</strong><span>25 → 5 % · palier bas</span></button>
+            <button class="program-choice" data-program="frequency"><strong>5 · Suivi de charge</strong><span>Paliers, rampes et échelons répétés</span></button>
+          </div>
+          <select id="transientSelect" class="hidden-control" aria-hidden="true"><option value="temperature">Température</option><option value="down">Niveau</option><option value="step">Dépassement</option><option value="lowstep">Îlotage</option><option value="frequency">Suivi de charge</option></select>
+          <div class="button-row"><button class="button button-primary" id="startTransient">Démarrer ce programme</button><button class="button" id="stopTransient">Revenir à 100 %</button></div>
+        </aside>
+        <section class="card"><h2 id="programTitle">Diagnostic température</h2>
+          <div class="program-stats"><div><span>Consigne PDEM</span><strong id="programDemand">100 %</strong></div><div><span>Temps du programme</span><strong id="programElapsed">00:00</strong></div><div><span>Puissance réseau</span><strong id="programElectric">1 300 MWe</strong></div></div>
+          <canvas id="loadProgramChart" width="900" height="340" aria-label="Aperçu et progression du programme de charge"></canvas>
+          <div id="transientReadout" class="detail-grid"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view" id="view-modele">
+      <div class="panel-head"><div><h1>Modèle physique</h1><p>Lois utilisées, seuils de surveillance et paramètres d’exercice.</p></div><span class="badge">Pédagogique · à calibrer</span></div>
+      <nav class="model-tabs" aria-label="Chapitres du modèle">
+        <button class="model-tab active" data-model-page="principes">Vue d’ensemble</button>
+        <button class="model-tab" data-model-page="alarmes">Seuils d’alarme</button>
+        <button class="model-tab" data-model-page="physique">Lois physiques</button>
+        <button class="model-tab" data-model-page="parametres">Paramètres</button>
+      </nav>
+      <div class="model-page active" id="model-principes">
+        <div class="model-overview">
+          <article class="card"><h2>1 · Puissance et réactivité</h2><p><strong>R, G1, G2, N1, N2</strong>, le bore, la température du combustible et celle de l’eau contribuent à la réactivité. La cinétique à six groupes de neutrons retardés fait évoluer POW1, puis la puissance thermique chauffe le combustible et le primaire.</p><p><strong>RGL001MM</strong> indique la position effective du groupe R en pas extraits ; la commande manuelle déplace R à vitesse finie.</p></article>
+          <article class="card"><h2>2 · Quatre boucles et quatre GV</h2><p>Le débit primaire nominal est partagé entre quatre boucles, mais l’inventaire reste commun. Chaque GV calcule son niveau par la différence entre le débit ARE et le débit vapeur. Le programme de turbine détermine la demande de vapeur.</p><p>QPRI est le débit primaire total rapporté au débit nominal : <strong>100 %</strong> en marche et <strong>0 %</strong> après ralentissement complet des GMPP.</p></article>
+          <article class="card"><h2>3 · Incident et protection</h2><p>Une brèche retire masse et bore du primaire, ce qui affecte pression et refroidissement. Une demande d’IS provoque aussi un AAR et l’arrêt des GMPP. Le RIS injecte du fluide boré après son délai de transit, selon les domaines de pression MP et BP.</p><p>CC-PROTECT émet les ordres AAR et IS ; CC-RÉGUL agit sur les commandes de fonctionnement courant.</p></article>
+          <article class="card"><h2>4 · Grandeurs reconstruites</h2><p>PLIN vient d’un profil axial indicatif à 32 mailles et de facteurs Fxy réglables. DNBR et sous-refroidissement sont des indicateurs simplifiés sensibles à la pression, à la température, au flux et au débit.</p><p>Ces grandeurs servent à observer la logique du simulateur ; elles ne représentent pas une démonstration de sûreté calculée.</p></article>
+        </div>
+      </div>
+      <div class="model-page" id="model-alarmes">
+        <section class="card"><div class="card-head"><h2>Seuils de surveillance</h2><button class="button" id="resetAlarms">Valeurs initiales</button></div>
+          <p class="hint">Les alarmes colorent le tableau de bord. Elles n’envoient aucun ordre AAR ou IS : ces ordres proviennent du CC-PROTECT. Les valeurs sont des seuils d’exercice.</p>
+          <div class="alarm-summary" id="alarmSummary">Aucune alarme active.</div>
+          <div class="alarm-table-wrap"><table class="alarm-table"><thead><tr><th>Grandeur</th><th>Unité</th><th>Rouge bas</th><th>Orange bas</th><th>Orange haut</th><th>Rouge haut</th></tr></thead><tbody id="alarmRows"></tbody></table></div>
+          <p class="alarm-status" id="alarmStatus" role="status">Seuils initiaux actifs.</p>
+        </section>
+      </div>
+      <div class="model-page" id="model-physique">
+        <div class="model-overview">
+          <article class="card"><h2>Neutronique et grappes</h2><p>La réactivité est la somme des contributions de R, des GCP, des groupes d’arrêt, du bore, de l’eau, du combustible et du xénon axial. Pour chaque groupe, l’efficacité intégrale entre 0 et 260 pas extraits vaut (1 − cos(π × position / 260)) / 2, multipliée par son efficacité réglable en pcm. Le bore contribue à −7 pcm par ppm d’écart à 1 200 ppm, l’eau à −25 pcm/°C et le combustible à −1,2 pcm/°C.</p><p>Une cinétique ponctuelle à six familles de neutrons retardés fait évoluer POW1. R se déplace à 1,2 pas/s au plus ; son IL varie de 202 à 186 pas en première moitié de cycle et de 211 à 198 en seconde moitié. Aucune IL GCP n’est appliquée ici.</p></article>
+          <article class="card"><h2>Comptage G3</h2><p>La courbe G3 donne un compteur en pas de chevauchement extraits selon la puissance et la campagne. Pour un compteur C, G1 = borne(C − 520), G2 = borne(C − 335), N1 = borne(C − 160), N2 = borne(C − 5), avec borne entre 0 et 260 pas extraits. Les décalages successifs 185, 175 et 155 pas correspondent aux recouvrements 75, 85 et 105 pas. À 100 % PN, les quatre groupes sont à 260 pas extraits.</p><p>La puissance vue par la courbe G3 est la puissance turbine augmentée du décalibrage manuel de 0 à 8 % PN. Le décalibrage reste accessible quand CC-RÉGUL est actif.</p></article>
+          <article class="card"><h2>Température à cœur des crayons</h2><p>Le transfert combustible–primaire vaut <strong>P échangée = K × (TCRA − TMOY)</strong>, avec <strong>K = 10 MW/°C</strong> fixe. L'extrait de note fourni donne 9,66 à 17,50 MW/°C, incertitudes comprises. Le débit des GMPP et le taux de couverture ne multiplient plus K : l'arrêt des pompes ne supprime pas cet échange.</p><p>La capacité thermique effective vaut 45 MJ/°C. À chaque pas : ΔTCRA = (P fission + P résiduelle − P échangée) × Δt / 45, avec les puissances en MW et le temps en secondes. Le même transfert est ajouté au bilan du primaire. À 3 817 MW et TMOY = 306,5 °C, l'équilibre initial donne <strong>TCRA = 688,2 °C</strong> ; cette valeur est aussi la référence Doppler.</p><p>L'IS refroidit l'eau primaire, prise en compte ensuite dans l'écart TCRA − TMOY. La constante de temps thermique vaut 4,5 s. Ce modèle global à K fixe ne distingue pas convection et ébullition et ne calcule pas la température maximale de gaine ni la dégradation de l'échange au dénoyage.</p></article>
+          <article class="card"><h2>Thermohydraulique et pressuriseur</h2><p>La masse primaire initiale est de 269 064 kg au total, répartie entre quatre boucles pour le débit nominal de 17 588 kg/s. Les bilans d’énergie font évoluer les températures du combustible, du primaire et de chaque GV : énergie nouvelle = énergie précédente + (puissance entrante − puissance sortante) × durée. Le bilan de masse primaire inclut brèche, charge/décharge RCV, soupapes et injection RIS. La brèche utilise un débit d’orifice plafonné ; après arrêt, une GMPP passe de son plein débit à zéro en environ une minute.</p><p>À 100 % PN, l’entrée cœur est à 288,4 °C, T RIC (sortie moyenne du cœur) à 326,9 °C et la sortie de cuve à 324,6 °C. Le modèle fait traverser le cœur à 93 % du débit cuve ; les 7 % restants le contournent. Les températures de branche chaude représentent la sortie de cuve après mélange.</p><p>À plein débit, les pertes de charge d’étude sont de 3,5 bar aux bornes de la cuve et 3,5 bar aux bornes d’un GV. La HMT d’une GMPP varie approximativement de 7 bar à chaud à 10 bar à froid. Les lignes 201VP et 202VP prennent l’eau sur les branches froides 1 et 2. Le débit des vannes réglantes suit leur ouverture et la racine de la pression motrice BF–BC ; les vannes s'ouvrent totalement en deux secondes. Même fermées, chaque ligne assure 230 l/h d’aspersion continue à pression motrice nominale. À 100 % d'ouverture, les vannes réglantes débitent 250 m³/h au total, plus 0,46 m³/h d’aspersion continue. Au point initial, 288 kW de chaufferettes compensent le refroidissement de cette aspersion et un échange thermique passif effectif, calé pour le modèle. La réponse à pleine aspersion est calée sur −0,15 bar/s à 100 % PN. Dans CC-RÉGUL, les vannes réglantes commencent à s’ouvrir à 157 bar et sont entièrement ouvertes à 160,2 bar dans le graphe initial.</p><p>Dans le synoptique, l’eau bleue et sa jauge donnent le niveau réel, la ligne pointillée donne NREF. La valeur QASP du tableau de bord est le débit réellement circulant en m³/h.</p></article>
+          <article class="card"><h2>RCV, RIS et protections</h2><p>La concentration en bore est le stock de bore divisé par la masse primaire. La décharge RCV reste à 15 m³/h. La charge démarre à 15 m³/h ; elle est réglable manuellement ou par la sortie QCHARGE de CC-RÉGUL. Sa concentration en bore reste manuelle et le transit vers le primaire dure 8 s. Aucun volume de ballon RCV n’est simulé.</p><p>Le RIS MP commence sous 120 bar, le BP sous 40 bar, avec 4 s de transit. La brèche retire masse et bore selon une loi d’orifice fonction de la pression. L’AAR fait chuter les grappes ; l’IS demande en plus l’AAR et l’arrêt des GMPP.</p></article>
+          <article class="card"><h2>GV : gammes de niveau et vapeur</h2><p>Les deux jauges utilisent la même hauteur d'eau : h = masse d'eau / 7 346 kg par mètre environ. La gamme large GL (106MN, 206MN, 306MN, 406MN) couvre 0 à 17 m depuis la plaque tubulaire, sous les cyclones. La gamme étroite GE (105MN, 205MN, 305MN, 405MN) couvre 12,5 à 17 m et sert à la régulation. Les mesures sont bornées entre 0 et 100 % de leur propre gamme. Au point initial, 110 000 kg donne <strong>55 % GE = 14,975 m = 88,09 % GL</strong>. Le pointillé orange représente uniquement NREF en % GE.</p><p>La conversion linéaire est une hypothèse de géométrie ; le gonflement et le tassement diphasiques ne sont pas modélisés. L'inventaire peut dépasser la gamme de mesure sans calcul d'entraînement d'eau. L'échange thermique dépend de l'inventaire disponible, et non de la lecture GE.</p><p>Les vannes principales VVP120VV, 220VV, 320VV et 420VV démarrent à 100 % d'ouverture. Leurs mesures KM suivent leur position effective. Q turbine = Qnom × PTUR/100 × ouverture/100 × √(P/65 bar). Le débit vapeur mesuré de chaque GV est la somme du débit turbine et du débit GCT-A ; cette somme alimente aussi l’anticipation de sa régulation ARE. La course de 50 %/s est une hypothèse d'exercice ; une vanne fermée annule le débit vers la turbine de son seul GV.</p></article>
+          <article class="card"><h2>GCT-A : écrêtage de la pression secondaire</h2><p>La pression du GV est calculée à partir de sa température par la relation de saturation <a href="https://iapws.org/technical-guidance/release/IF97-Rev" target="_blank" rel="noopener">IAPWS-IF97, région 4</a>. Le point initial de 65 bar absolus correspond à 280,859 °C ; la conductance primaire–GV est recalée pour conserver le bilan nominal.</p><p>Le contournement turbine à l'atmosphère GCT-A reste fermé sous <strong>Psat(297,2 °C) = 82,5406 bar absolus</strong>. Au-dessus, sa demande d'ouverture vaut 100 × (P − 82,5406) / 1 bar, bornée à 0–100 %. Le débit vaut 600 kg/s × ouverture/100 × √(P/Pseuil) par GV. La bande de 1 bar, cette capacité et la course de 50 %/s sont des hypothèses d'étude. Lorsqu'il débite, la pression se stabilise légèrement au-dessus du seuil. La vapeur est retirée des bilans de masse et d'énergie, sans produire d'électricité. Sa vanne réglante VDA120VV suit le numéro du GV. VDA120KM, 220KM, 320KM et 420KM affichent le débit GCT-A en kg/s ; l’ouverture en % reste indiquée près de la vanne.</p></article>
+          <article class="card"><h2>Niveaux et marges</h2><p>Chaque GV a son propre inventaire en eau, niveau, température et pression. Sa masse d’eau intègre (débit ARE − débit vapeur total) × durée. Le débit ARE répond à sa vanne avec un temps caractéristique de 8 s. Le débit vapeur total inclut turbine et GCT-A. La puissance électrique affichée est proportionnelle au seul débit envoyé à la turbine.</p><p>Deux réservoirs iode/xénon haut et bas alimentent un profil axial à 32 mailles regroupées en six mesures. PLIN est le maximum de ce profil multiplié par la puissance et un Fxy grappé ou non grappé. Le DNBR affiché est une approximation normalisée à 1,65 au point initial ; il combine pression, sous-refroidissement, PLIN et racine du débit. Ce n’est pas une corrélation de sûreté qualifiée.</p></article>
+          <article class="card"><h2>Chaînes de commande</h2><p>Le graphe CC-RÉGUL peut piloter R en pas extraits, G3, les quatre vannes ARE, les chaufferettes, l’ouverture d’aspersion et la charge RCV. Hors régulation, ces commandes viennent du pupitre manuel. Quand le graphe est actif, les glissières grisées suivent les valeurs appliquées ; leur reprise manuelle se fait à ces valeurs. Le décalibrage GCP et la CB de charge restent toujours manuels.</p><p>Le graphe CC-PROTECT est actif au démarrage. Il reçoit pression, POW1 sans plafonnement à 100 %, et manque de tension ; ses demandes AAR/IS ont priorité. La variation de POW1 passe par un bloc Dérivée filtrée relié à la mesure : H(s) = s / (1 + τs), avec τ = 0,5 s réglable. La sortie est en % PN/s, initialisée à zéro et figée en pause. Le calcul est Dnouveau = (τ × Dancien + POW1nouveau − POW1ancien) / (τ + Δt). E1 et S sont affichés dans les propriétés du bloc. Les seuils d’alarme colorent le tableau de bord sans émettre d’ordres de protection. Le moteur avance par pas de 0,1 s au maximum.</p></article>
+        </div>
+      </div>
+      <div class="model-page" id="model-parametres"><div class="control-grid two-col">
+        <section class="card"><h2>Campagne et courbe G3</h2><label>État de campagne <select id="campaignSelect"><option value="debut">Début de campagne</option><option value="milieu">Milieu de campagne</option><option value="fin">Fin de campagne</option></select></label><p class="hint">Le décalibrage du pupitre ajoute 0 à 8 % PN à la puissance utilisée par la courbe G3.</p></section>
+        <section class="card"><h2>Efficacité intégrale des groupes · réglages</h2><div id="rodWorthControls" class="worth-grid"></div><p id="rodWorthStatus" class="readout"></p><p class="hint">Les neuf valeurs initiales sont les réglages d'étude choisis pour ce simulateur. Elles peuvent être comparées aux <a href="../support/sources/Exploitation%20des%20Coeurs%20REP.pdf" target="_blank" rel="noopener">mesures REP 1 300 MWe de 2006, tableaux 6.7 à 6.9, pages PDF 152–153</a>, mais ne leur sont pas identiques. Le moteur emploie directement chaque réglage. À 220 pas extraits, l'effet de R est nul par définition du point initial ; il apparaît dès que R se déplace. La loi de position cosinus et la transposition en puissance restent des approximations.</p></section>
+        <section class="card"><h2>Courbes RIS · facteurs d’étude</h2><div class="form-row"><label>Échelle débit MP<input id="mpScale" type="number" min="0" max="3" step="0.1" value="1"></label><label>Échelle débit BP<input id="bpScale" type="number" min="0" max="3" step="0.1" value="1"></label></div><p class="hint">MP active sous 120 bar ; BP sous 40 bar. Deux voies A/B, une courbe simplifiée par voie et 4 s de transit.</p></section>
+        <section class="card"><h2>Distribution axiale · étude</h2><div class="form-row"><label>Fxy non grappé<input id="fxyUngraped" type="number" min="1" max="2.5" step="0.01" value="1.28"></label><label>Fxy grappé<input id="fxyGraped" type="number" min="1" max="2.5" step="0.01" value="1.36"></label><label>Accélération xénon pour essai<input id="xenonScale" type="number" min="0.1" max="100" step="0.1" value="1"></label></div><div id="axialBars" class="axial-bars" aria-label="Profil axial à 32 mailles"></div><p class="readout">Six détecteurs : <span id="detectorValues">—</span> · P linéique maximale <strong id="plineValue">—</strong> W/cm</p><p class="hint">La reconstitution à 32 mailles et les Fxy sont illustratifs, sans tables du DSS de recharge.</p></section>
+        <section class="card"><h2>Sources et statut</h2><ul class="sources"><li><a href="../support/sources/Exploitation%20des%20Coeurs%20REP.pdf" target="_blank" rel="noopener">Exploitation des cœurs REP</a> : EP-RGL4, G3 et chaînes de protection (pages PDF 185–188 et 205–209).</li><li><a href="../support/sources/Serge%20Marguet%20-%20La%20technologie%20des%20r%C3%A9acteurs%20%C3%A0%20eau%20pressuris%C3%A9e-EDP%20Sciences%20(2019)-1.pdf" target="_blank" rel="noopener">Marguet</a> : comptage des pas de groupe (§5.4.4, pages PDF 616–622).</li><li>RIS : structure MP/BP et deux voies ; débits et bore source sont des hypothèses réglables.</li><li>La méthode détaillée, les équations et les limites de validité sont décrites dans l’onglet Lois physiques et le fichier METHODE-CENTURION.md.</li></ul></section>
+      </div></div>
+    </section>
+  </main>
+  <script src="centurion-engine.js"></script>
+  <script src="centurion-app.js"></script>
+</body>
+</html>

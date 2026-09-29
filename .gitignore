@@ -1,0 +1,17 @@
+# Références et archives conservées dans l'espace de travail local.
+/support/*
+!/support/README.md
+/corbeille/
+
+# Configuration locale, secrets et fichiers temporaires.
+.agents/
+.codex/
+.env
+.env.*
+!.env.example
+node_modules/
+*.log
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db

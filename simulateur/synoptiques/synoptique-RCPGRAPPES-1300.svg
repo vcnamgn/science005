@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1190" viewBox="0 0 1360 1190" role="img" aria-labelledby="titre description">
+  <title id="titre">Positions des grappes — palier 1300, exemple G3 d'étude</title>
+  <desc id="description">Positions individuelles en pas extraits, de 0 inséré à 260 totalement extrait. Exemple pédagogique à 90 pour cent de puissance relative : 600 pas de chevauchement G3 donnent G1 à 80 pas extraits et G2, N1 et N2 à 260. Le groupe R est illustré à 220 pas extraits. Sa limite d'insertion active vaut 188 pas extraits en première moitié de cycle, à 90 pour cent de puissance relative ; elle vaudrait 199 en seconde moitié. Les groupes d'arrêt sont à 260 pas extraits. Aucune insertion limite n'est affichée pour les GCP. Courbes G3 numérisées approximativement d'après la figure d'étude fournie.</desc>
+  <style>
+    text{font-family:Arial,Helvetica,sans-serif;fill:#17324d}
+    .title{font-size:30px;font-weight:800;letter-spacing:.4px}
+    .subtitle{font-size:14px;fill:#466178}
+    .section{font-size:18px;font-weight:800}
+    .small{font-size:12.5px;fill:#506c80}
+    .bar-name{font-size:22px;font-weight:800}
+    .value{font:700 26px Consolas,'Courier New',monospace}
+    .kpi-label{font-size:13px;font-weight:800;letter-spacing:.5px;fill:#506c80}
+    .kpi-value{font:800 31px Consolas,'Courier New',monospace}
+    .kpi-unit{font-size:14px;fill:#466178}
+    .il-label{font-size:13px;font-weight:800;fill:#c34a22}
+    .panel-title{font-size:17px;font-weight:800}
+    .panel-text{font-size:14px}
+    .mono{font:700 17px Consolas,'Courier New',monospace}
+    .axis{font-size:11px;fill:#61778a}
+    .nav{fill:#b79af7;stroke:#7146d4;stroke-width:3;stroke-linejoin:round}
+  </style>
+  <rect width="1360" height="1480" fill="#f7fbfd"/>
+  <rect x="0" y="0" width="1360" height="100" fill="#eaf4fa"/>
+  <circle cx="45" cy="54" r="10" fill="#ff6747"/>
+  <text x="72" y="65" class="title">POSITIONS DES GRAPPES</text>
+  <text x="73" y="87" class="subtitle">Palier 1300 MW · lecture en pas extraits · G3 d’étude</text>
+  <a href="synoptique-RCP-1300.svg" id="retour-rcp"><path class="nav" d="M72 118 H166 L187 139 166 160 H72Z"/><text x="123" y="146" font-size="17" font-weight="700" text-anchor="middle">RCP</text></a>
+  <text x="215" y="142" font-size="16" font-weight="700">260 = totalement extrait  ·  0 = totalement inséré</text>
+  <rect x="800" y="115" width="480" height="47" rx="9" fill="#e6f8ef" stroke="#9cdec0" stroke-width="1"/>
+  <text x="820" y="144" font-size="14" font-weight="700">La zone colorée montre la partie insérée dans le cœur</text>
+  <g id="bandeau-etude">
+    <rect x="80" y="182" width="275" height="103" rx="12" fill="#ffffff" stroke="#c7dfea" stroke-width="1.5"/>
+    <text x="101" y="210" class="kpi-label">PUISSANCE RELATIVE CŒUR</text>
+    <text x="101" y="251" class="kpi-value" id="puissance-electrique">90 %</text>
+    <text x="218" y="251" class="kpi-unit">exemple d’étude</text>
+    <rect x="374" y="182" width="362" height="103" rx="12" fill="#ffffff" stroke="#c7dfea" stroke-width="1.5"/>
+    <text x="395" y="210" class="kpi-label">POSITION G3 DES GCP</text>
+    <text x="395" y="251" class="kpi-value" id="compteur-g3" data-unite="pas-de-chevauchement">600</text>
+    <text x="472" y="251" class="kpi-unit">pas de chevauchement</text>
+    <rect x="755" y="182" width="525" height="103" rx="12" fill="#ffffff" stroke="#c7dfea" stroke-width="1.5"/>
+    <text x="776" y="210" class="kpi-label">RECOUVREMENT DES GCP</text>
+    <text x="776" y="240" font-size="15" font-weight="700">G1 / G2 : 75   ·   G2 / N1 : 85   ·   N1 / N2 : 105*</text>
+    <text x="776" y="265" class="small">* Valeurs d’étude fournies ; Marguet indique 100 pour N1 / N2.</text>
+  </g>
+  <path d="M304 312V846 M814 312V846" stroke="#d4e4ed" stroke-width="2"/>
+  <rect x="81" y="307" width="199" height="45" rx="9" fill="#eee6ff"/>
+  <text x="101" y="336" class="section">GROUPE R</text>
+  <rect x="327" y="307" width="465" height="45" rx="9" fill="#e4f3fa"/>
+  <text x="346" y="336" class="section">COMPENSATION DE PUISSANCE</text>
+  <rect x="840" y="307" width="440" height="45" rx="9" fill="#ffede8"/>
+  <text x="861" y="336" class="section">GROUPES D&#x27;ARRÊT</text>
+  <g id="barres">
+<g id="groupe-R" data-groupe="R" data-famille="r" data-position-pas-extraits="220" data-il-pas-extraits="188" data-phase-cycle="premiere-moitie" data-puissance-relative-pourcent="90" data-course-pas="260">
+<text x="190" y="367" class="bar-name" text-anchor="middle">R</text>
+<rect x="156.5" y="383" width="67" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="160.5" y="387" width="59" height="55.38" rx="3" fill="#7157c9" id="remplissage-R"/>
+<path d="M163.5 383.0H216.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M163.5 473.0H216.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M163.5 563.0H216.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M163.5 653.0H216.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M163.5 743.0H216.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path id="limite-R" d="M146.5 482.69H233.5" stroke="#ed6a37" stroke-width="4"/>
+<text x="190" y="471.69" class="il-label" text-anchor="middle" id="valeur-limite-R">IL 188</text>
+<rect x="152" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="190" y="790" class="value" id="position-R" text-anchor="middle">220</text>
+<text x="190" y="825" class="small" text-anchor="middle">RGL001MM</text>
+<text x="190" y="849" class="small" text-anchor="middle">RGL001KM</text>
+</g>
+<g id="groupe-G1" data-groupe="G1" data-famille="gris" data-position-pas-extraits="80" data-course-pas="260">
+<text x="380" y="367" class="bar-name" text-anchor="middle">G1</text>
+<rect x="346.5" y="383" width="67" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="350.5" y="387" width="59" height="249.23" rx="3" fill="#269bc6" id="remplissage-G1"/>
+<path d="M353.5 383.0H406.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M353.5 473.0H406.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M353.5 563.0H406.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M353.5 653.0H406.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M353.5 743.0H406.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="342" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="380" y="790" class="value" id="position-G1" text-anchor="middle">80</text>
+<text x="380" y="825" class="small" text-anchor="middle">RGL002MM</text>
+<text x="380" y="849" class="small" text-anchor="middle">RGL002KM</text>
+</g>
+<g id="groupe-G2" data-groupe="G2" data-famille="gris" data-position-pas-extraits="260" data-course-pas="260">
+<text x="490" y="367" class="bar-name" text-anchor="middle">G2</text>
+<rect x="456.5" y="383" width="67" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="460.5" y="387" width="59" height="0.0" rx="3" fill="#269bc6" id="remplissage-G2"/>
+<path d="M463.5 383.0H516.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M463.5 473.0H516.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M463.5 563.0H516.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M463.5 653.0H516.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M463.5 743.0H516.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="452" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="490" y="790" class="value" id="position-G2" text-anchor="middle">260</text>
+<text x="490" y="825" class="small" text-anchor="middle">RGL003MM</text>
+<text x="490" y="849" class="small" text-anchor="middle">RGL003KM</text>
+</g>
+<g id="groupe-N1" data-groupe="N1" data-famille="noir" data-position-pas-extraits="260" data-course-pas="260">
+<text x="600" y="367" class="bar-name" text-anchor="middle">N1</text>
+<rect x="566.5" y="383" width="67" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="570.5" y="387" width="59" height="0.0" rx="3" fill="#17324d" id="remplissage-N1"/>
+<path d="M573.5 383.0H626.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M573.5 473.0H626.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M573.5 563.0H626.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M573.5 653.0H626.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M573.5 743.0H626.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="562" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="600" y="790" class="value" id="position-N1" text-anchor="middle">260</text>
+<text x="600" y="825" class="small" text-anchor="middle">RGL004MM</text>
+<text x="600" y="849" class="small" text-anchor="middle">RGL004KM</text>
+</g>
+<g id="groupe-N2" data-groupe="N2" data-famille="noir" data-position-pas-extraits="260" data-course-pas="260">
+<text x="710" y="367" class="bar-name" text-anchor="middle">N2</text>
+<rect x="676.5" y="383" width="67" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="680.5" y="387" width="59" height="0.0" rx="3" fill="#17324d" id="remplissage-N2"/>
+<path d="M683.5 383.0H736.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M683.5 473.0H736.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M683.5 563.0H736.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M683.5 653.0H736.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M683.5 743.0H736.5" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="672" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="710" y="790" class="value" id="position-N2" text-anchor="middle">260</text>
+<text x="710" y="825" class="small" text-anchor="middle">RGL005MM</text>
+<text x="710" y="849" class="small" text-anchor="middle">RGL005KM</text>
+</g>
+<g id="groupe-SA" data-groupe="SA" data-famille="arret" data-position-pas-extraits="260" data-course-pas="260">
+<text x="899" y="367" class="bar-name" text-anchor="middle">SA</text>
+<rect x="868.0" y="383" width="62" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="872.0" y="387" width="54" height="0.0" rx="3" fill="#ef7659" id="remplissage-SA"/>
+<path d="M875.0 383.0H923.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M875.0 473.0H923.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M875.0 563.0H923.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M875.0 653.0H923.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M875.0 743.0H923.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="861" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="899" y="790" class="value" id="position-SA" text-anchor="middle">260</text>
+<text x="899" y="825" class="small" text-anchor="middle">RGL006MM</text>
+</g>
+<g id="groupe-SB" data-groupe="SB" data-famille="arret" data-position-pas-extraits="260" data-course-pas="260">
+<text x="995" y="367" class="bar-name" text-anchor="middle">SB</text>
+<rect x="964.0" y="383" width="62" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="968.0" y="387" width="54" height="0.0" rx="3" fill="#ef7659" id="remplissage-SB"/>
+<path d="M971.0 383.0H1019.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M971.0 473.0H1019.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M971.0 563.0H1019.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M971.0 653.0H1019.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M971.0 743.0H1019.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="957" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="995" y="790" class="value" id="position-SB" text-anchor="middle">260</text>
+<text x="995" y="825" class="small" text-anchor="middle">RGL007MM</text>
+</g>
+<g id="groupe-SC" data-groupe="SC" data-famille="arret" data-position-pas-extraits="260" data-course-pas="260">
+<text x="1091" y="367" class="bar-name" text-anchor="middle">SC</text>
+<rect x="1060.0" y="383" width="62" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="1064.0" y="387" width="54" height="0.0" rx="3" fill="#ef7659" id="remplissage-SC"/>
+<path d="M1067.0 383.0H1115.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1067.0 473.0H1115.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1067.0 563.0H1115.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1067.0 653.0H1115.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1067.0 743.0H1115.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="1053" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="1091" y="790" class="value" id="position-SC" text-anchor="middle">260</text>
+<text x="1091" y="825" class="small" text-anchor="middle">RGL008MM</text>
+</g>
+<g id="groupe-SD" data-groupe="SD" data-famille="arret" data-position-pas-extraits="260" data-course-pas="260">
+<text x="1187" y="367" class="bar-name" text-anchor="middle">SD</text>
+<rect x="1156.0" y="383" width="62" height="360" rx="8" fill="#e9f3f8" stroke="#17324d" stroke-width="2.4"/>
+<rect x="1160.0" y="387" width="54" height="0.0" rx="3" fill="#ef7659" id="remplissage-SD"/>
+<path d="M1163.0 383.0H1211.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1163.0 473.0H1211.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1163.0 563.0H1211.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1163.0 653.0H1211.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<path d="M1163.0 743.0H1211.0" stroke="#b2ccd9" stroke-width="1" stroke-dasharray="4 5"/>
+<rect x="1149" y="762" width="76" height="40" rx="6" fill="#fff0ba" stroke="#e8cb70" stroke-width="1"/>
+<text x="1187" y="790" class="value" id="position-SD" text-anchor="middle">260</text>
+<text x="1187" y="825" class="small" text-anchor="middle">RGL009MM</text>
+</g>
+  </g>
+  <g id="legendes-groupes"/>
+  <path d="M80 865H1280" stroke="#c7dfea" stroke-width="2"/>
+  <g id="courbe-g3">
+
+<rect x="80" y="882" width="575" height="293" rx="12" fill="#ffffff" stroke="#c7dfea" stroke-width="1.5"/>
+<text x="101" y="911" class="panel-title">G3 D&#x27;ÉTUDE  ·  puissance ↔ pas de chevauchement</text>
+<path d="M118 1095.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="1099.0" class="axis" text-anchor="end">0%</text>
+<path d="M118 1068.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="1072.0" class="axis" text-anchor="end">20%</text>
+<path d="M118 1041.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="1045.0" class="axis" text-anchor="end">40%</text>
+<path d="M118 1014.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="1018.0" class="axis" text-anchor="end">60%</text>
+<path d="M118 987.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="991.0" class="axis" text-anchor="end">80%</text>
+<path d="M118 960.0H630" stroke="#e5edf2" stroke-width="1"/>
+<text x="109" y="964.0" class="axis" text-anchor="end">100%</text>
+<path d="M118.0 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="118.0" y="1114" class="axis" text-anchor="middle">200</text>
+<path d="M206.3 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="206.3" y="1114" class="axis" text-anchor="middle">300</text>
+<path d="M294.6 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="294.6" y="1114" class="axis" text-anchor="middle">400</text>
+<path d="M382.8 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="382.8" y="1114" class="axis" text-anchor="middle">500</text>
+<path d="M471.1 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="471.1" y="1114" class="axis" text-anchor="middle">600</text>
+<path d="M559.4 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="559.4" y="1114" class="axis" text-anchor="middle">700</text>
+<path d="M630.0 960V1095" stroke="#e5edf2" stroke-width="1"/>
+<text x="630.0" y="1114" class="axis" text-anchor="middle">780</text>
+<polyline id="courbe-g3-debut" points="171.0,1095.0 197.4,1081.5 219.5,1068.0 241.6,1054.5 254.8,1041.0 285.7,1027.5 329.9,1014.0 366.9,1000.5 413.7,987.0 471.1,973.5 630.0,960.0" fill="none" stroke="#19a9cf" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="courbe-g3-milieu" points="144.5,1095.0 171.0,1081.5 201.9,1068.0 232.8,1054.5 254.8,1041.0 276.9,1027.5 299.0,1014.0 365.2,1000.5 413.7,987.0 479.9,973.5 630.0,960.0" fill="none" stroke="#8e9da8" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline id="courbe-g3-fin" points="126.8,1095.0 140.1,1081.5 153.3,1068.0 197.4,1054.5 232.8,1041.0 259.2,1027.5 281.3,1014.0 343.1,1000.5 406.7,987.0 453.4,973.5 630.0,960.0" fill="none" stroke="#405163" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle id="point-g3" cx="471.1" cy="973.5" r="7" fill="#ff6848" stroke="#ffffff" stroke-width="2"/>
+<text id="libelle-point-g3" x="459.1" y="962.5" font-size="12" font-weight="800" text-anchor="end" fill="#c34a22">90 % / 600</text>
+<path d="M120 1139H145" stroke="#19a9cf" stroke-width="3"/><text x="151" y="1144" class="small">début</text>
+<path d="M224 1139H249" stroke="#8e9da8" stroke-width="3"/><text x="255" y="1144" class="small">milieu</text>
+<path d="M343 1139H368" stroke="#405163" stroke-width="3"/><text x="374" y="1144" class="small">fin de campagne</text>
+<text x="101" y="1163" class="small">Courbes lues approximativement sur la figure fournie.</text>
+</g>
+<g id="courbe-il-R" transform="translate(600,-308)">
+  <rect x="80" y="1190" width="575" height="253" rx="12" fill="#ffffff" stroke="#c7dfea" stroke-width="1.5"/>
+  <text x="101" y="1219" class="panel-title">IL DU GROUPE R · puissance et avancement du cycle</text>
+  <text x="101" y="1241" class="small">Insertion limite en pas extraits : position R ≥ IL active</text>
+  <path d="M135 1284H620 M135 1332H620 M135 1380H620" stroke="#e5edf2" stroke-width="1"/>
+  <path d="M135 1284V1380 M377.5 1284V1380 M620 1284V1380" stroke="#e5edf2" stroke-width="1"/>
+  <text x="126" y="1288" class="axis" text-anchor="end">220</text>
+  <text x="126" y="1336" class="axis" text-anchor="end">200</text>
+  <text x="126" y="1384" class="axis" text-anchor="end">180</text>
+  <text x="135" y="1400" class="axis" text-anchor="middle">0 %</text>
+  <text x="377.5" y="1400" class="axis" text-anchor="middle">50 %</text>
+  <text x="620" y="1400" class="axis" text-anchor="middle">100 %</text>
+  <path id="il-r-premiere-moitie" d="M135 1327.2L620 1365.6" fill="none" stroke="#ed6a37" stroke-width="3" data-il-a-0="202" data-il-a-100="186"/>
+  <path id="il-r-seconde-moitie" d="M135 1305.6L620 1336.8" fill="none" stroke="#d34cc0" stroke-width="3" data-il-a-0="211" data-il-a-100="198"/>
+  <circle id="point-il-premiere" cx="571.5" cy="1361.76" r="6" fill="#ed6a37" stroke="#ffffff" stroke-width="2"/>
+  <circle id="point-il-seconde" cx="571.5" cy="1333.68" r="5" fill="#d34cc0" stroke="#ffffff" stroke-width="2"/>
+  <text id="libelle-il-premiere" x="571" y="1354" class="axis" text-anchor="end">188</text>
+  <text id="libelle-il-seconde" x="568" y="1327" class="axis" text-anchor="end">199</text>
+  <path d="M108 1419H133" stroke="#ed6a37" stroke-width="3"/>
+  <text x="140" y="1424" class="small">1re moitié de cycle</text>
+  <path d="M300 1419H325" stroke="#d34cc0" stroke-width="3"/>
+  <text x="332" y="1424" class="small">2e moitié de cycle</text>
+</g>
+
+<script type="application/ecmascript" href="../centurion-svg-bridge.js"/>
+</svg>
