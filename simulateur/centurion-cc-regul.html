@@ -976,7 +976,6 @@
       .reactivity-wrap { height: 120px; flex: none; }
     }
   </style>
-  <link rel="stylesheet" href="safety.css">
   <style>
     body {min-width:0;background:#f3f8fb}
     body>.appbar,body>main>.view:not(#view-regulation){display:none!important}
@@ -1042,7 +1041,6 @@
             <object
               class="process-object"
               id="processSynoptic"
-              data="synoptique-rep-edit_v0.2.svg?v=20260920-rods"
               type="image/svg+xml"
               aria-label="Synoptique animé d’un réacteur à eau pressurisée simplifié">
               Le synoptique SVG n’a pas pu être chargé.
@@ -1370,7 +1368,7 @@
             </section>
             <section class="safety-panel"><h2>Groupes de grappes</h2><p class="safety-fine">Position en % extrait · 0 = inséré · 100 = extrait. Chaque groupe possède sa courbe de valeur.</p><div id="safetyRods"></div></section>
             <section class="safety-panel"><h2>Bore soluble</h2><label class="safety-field">RCV <select id="safetyBoration"><option value="off">À l'arrêt</option><option value="borate">Borication · 2 400 ppm</option><option value="dilute">Dilution · 0 ppm</option></select></label><p class="safety-fine">Le bore suit un bilan de masse : les sorties emportent la concentration courante ; charge et injection apportent leur propre concentration.</p></section>
-            <section class="safety-panel safety-method"><h2>Lecture du modèle</h2><p>Six groupes de neutrons retardés, quatre groupes de grappes avec cinétique de déplacement et bilan du bore. Le primaire est un volume homogène avec décharge limitée par un flux critique simplifié, injection par paliers, refroidissement par GV, ébullition et couverture représentées par des indicateurs réduits.</p><p>Les lois de brèche, de dénoyage et de température ne résolvent ni la géométrie de la cuve ni l'écoulement diphasique local. Les scénarios servent à comparer des fonctions de protection.</p><a href="METHODE-SURETE.md" target="_blank" rel="noopener">Hypothèses, équations et limites →</a></section>
+            <section class="safety-panel safety-method"><h2>Lecture du modèle</h2><p>Six groupes de neutrons retardés, quatre groupes de grappes avec cinétique de déplacement et bilan du bore. Le primaire est un volume homogène avec décharge limitée par un flux critique simplifié, injection par paliers, refroidissement par GV, ébullition et couverture représentées par des indicateurs réduits.</p><p>Les lois de brèche, de dénoyage et de température ne résolvent ni la géométrie de la cuve ni l'écoulement diphasique local. Les scénarios servent à comparer des fonctions de protection.</p><a href="METHODE-CENTURION.md" target="_blank" rel="noopener">Hypothèses, équations et limites →</a></section>
           </aside>
         </div>
       </div>
@@ -6349,7 +6347,5 @@
     window.parent.postMessage({type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE},"*");
     requestAnimationFrame(frame);
   </script>
-  <script src="safety-engine.js"></script>
-  <script src="safety-app.js"></script>
 </body>
 </html>

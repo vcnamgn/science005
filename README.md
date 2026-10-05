@@ -25,6 +25,16 @@ git clone https://github.com/vcnamgn/science005.git
 
 Voir le [mode d'emploi](simulateur/README.md) et les [équations et hypothèses du modèle](simulateur/METHODE-CENTURION.md). Les résultats illustrent des principes ; ils ne constituent pas une démonstration de sûreté qualifiée.
 
+## Documentation de conception
+
+La [note de conception](docs/CONCEPTION.md) décrit l'architecture, les bilans physiques, les unités, les échanges entre les éditeurs et le moteur, les priorités et les essais. La [documentation HTML](docs/index.html) propose une table des matières, une recherche et un index des fonctions avec leurs liens vers le code. Elle se consulte aussi [en ligne](https://vcnamgn.github.io/science005/docs/).
+
+Régénérer la documentation après une modification du code :
+
+```sh
+node scripts/generate-docs.mjs
+```
+
 ## Vérifier
 
 Les tests utilisent uniquement Node.js, sans dépendance à installer. Depuis la racine du dépôt :
@@ -35,9 +45,11 @@ node --test simulateur/tests/*.test.js
 
 ## Organisation
 
-- [`simulateur/`](simulateur/) : application, moteurs, styles et documentation.
-- [`simulateur/synoptiques/`](simulateur/synoptiques/) : quatre SVG partagés entre les vues.
+- [`simulateur/`](simulateur/) : application, moteur, styles et mode d'emploi.
+- [`simulateur/synoptiques/`](simulateur/synoptiques/) : six SVG ; la vue Cœur est dessinée en Canvas.
 - [`simulateur/tests/`](simulateur/tests/) : tests des modèles, des signaux de commande et des synoptiques.
+- [`docs/`](docs/) : note de conception et index généré du code.
+- [`scripts/`](scripts/) : génération de la documentation et exclusions de publication.
 - [`support/README.md`](support/README.md) : organisation des références documentaires locales.
 
-Le simulateur pédagogique précédent est conservé dans [`simulateur/simulateur-rep.html`](simulateur/simulateur-rep.html) comme référence autonome.
+Le dépôt public contient le simulateur actuel. Les prototypes précédents et les documents de travail sont conservés dans les archives locales ; ils sont exclus de la publication. Voir le [journal de nettoyage](docs/NETTOYAGE.md).

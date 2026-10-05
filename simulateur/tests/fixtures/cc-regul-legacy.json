@@ -1,0 +1,715 @@
+{
+  "format": "SimuREP-Regulation",
+  "version": 1,
+  "name": "Modèle de régulation",
+  "savedAt": "2026-09-22T20:10:25.426Z",
+  "nodes": [
+    {
+      "id": "N1",
+      "type": "ptur",
+      "x": -422.6808575255819,
+      "y": -370.109557053897,
+      "label": "PTUR",
+      "params": {}
+    },
+    {
+      "id": "N2",
+      "type": "curve",
+      "x": -102.9390772999448,
+      "y": -304.36540353545394,
+      "label": "Programme TREF",
+      "params": {
+        "curveRole": "tref",
+        "xUnit": "% PN",
+        "yUnit": "°C",
+        "points": [
+          {
+            "x": 0,
+            "y": 297.2
+          },
+          {
+            "x": 100,
+            "y": 306.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "N3",
+      "type": "tmoy",
+      "x": -413.61295986334824,
+      "y": -505.3286627288333,
+      "label": "TMOY",
+      "params": {}
+    },
+    {
+      "id": "N4",
+      "type": "sum",
+      "x": 170.54828729999304,
+      "y": -353.4991605311744,
+      "label": "Écart T",
+      "params": {
+        "a": 1,
+        "b": -1
+      }
+    },
+    {
+      "id": "N5",
+      "type": "pow1",
+      "x": -934.9724860798332,
+      "y": -167.95947577974675,
+      "label": "POW1",
+      "params": {}
+    },
+    {
+      "id": "N6",
+      "type": "sum",
+      "x": -669.4532732594231,
+      "y": -58.16278005361988,
+      "label": "Écart puissance",
+      "params": {
+        "a": 1,
+        "b": -1
+      }
+    },
+    {
+      "id": "N7",
+      "type": "highpass",
+      "x": -395.8487171051626,
+      "y": 29.95650242301585,
+      "label": "D filtrée",
+      "params": {
+        "tau": 20
+      }
+    },
+    {
+      "id": "N8",
+      "type": "curve",
+      "x": -139.70648376388453,
+      "y": 49.14367467066441,
+      "label": "Courbe G1",
+      "params": {
+        "curveRole": "g1",
+        "xUnit": "% PN",
+        "yUnit": "°C",
+        "points": [
+          {
+            "x": -28.833,
+            "y": -3
+          },
+          {
+            "x": -5.5,
+            "y": -0.2
+          },
+          {
+            "x": -0.5,
+            "y": 0
+          },
+          {
+            "x": 0.5,
+            "y": 0
+          },
+          {
+            "x": 5.5,
+            "y": 0.2
+          },
+          {
+            "x": 28.833,
+            "y": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "N9",
+      "type": "curve",
+      "x": -128.48349254108268,
+      "y": 200.47020251477178,
+      "label": "Courbe G2",
+      "params": {
+        "curveRole": "g2",
+        "xUnit": "% PN",
+        "yUnit": "",
+        "points": [
+          {
+            "x": 0,
+            "y": 3.33
+          },
+          {
+            "x": 30,
+            "y": 3.33
+          },
+          {
+            "x": 40,
+            "y": 2.5
+          },
+          {
+            "x": 50,
+            "y": 2
+          },
+          {
+            "x": 60,
+            "y": 1.667
+          },
+          {
+            "x": 70,
+            "y": 1.429
+          },
+          {
+            "x": 80,
+            "y": 1.25
+          },
+          {
+            "x": 90,
+            "y": 1.111
+          },
+          {
+            "x": 100,
+            "y": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "N10",
+      "type": "product",
+      "x": 156.61443159030432,
+      "y": 150.92017934737757,
+      "label": "Correction puissance",
+      "params": {}
+    },
+    {
+      "id": "N11",
+      "type": "sum",
+      "x": 433.0739250318664,
+      "y": -197.43465602862963,
+      "label": "Écart corrigé",
+      "params": {
+        "a": 1,
+        "b": 1
+      }
+    },
+    {
+      "id": "N12",
+      "type": "deadband",
+      "x": 710.3053432770566,
+      "y": -77.9755547410696,
+      "label": "Bande morte",
+      "params": {
+        "width": 0.83,
+        "hysteresis": 0.28
+      }
+    },
+    {
+      "id": "N13",
+      "type": "gain",
+      "x": 948.8695859569723,
+      "y": 109.14984766140206,
+      "label": "Vitesse grappes",
+      "params": {
+        "k": 62,
+        "outputUnit": "pas/min"
+      }
+    },
+    {
+      "id": "N14",
+      "type": "limit",
+      "x": 1277.1464055316612,
+      "y": 267.21771604598064,
+      "label": "Limite ±72",
+      "params": {
+        "min": -72,
+        "max": 72
+      }
+    },
+    {
+      "id": "N15",
+      "type": "gain",
+      "x": 1511.9582850254858,
+      "y": 399.6593110500527,
+      "label": "K PAS→%",
+      "params": {
+        "k": 0.4386,
+        "outputUnit": "%/min"
+      }
+    },
+    {
+      "id": "N16",
+      "type": "compare",
+      "x": 1224.3064681586548,
+      "y": 512.3747265683392,
+      "label": "POW1 ≥ 99 ?",
+      "params": {
+        "relation": "≥",
+        "threshold": 99,
+        "whenTrue": 0,
+        "whenFalse": 1
+      }
+    },
+    {
+      "id": "N17",
+      "type": "product",
+      "x": 1746.4320324529203,
+      "y": 583.4987898952052,
+      "label": "Vitesse autorisée",
+      "params": {}
+    },
+    {
+      "id": "N18",
+      "type": "maximum",
+      "x": 2081.8432953910087,
+      "y": 524.6051113882686,
+      "label": "Inhibition extraction",
+      "params": {}
+    },
+    {
+      "id": "N19",
+      "type": "integrator",
+      "x": 2356.444076151028,
+      "y": 622.1609760118005,
+      "label": "Intégrateur",
+      "params": {
+        "min": 0,
+        "max": 100,
+        "outputUnit": "%"
+      }
+    },
+    {
+      "id": "N20",
+      "type": "posg",
+      "x": 2601.738338648267,
+      "y": 759.8437088563065,
+      "label": "POSG",
+      "params": {}
+    },
+    {
+      "id": "N21",
+      "type": "curve",
+      "x": 452.6535525011627,
+      "y": 623.4616023180097,
+      "label": "Programme NREF",
+      "params": {
+        "curveRole": "nref",
+        "xUnit": "°C",
+        "yUnit": "%",
+        "points": [
+          {
+            "x": 297.2,
+            "y": 20
+          },
+          {
+            "x": 306.5,
+            "y": 41.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "N22",
+      "type": "nrefOut",
+      "x": 714.1789467208614,
+      "y": 741.8134888828156,
+      "label": "NREF",
+      "params": {}
+    },
+    {
+      "id": "N23",
+      "type": "mn1Signal",
+      "x": 748.1673057565799,
+      "y": 640.6270534357062,
+      "label": "MN1",
+      "params": {}
+    },
+    {
+      "id": "N24",
+      "type": "sum",
+      "x": 1030.4882660863068,
+      "y": 820.3059855181077,
+      "label": "Erreur niveau",
+      "params": {
+        "a": 1,
+        "b": -1
+      }
+    },
+    {
+      "id": "N25",
+      "type": "pi",
+      "x": 1282.482439614354,
+      "y": 868.6039943465788,
+      "label": "PI niveau",
+      "params": {
+        "kp": 1.5,
+        "ki": 0.08,
+        "min": -15,
+        "max": 15,
+        "outputUnit": "m³/h"
+      }
+    },
+    {
+      "id": "N26",
+      "type": "qchaSignal",
+      "x": 1282.482439614354,
+      "y": 1051.760144052163,
+      "label": "QCHA",
+      "params": {}
+    },
+    {
+      "id": "N27",
+      "type": "sum",
+      "x": 1562.5570383238457,
+      "y": 975.560991919222,
+      "label": "Débit demandé",
+      "params": {
+        "a": 1,
+        "b": 1
+      }
+    },
+    {
+      "id": "N28",
+      "type": "limit",
+      "x": 1829.153055980788,
+      "y": 1054.185540750689,
+      "label": "Limite QDEC",
+      "params": {
+        "min": 0,
+        "max": 30
+      }
+    },
+    {
+      "id": "N29",
+      "type": "qdecOut",
+      "x": 2086.763133559423,
+      "y": 1101.3603687690425,
+      "label": "QDEC",
+      "params": {}
+    },
+    {
+      "id": "N30",
+      "type": "constant",
+      "x": 86.16078471230202,
+      "y": 1247.6846345358172,
+      "label": "PREF",
+      "params": {
+        "value": 155,
+        "unit": "bar abs."
+      }
+    },
+    {
+      "id": "N31",
+      "type": "mp1Signal",
+      "x": 90.1721447484359,
+      "y": 1072.756465342146,
+      "label": "MP1",
+      "params": {}
+    },
+    {
+      "id": "N32",
+      "type": "sum",
+      "x": 376.5044504238987,
+      "y": 1187.3408586462367,
+      "label": "Erreur pression",
+      "params": {
+        "a": 1,
+        "b": -1
+      }
+    },
+    {
+      "id": "N33",
+      "type": "pid",
+      "x": 651.8052221920364,
+      "y": 1269.57579604268,
+      "label": "PID pression",
+      "params": {
+        "kp": 25,
+        "ki": 2,
+        "kd": 5,
+        "tauD": 2,
+        "min": -100,
+        "max": 100,
+        "outputUnit": "%"
+      }
+    },
+    {
+      "id": "N34",
+      "type": "curve",
+      "x": 952.1776552539138,
+      "y": 1300.8937547689968,
+      "label": "Répartition PCHF",
+      "params": {
+        "curveRole": "heater",
+        "xUnit": "%",
+        "yUnit": "kW",
+        "points": [
+          {
+            "x": -100,
+            "y": 2500
+          },
+          {
+            "x": 0,
+            "y": 2001.4680740277474
+          },
+          {
+            "x": 100,
+            "y": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "N35",
+      "type": "pchauffOut",
+      "x": 1236.5042074593205,
+      "y": 1387.140125653563,
+      "label": "PCHF",
+      "params": {}
+    },
+    {
+      "id": "N36",
+      "type": "compare",
+      "x": 952.1776552539138,
+      "y": 1470.8937547689968,
+      "label": "Arrêt aspersion",
+      "params": {
+        "relation": "≥",
+        "threshold": -5,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N37",
+      "type": "qaspOut",
+      "x": 1233.4956139802307,
+      "y": 1542.0970848061256,
+      "label": "QASP",
+      "params": {}
+    },
+    {
+      "id": "N38",
+      "type": "tmoy",
+      "x": 204.5571767073488,
+      "y": 499.15989453950306,
+      "label": "TMOY",
+      "params": {}
+    },
+    {
+      "id": "N39",
+      "type": "ptur",
+      "x": -957.8751927983928,
+      "y": 270.5921329323959,
+      "label": "PTUR",
+      "params": {}
+    },
+    {
+      "id": "N40",
+      "type": "pow1",
+      "x": 968.4109284530562,
+      "y": 408.30364216122416,
+      "label": "POW1",
+      "params": {}
+    }
+  ],
+  "links": [
+    {
+      "from": "N1",
+      "to": "N2",
+      "toPort": 0
+    },
+    {
+      "from": "N3",
+      "to": "N4",
+      "toPort": 0
+    },
+    {
+      "from": "N2",
+      "to": "N4",
+      "toPort": 1
+    },
+    {
+      "from": "N5",
+      "to": "N6",
+      "toPort": 0
+    },
+    {
+      "from": "N6",
+      "to": "N7",
+      "toPort": 0
+    },
+    {
+      "from": "N7",
+      "to": "N8",
+      "toPort": 0
+    },
+    {
+      "from": "N8",
+      "to": "N10",
+      "toPort": 0
+    },
+    {
+      "from": "N9",
+      "to": "N10",
+      "toPort": 1
+    },
+    {
+      "from": "N4",
+      "to": "N11",
+      "toPort": 0
+    },
+    {
+      "from": "N10",
+      "to": "N11",
+      "toPort": 1
+    },
+    {
+      "from": "N11",
+      "to": "N12",
+      "toPort": 0
+    },
+    {
+      "from": "N12",
+      "to": "N13",
+      "toPort": 0
+    },
+    {
+      "from": "N13",
+      "to": "N14",
+      "toPort": 0
+    },
+    {
+      "from": "N14",
+      "to": "N15",
+      "toPort": 0
+    },
+    {
+      "from": "N15",
+      "to": "N17",
+      "toPort": 0
+    },
+    {
+      "from": "N16",
+      "to": "N17",
+      "toPort": 1
+    },
+    {
+      "from": "N15",
+      "to": "N18",
+      "toPort": 0
+    },
+    {
+      "from": "N17",
+      "to": "N18",
+      "toPort": 1
+    },
+    {
+      "from": "N18",
+      "to": "N19",
+      "toPort": 0
+    },
+    {
+      "from": "N19",
+      "to": "N20",
+      "toPort": 0
+    },
+    {
+      "from": "N21",
+      "to": "N22",
+      "toPort": 0
+    },
+    {
+      "from": "N23",
+      "to": "N24",
+      "toPort": 0
+    },
+    {
+      "from": "N22",
+      "to": "N24",
+      "toPort": 1
+    },
+    {
+      "from": "N24",
+      "to": "N25",
+      "toPort": 0
+    },
+    {
+      "from": "N25",
+      "to": "N27",
+      "toPort": 0
+    },
+    {
+      "from": "N26",
+      "to": "N27",
+      "toPort": 1
+    },
+    {
+      "from": "N27",
+      "to": "N28",
+      "toPort": 0
+    },
+    {
+      "from": "N28",
+      "to": "N29",
+      "toPort": 0
+    },
+    {
+      "from": "N31",
+      "to": "N32",
+      "toPort": 0
+    },
+    {
+      "from": "N30",
+      "to": "N32",
+      "toPort": 1
+    },
+    {
+      "from": "N32",
+      "to": "N33",
+      "toPort": 0
+    },
+    {
+      "from": "N33",
+      "to": "N34",
+      "toPort": 0
+    },
+    {
+      "from": "N34",
+      "to": "N35",
+      "toPort": 0
+    },
+    {
+      "from": "N33",
+      "to": "N36",
+      "toPort": 0
+    },
+    {
+      "from": "N36",
+      "to": "N37",
+      "toPort": 0
+    },
+    {
+      "from": "N38",
+      "to": "N21",
+      "toPort": 0
+    },
+    {
+      "from": "N39",
+      "to": "N9",
+      "toPort": 0
+    },
+    {
+      "from": "N39",
+      "to": "N6",
+      "toPort": 1
+    },
+    {
+      "from": "N40",
+      "to": "N16",
+      "toPort": 0
+    }
+  ],
+  "nodeCounter": 40,
+  "viewport": {
+    "x": 376.72052812251883,
+    "y": 143.68473668840613,
+    "zoom": 0.3
+  }
+}

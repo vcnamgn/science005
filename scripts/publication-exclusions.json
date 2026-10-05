@@ -1,0 +1,14 @@
+{
+  "obsolete": [
+    "simulateur/simulateur-rep.html",
+    "simulateur/safety-engine.js",
+    "simulateur/safety-app.js",
+    "simulateur/safety.css",
+    "simulateur/synoptique-rep-edit_v0.2.svg",
+    "simulateur/METHODE-SURETE.md",
+    "simulateur/tests/safety-engine.test.js"
+  ],
+  "private": [
+    "simulateur/synoptiques/CPP-inventaire-origin.svg"
+  ]
+}

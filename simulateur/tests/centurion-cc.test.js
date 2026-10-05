@@ -199,8 +199,8 @@ test('température : hystérésis 0,83/0,55 et vitesse R 8–72 pas/min, inserti
 });
 
 test('température : anciennes sauvegardes mises à jour une seule fois et paramètres personnalisés conservés',()=>{
-  const h=fs.readFileSync(path.join(__dirname,'../simulateur-rep.html'),'utf8');
-  const legacy=JSON.parse(h.match(/id="solutionDataComplete">([\s\S]*?)<\/script>/)[1]);
+  const fixture=fs.readFileSync(path.join(__dirname,'fixtures/cc-regul-legacy.json'),'utf8');
+  const legacy=JSON.parse(fixture);
   const {cc}=editor('regul');cc.migrateRegulation(legacy);
   assert.equal(legacy.nodes.find(n=>n.id==='N7').params.tau,50);
   assert.equal(legacy.nodes.find(n=>n.id==='N8').params.points.find(p=>p.x===1).y,.4);
@@ -211,7 +211,7 @@ test('température : anciennes sauvegardes mises à jour une seule fois et param
   assert.equal(new Set(legacy.nodes.map(n=>n.id)).size,legacy.nodes.length);
   const migrated=JSON.stringify(legacy);cc.migrateRegulation(legacy);
   assert.equal(JSON.stringify(legacy),migrated,'migration idempotente');
-  const own=JSON.parse(h.match(/id="solutionDataComplete">([\s\S]*?)<\/script>/)[1]);
+  const own=JSON.parse(fixture);
   own.nodes.find(n=>n.id==='N8').params.points[4].y=.7;
   own.nodes.find(n=>n.id==='N9').params.points[0].y=5;
   own.nodes.find(n=>n.id==='N7').params.tau=33;
