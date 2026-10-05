@@ -1,15 +1,133 @@
-/* Exécuté dans chaque SVG chargé par <object>, y compris depuis file://. */
+/* Exécuté dans les SVG chargés par <object>, y compris depuis file://. */
 (function () {
   "use strict";
   const root=document.documentElement;
   const file=decodeURIComponent(location.pathname).toUpperCase();
-  const kind=file.includes("RCPGRAPPES")?"rods":file.includes("RCPPZR")?"pzr":
-    file.includes("RCPGV")?"gv":"rcp";
+  const semantic=root.getAttribute("data-centurion-diagram");
+  const kind=semantic||(file.includes("RCPGRAPPES")?"rods":file.includes("RCPPZR")?"pzr":
+    file.includes("RCPGV")?"gv":"rcp");
   const fmt=(value,d=0)=>Number(value).toLocaleString("fr-FR",{
     minimumFractionDigits:d,maximumFractionDigits:d});
   const set=(id,value)=>{const e=document.getElementById(id);if(e)e.textContent=value;};
+  const read=(data,path)=>path.split(".").reduce((value,key)=>value?.[key],data);
+  const nodes=selector=>Array.from(root.querySelectorAll(selector));
   let gv=1;
 
+  function levelY(node,value){
+    const top=Number(node.getAttribute("data-level-top"));
+    const bottom=Number(node.getAttribute("data-level-bottom"));
+    return bottom-(bottom-top)*Math.max(0,Math.min(100,value))/100;
+  }
+  function updateSemantic(data){
+    gv=Math.max(1,Math.min(4,Math.trunc(Number(data.gv)||1)));
+    root.setAttribute("data-loop",String(gv));
+    root.setAttribute("data-simulation-time",String(data.time));
+    for(const node of nodes("[data-gv-template]"))
+      node.textContent=node.getAttribute("data-gv-template").replaceAll("{gv}",String(gv));
+    const others=[1,2,3,4].filter(n=>n!==gv);
+    for(const node of nodes("[data-other-gv-slot]")){
+      const number=others[Number(node.getAttribute("data-other-gv-slot"))];
+      node.setAttribute("data-navigation-gv",String(number));
+      node.querySelector("text").textContent=`GV${number}`;
+    }
+    for(const node of nodes("[data-value]")){
+      const path=node.getAttribute("data-value"),value=read(data,path);
+      const available=typeof value==="number"&&Number.isFinite(value);
+      const number=available?fmt(value,Number(node.getAttribute("data-decimals"))||0):"—";
+      node.textContent=node.getAttribute("data-template").replaceAll("{gv}",String(gv)).replaceAll("{value}",number);
+      node.setAttribute("data-available",String(available));
+      node.setAttribute("data-current-value",available?String(value):"");
+      node.setAttribute("aria-label",`${node.textContent} ${node.getAttribute("data-unit")||""}`.trim());
+    }
+    for(const node of nodes("[data-text-value]")){
+      const value=read(data,node.getAttribute("data-text-value"));
+      node.textContent=typeof value==="string"?value:"—";
+    }
+    for(const node of nodes("[data-level-value]")){
+      const value=read(data,node.getAttribute("data-level-value"));
+      if(!Number.isFinite(value))continue;
+      const y=levelY(node,value),bottom=Number(node.getAttribute("data-fill-bottom"));
+      node.setAttribute("y",String(y));node.setAttribute("height",String(Math.max(0,bottom-y)));
+    }
+    for(const node of nodes("[data-line-value]")){
+      const value=read(data,node.getAttribute("data-line-value"));
+      if(!Number.isFinite(value))continue;
+      node.setAttribute("d",node.getAttribute("data-line-template").replaceAll("{y}",String(levelY(node,value))));
+    }
+    for(const node of nodes("[data-follow-level]")){
+      const value=read(data,node.getAttribute("data-follow-level"));
+      if(Number.isFinite(value))node.setAttribute("y",String(levelY(node,value)+Number(node.getAttribute("data-follow-offset"))));
+    }
+    for(const node of nodes("[data-actuator]")){
+      const value=read(data,node.getAttribute("data-actuator"));
+      node.setAttribute("data-opening-pct",String(value));
+      for(const body of node.querySelectorAll("[data-actuator-body]")){
+        if(body._centurionFill===undefined)body._centurionFill=body.style.fill||"";
+        body.style.fill=value>0?"#8bd8e9":body._centurionFill;
+      }
+      const title=node.querySelector("[data-actuator-title]");
+      if(title)title.textContent=`Ouverture réalisée : ${Number.isFinite(value)?fmt(value,1):"—"} %`;
+    }
+    for(const node of nodes("[data-pump]")){
+      const loop=read(data,node.getAttribute("data-pump"));
+      if(!loop)continue;
+      const state=!loop.pumpStopped?"running":loop.forcedFlowKgS>1?"coasting":"stopped";
+      node.setAttribute("data-pump-state",state);
+      const body=node.querySelector("circle");
+      if(body){if(body._centurionFill===undefined)body._centurionFill=body.style.fill||"";
+        body.style.fill=state==="stopped"?"#d9e0e6":body._centurionFill;}
+      node.querySelector("[data-pump-title]").textContent=
+        `Débit de boucle : ${fmt(loop.flowKgS)} kg/s (${fmt(loop.flowPct,1)} %) ; thermosiphon : ${fmt(loop.naturalFlowKgS)} kg/s`;
+    }
+    for(const node of nodes("[data-flow]")){
+      const value=read(data,node.getAttribute("data-flow"));
+      node.setAttribute("data-flowing",String(value>0.01));
+      for(const body of node.querySelectorAll("rect")){
+        if(body._centurionFill===undefined)body._centurionFill=body.style.fill||"";
+        body.style.fill=value>0.01?"#ccebf4":body._centurionFill;
+      }
+    }
+    for(const node of nodes("[data-alarm]"))
+      node.setAttribute("data-flow-alarm",String(Boolean(read(data,node.getAttribute("data-alarm")))));
+    for(const node of nodes("[data-visible-positive]"))
+      node.style.display=read(data,node.getAttribute("data-visible-positive"))>1?"":"none";
+    if(kind==="inventory") {
+      const line=document.getElementById("cpp-waterline");
+      if(line){
+        const scale=Number(line.getAttribute("data-metres-scale"))||21;
+        const zero=Number(line.getAttribute("data-metres-zero"))||764;
+        const x1=Number(line.getAttribute("data-marker-x1"))||90;
+        const x2=Number(line.getAttribute("data-marker-x2"))||125;
+        line.setAttribute("d",`M${x1} ${zero-scale*data.inventory.levelM}H${x2}`);
+      }
+    }
+    if(kind==="pt") {
+      const x=t=>105+t/370*1060,y=p=>710-p/180*610;
+      const path=points=>points.map((v,i)=>`${i?"L":"M"}${x(v[0]).toFixed(2)} ${y(v[1]).toFixed(2)}`).join(" ");
+      const write=(id,points)=>document.getElementById(id)?.setAttribute("d",path(points));
+      const curves=data.ptCurves||{lower:[],upper:[],saturation:[]};
+      write("pt-lower",curves.lower);write("pt-upper",curves.upper);write("pt-saturation",curves.saturation);
+      const polygon=[...curves.lower,...[...curves.upper].reverse()];
+      document.getElementById("pt-domain")?.setAttribute("d",path(polygon)+" Z");
+      write("pt-trace",(data.ptHistory||[]).map(p=>[p.tavg,p.pressure]));
+      const point=document.getElementById("pt-point");
+      point?.setAttribute("cx",String(x(data.tavgC)));point?.setAttribute("cy",String(y(data.pressure)));
+      point?.setAttribute("data-flow-alarm",String(Boolean(data.alarms.pt)));
+    }
+  }
+  function bindNavigation(){
+    for(const node of nodes("[data-navigation]")){
+      const diagram=node.getAttribute("data-navigation");
+      if(!diagram)continue;
+      const activate=event=>{
+        if(event.type==="keydown"&&!["Enter"," "].includes(event.key))return;
+        event.preventDefault();event.stopPropagation();
+        const number=node.getAttribute("data-navigation-gv");
+        navigate({diagram,gv:number==="selected"?gv:Number(number)||gv});
+      };
+      node.addEventListener("click",activate);node.addEventListener("keydown",activate);
+    }
+  }
   function destination(label){
     const name=label.replace(/\s+/g," ").trim().toUpperCase();
     const match=/^GV\s*([1-4])$/.exec(name);
@@ -67,54 +185,6 @@
       if(arrow){arrow.style.cursor="pointer";arrow.addEventListener("click",()=>navigate({diagram:"rods"}));}
     }
   }
-  function gvLabels(number){
-    gv=number;
-    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-    while(walker.nextNode()){
-      const node=walker.currentNode;
-      if(!node.parentElement||!["text","tspan"].includes(node.parentElement.localName))continue;
-      if(node._centurionBase===undefined)node._centurionBase=node.nodeValue;
-      node.nodeValue=node._centurionBase.replace(/GV1/g,`GV${number}`)
-        .replace(/\b(ARE|ASG|VDA|VVP)1(?=\d{2}[A-Z]{2}\b)/g,`$1${number}`)
-        .replace(/\b1(?=\d{2}(?:MN|MP|KM|VD|VL|VV)\b)/g,String(number));
-    }
-    const title=document.getElementById("titre-GV1-pedagogique")?.querySelector("text");
-    if(title)title.textContent=`GÉNÉRATEUR DE VAPEUR ${number}`;
-    const others=[1,2,3,4].filter(n=>n!==number);
-    ["renvoi-GV2","renvoi-GV3","renvoi-GV4"].forEach((id,i)=>{
-      const label=document.getElementById(id)?.querySelector("text");
-      if(label)label.textContent=`GV${others[i]}`;
-    });
-    root.setAttribute("data-loop",String(number));
-  }
-  function updateGv(data){
-    gvLabels(Number(data.gv)||1);
-    const unit=data.gvState;
-    if(!unit)return;
-    set("text4024",fmt(unit.pressureBar,1));
-    set("text4716",fmt(unit.feedKgS*3.6));
-    set("text5592","245"); // Température ARE fixe, commune au tableau de bord.
-    set("text2666",fmt(unit.levelPct,1));
-    set("text5672",fmt(unit.levelWidePct,1));
-    set("gv-level-height",`${fmt(unit.levelMetres,2)} m`);
-    set("vvp-opening-value",fmt(unit.steamValvePct,1));
-    set("text2890",`${fmt(unit.gctAValvePct,1)} %`);
-    set("text5934",fmt(unit.dumpKgS,1));
-    const gauge=(id,bottom,height,pct)=>{
-      const fill=document.getElementById(id);
-      const h=height*Math.max(0,Math.min(100,Number(pct)||0))/100;
-      if(fill){fill.setAttribute("y",String(bottom-h));fill.setAttribute("height",String(h));}
-    };
-    gauge("gv-gauge-wide-fill",923.97,450.92,unit.levelWidePct);
-    const narrowHeight=450.92*(17-12.5)/17, narrowBottom=473.05+narrowHeight;
-    gauge("gv-gauge-narrow-fill",narrowBottom,narrowHeight,unit.levelPct);
-    const setpoint=Math.max(0,Math.min(100,Number(data.gvSetpoint)||0));
-    const y=narrowBottom-narrowHeight*setpoint/100;
-    const ref=document.getElementById("gv-level-reference");
-    if(ref){ref.setAttribute("y1",String(y));ref.setAttribute("y2",String(y));}
-    const note=document.getElementById("gv-level-reference-label");
-    if(note){note.setAttribute("y",String(y-7));note.textContent=`NREF ${fmt(setpoint)} % GE`;}
-  }
   function updateRods(data){
     set("puissance-electrique",`${fmt(data.power,1)} %`);
     set("compteur-g3",data.tripAt===null?fmt(data.g3):"—");
@@ -151,92 +221,14 @@
         note.textContent=fmt(limit);}
     }
   }
-  function updatePzr(data){
-    set("valeur-003MN",fmt(data.pzrLevel,1));
-    set("valeur-003MN-9",fmt(data.pzrTempC,1));
-    set("valeur-002MP",fmt(data.pressure,1));
-    const level=Math.max(0,Math.min(100,data.pzrLevel));
-    const y=970-640*level/100;
-    const water=document.getElementById("niveau-eau-graphique");
-    if(water){water.setAttribute("y",String(y));water.setAttribute("height",String(640*level/100));}
-    const line=document.getElementById("path1020");
-    if(line)line.setAttribute("d",`M605 ${y}H945`);
-    const gauge=document.getElementById("jauge-remplissage");
-    if(gauge){gauge.setAttribute("y",String(y));gauge.setAttribute("height",String(970-y));}
-    const nref=Math.max(0,Math.min(100,Number(data.nref)||0));
-    const nrefY=970-640*nref/100;
-    const dotted=document.getElementById("path1028");
-    if(dotted)dotted.setAttribute("d",`M606 ${nrefY}H945`);
-    const nrefLabel=document.getElementById("libelle-nref");
-    if(nrefLabel){nrefLabel.setAttribute("y",String(nrefY-7));
-      nrefLabel.textContent=`NREF ${fmt(nref,1)} %`;}
-    set("text1090",fmt(data.sprayPct||0));
-    set("text1099",fmt(data.sprayPct||0));
-    set("valeur-004KM",fmt(data.heaterKW||0));
-    for(const id of ["vanne-201VP","vanne-202VP"]){
-      const valve=document.getElementById(id)?.querySelector(".valve");
-      if(valve)valve.style.fill=(data.sprayPct||0)>0?"#49cde0":"#f4f9fe";
-    }
-    for(let i=0;i<3;i++){
-      const valve=document.getElementById(`soupape-${i+1}`)?.querySelector(".valve");
-      if(valve)valve.style.fill=data.reliefStages?.[i]?"#ff9478":"#f4f9fe";
-    }
-  }
-  function updateRcp(data){
-    set("text5478",fmt(data.power,1));
-    set("text6746",fmt(data.sprayPct||0));
-    set("text6746-0",fmt(data.sprayPct||0));
-    set("text6206",fmt(data.boron));
-    set("text5358",fmt(data.pressure,1));
-    set("text5358-9",fmt(data.pzrLevel,1));
-    set("text5558",fmt(data.tavgC,1));
-    set("text5618",fmt(data.hotC,1));
-    set("text6126",fmt(data.tRicC,1));
-    const nominalLoopFlow=17588/4;
-    const loopSensors=[
-      ["text5238","text5298","text5418"],
-      ["text5946","text6006","text5886"],
-      ["text5698","text5762","text5826"],
-      ["text5118","text5178","text5058"]
-    ];
-    (data.loops||[]).forEach((loop,i)=>{
-      const ids=loopSensors[i];if(!ids)return;
-      set(ids[0],fmt(loop.hotC,1));set(ids[1],fmt(loop.coldC,1));
-      set(ids[2],fmt(100*loop.flowKgS/nominalLoopFlow));
-    });
-    set("valeur-debit-vapeur",fmt(data.steamKgS*3.6));
-    set("valeur-puissance-turbine",fmt(data.turbinePct));
-    set("valeur-puissance-thermique",fmt(data.thermalMW));
-    set("valeur-puissance-reseau",fmt(data.electricMW));
-    set("valeur-debit-vapeur-2",fmt(data.rods.R));
-    set("valeur-puissance-turbine-4",data.tripAt===null?fmt(data.g3):"—");
-    set("valeur-puissance-turbine-4-9",fmt(data.rods.SA));
-    const gvValues=[
-      ["text5358-0","text5358-9-0"],
-      ["text5358-0-7","text5358-9-0-6"],
-      ["gv3-pressure-value-part10","gv3-level-value-part10"],
-      ["gv4-pressure-value-part10","gv4-level-value-part10"]
-    ];
-    (data.gvAll||[]).forEach((unit,i)=>{
-      if(gvValues[i]){
-        set(gvValues[i][0],fmt(unit.pressureBar,1));
-        set(gvValues[i][1],fmt(unit.levelPct,1));
-      }
-    });
-    const risM3h=(Number(data.risDelivered)||0)*3.6/(4*0.72);
-    for(const id of ["text5418-4","ris2-flow-value-part10", "ris3-flow-value-part10", "ris4-flow-value-part10"])
-      set(id,fmt(risM3h));
-    for(const id of ["text45237-6","text45245-5","text45245-5-6"])set(id,"pas");
-  }
   window.addEventListener("message",event=>{
+    if(event.source!==window.parent)return;
     const data=event.data;
     if(!data||data.type!=="centurion-state")return;
-    if(kind==="gv")updateGv(data);
+    if(semantic)updateSemantic(data);
     else if(kind==="rods")updateRods(data);
-    else if(kind==="pzr")updatePzr(data);
-    else updateRcp(data);
   });
-  bindArrows();
+  if(semantic)bindNavigation();else bindArrows();
   if(window.parent&&window.parent!==window)
     window.parent.postMessage({type:"centurion-svg-ready",kind},"*");
 })();

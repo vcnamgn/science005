@@ -4,14 +4,14 @@ Simulateur pédagogique d'un REP 1300 à quatre boucles, avec synoptiques SVG an
 
 ## Démarrer
 
-**[Ouvrir le simulateur en ligne](https://philippejacquet0-source.github.io/science005/)** — aucune installation nécessaire.
+**[Ouvrir le simulateur en ligne](https://vcnamgn.github.io/science005/)** — aucune installation nécessaire.
 
 Télécharger le dépôt avec **Code → Download ZIP**, extraire l'archive et ouvrir [`simulateur/centurion.html`](simulateur/centurion.html) dans Chrome, Edge ou Firefox. Le dossier doit conserver son arborescence : l'application fonctionne hors ligne, sans installation ni serveur.
 
 Ou cloner le dépôt :
 
 ```sh
-git clone https://github.com/philippejacquet0-source/science005.git
+git clone https://github.com/vcnamgn/science005.git
 ```
 
 ## Fonctions

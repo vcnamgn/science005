@@ -2,6 +2,8 @@
 /support/*
 !/support/README.md
 /corbeille/
+/propositions/
+/tmp/
 
 # Configuration locale, secrets et fichiers temporaires.
 .agents/

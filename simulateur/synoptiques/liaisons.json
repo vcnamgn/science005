@@ -1,0 +1,496 @@
+[
+  {
+    "diagram": "rcp",
+    "target": "synoptique-RCP-1300.svg",
+    "bindings": [
+      {
+        "id": "texte-17",
+        "value": "rods.R",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "texte-20",
+        "value": "g3Display",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "texte-23",
+        "value": "rods.SA",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "pression-pzr",
+        "value": "pressure",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "niveau-pzr",
+        "value": "pzrLevel",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "coeur-0-valeur",
+        "value": "power",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "coeur-1-valeur",
+        "value": "boron",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "coeur-2-valeur",
+        "value": "lidC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "coeur-3-valeur",
+        "value": "tRicC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "coeur-4-valeur",
+        "value": "tavgC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "valeur-debit-vapeur",
+        "value": "steamTh",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "valeur-puissance-turbine",
+        "value": "turbinePct",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "valeur-puissance-thermique",
+        "value": "thermalMW",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "valeur-puissance-reseau",
+        "value": "electricMW",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "texte-27",
+        "value": "sprayPct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "201KM · {value} %"
+      },
+      {
+        "id": "texte-29",
+        "value": "sprayPct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "202KM · {value} %"
+      },
+      {
+        "id": "boucle-1-101MT-valeur",
+        "value": "loops.0.hotC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-1-102MT-valeur",
+        "value": "loops.0.coldC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-1-101MD-valeur",
+        "value": "loops.0.flowPct",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-1-pression",
+        "value": "gvAll.0.pressureBar",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-1-niveau",
+        "value": "gvAll.0.levelPct",
+        "unit": "% GE",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "ris-1-debit",
+        "value": "risLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "RIS101MD · {value} m³/h"
+      },
+      {
+        "id": "boucle-2-201MT-valeur",
+        "value": "loops.1.hotC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-2-202MT-valeur",
+        "value": "loops.1.coldC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-2-201MD-valeur",
+        "value": "loops.1.flowPct",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-2-pression",
+        "value": "gvAll.1.pressureBar",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-2-niveau",
+        "value": "gvAll.1.levelPct",
+        "unit": "% GE",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "ris-2-debit",
+        "value": "risLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "RIS201MD · {value} m³/h"
+      },
+      {
+        "id": "boucle-3-301MT-valeur",
+        "value": "loops.2.hotC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-3-302MT-valeur",
+        "value": "loops.2.coldC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-3-301MD-valeur",
+        "value": "loops.2.flowPct",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-3-pression",
+        "value": "gvAll.2.pressureBar",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-3-niveau",
+        "value": "gvAll.2.levelPct",
+        "unit": "% GE",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "ris-3-debit",
+        "value": "risLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "RIS301MD · {value} m³/h"
+      },
+      {
+        "id": "boucle-4-401MT-valeur",
+        "value": "loops.3.hotC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-4-402MT-valeur",
+        "value": "loops.3.coldC",
+        "unit": "",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "boucle-4-401MD-valeur",
+        "value": "loops.3.flowPct",
+        "unit": "",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-4-pression",
+        "value": "gvAll.3.pressureBar",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "gv-4-niveau",
+        "value": "gvAll.3.levelPct",
+        "unit": "% GE",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "ris-4-debit",
+        "value": "risLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "RIS401MD · {value} m³/h"
+      },
+      {
+        "id": "texte-92",
+        "value": "rraLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "REFOULEMENT · {value} m³/h"
+      },
+      {
+        "id": "texte-124",
+        "value": "rraLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "ASPIRATION · {value} m³/h"
+      },
+      {
+        "id": "texte-156",
+        "value": "rraLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "ASPIRATION · {value} m³/h"
+      },
+      {
+        "id": "texte-188",
+        "value": "rraLoopM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "REFOULEMENT · {value} m³/h"
+      },
+      {
+        "id": "texte-193",
+        "value": "chargeM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "CHARGE RCV · {value} m³/h"
+      },
+      {
+        "id": "texte-196",
+        "value": "letdownM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "DÉCHARGE RCV · {value} m³/h"
+      }
+    ]
+  },
+  {
+    "diagram": "gv",
+    "target": "synoptique-RCPGV-1300.svg",
+    "bindings": [
+      {
+        "id": "104MP-valeur",
+        "value": "gvState.pressureBar",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "105MN-valeur",
+        "value": "gvState.levelPct",
+        "unit": "% GE",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "106MN-valeur",
+        "value": "gvState.levelWidePct",
+        "unit": "% GL",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "gcta-debit",
+        "value": "gvState.dumpKgS",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "asg-debit",
+        "value": "gvState.asgM3h",
+        "unit": "m³/h",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "are-debit",
+        "value": "gvState.feedTh",
+        "unit": "t/h",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "are-temperature",
+        "value": "gvState.areTempC",
+        "unit": "°C",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "vapeur-total",
+        "value": "gvState.steamKgS",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "vapeur-turbine",
+        "value": "gvState.turbineSteamKgS",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "vvp-ouverture",
+        "value": "gvState.steamValvePct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "VVP{gv}20KM · {value} %"
+      },
+      {
+        "id": "texte-34",
+        "value": "gvState.gctAValvePct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "Ouverture {value} %"
+      },
+      {
+        "id": "texte-15",
+        "value": "gvSetpoint",
+        "unit": "% GE",
+        "decimals": 0,
+        "template": "NREF {value} % GE"
+      }
+    ]
+  },
+  {
+    "diagram": "pzr",
+    "target": "synoptique-RCPPZR-1300.svg",
+    "bindings": [
+      {
+        "id": "002MP-valeur",
+        "value": "pressure",
+        "unit": "bar abs.",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "003MN-valeur",
+        "value": "pzrLevel",
+        "unit": "%",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "006MT-valeur",
+        "value": "pzrTempC",
+        "unit": "°C",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "004KM-valeur",
+        "value": "heaterKW",
+        "unit": "kW",
+        "decimals": 0,
+        "template": "{value}"
+      },
+      {
+        "id": "201KM-valeur",
+        "value": "sprayPct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "202KM-valeur",
+        "value": "sprayPct",
+        "unit": "%",
+        "decimals": 1,
+        "template": "{value}"
+      },
+      {
+        "id": "texte-3",
+        "value": "nref",
+        "unit": "%",
+        "decimals": 1,
+        "template": "NREF {value} %"
+      },
+      {
+        "id": "soupape-1-ouverture",
+        "value": "reliefOpeningPct.0",
+        "unit": "%",
+        "decimals": 0,
+        "template": "Étage 1 · {value} %"
+      },
+      {
+        "id": "soupape-2-ouverture",
+        "value": "reliefOpeningPct.1",
+        "unit": "%",
+        "decimals": 0,
+        "template": "Étage 2 · {value} %"
+      },
+      {
+        "id": "soupape-3-ouverture",
+        "value": "reliefOpeningPct.2",
+        "unit": "%",
+        "decimals": 0,
+        "template": "Étage 3 · {value} %"
+      }
+    ]
+  }
+]

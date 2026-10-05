@@ -1480,6 +1480,7 @@
                 <button class="palette-item" type="button" data-block-type="pi">PI<br>Correcteur</button>
                 <button class="palette-item" type="button" data-block-type="pid">PID<br>Correcteur</button>
                 <button class="palette-item" type="button" data-block-type="filter">1/(1+τs)<br>Filtre</button>
+                <button class="palette-item" type="button" data-block-type="leadlag">(1+τzs)/(1+τps)<br>Avance–retard</button>
                 <button class="palette-item" type="button" data-block-type="highpass">τs/(1+τs)<br>Passe-haut</button>
                 <button class="palette-item" type="button" data-block-type="derivative">s/(1+τs)<br>Dérivée filtrée</button>
                 <button class="palette-item" type="button" data-block-type="product">×<br>Multiplicateur</button>
@@ -1540,10 +1541,11 @@
               </div>
             </div>
             <div class="palette-group protect-only">
-              <h3>Signaux de protection</h3>
+              <h3>Information de protection</h3>
               <div class="palette-grid">
                 <button class="palette-item" type="button" data-block-type="voltageSignal">TENSION<br>Présente / absente</button>
-                <button class="palette-item" type="button" data-block-type="derivative">dPOW1/dt<br>Dérivée filtrée</button>
+                <button class="palette-item" type="button" data-block-type="plinSignal">PLIN<br>Puissance linéique max.</button>
+                <button class="palette-item" type="button" data-block-type="aarSignal">AAR<br>État de l’ordre</button>
                 <button class="palette-item" type="button" data-block-type="mp1Signal">002MP<br>Pression primaire</button>
                 <button class="palette-item" type="button" data-block-type="pow1">POW1<br>Puissance nucléaire</button>
               </div>
@@ -1553,6 +1555,7 @@
               <div class="palette-grid">
                 <button class="palette-item" type="button" data-block-type="aarOut">AAR<br>Arrêt automatique</button>
                 <button class="palette-item" type="button" data-block-type="risOut">IS<br>Injection sécurité</button>
+                <button class="palette-item" type="button" data-block-type="asgOut">ASG<br>Démarrage secours GV</button>
               </div>
             </div>
           </aside>
@@ -1605,7 +1608,7 @@
                 <div><span id="regLiveLabel3">Commande RGL001MM</span><strong id="regSpeed">50,0 %</strong></div>
                 <div><span id="regLiveLabel4">Consigne NREF</span><strong id="regSpeedPct">40,6 %</strong></div>
                 <div><span id="regLiveLabel5">Erreur MN1 − NREF</span><strong id="regPosg">1,2 %</strong></div>
-                <div><span id="regLiveLabel6">Commande QCHARGE</span><strong id="regOutput">15,0 m³/h</strong></div>
+                <div><span id="regLiveLabel6">Commande QCHARGE</span><strong id="regOutput">36,0 m³/h</strong></div>
                 <div><span>Correction anticipatrice G1 × G2</span><strong id="regPowerCorrection">0,00 °C équiv.</strong></div>
                 <div><span>Autorisation d’extraction</span><strong id="regExtractionPermission">AUTORISÉE</strong></div>
                 <div><span>Consigne PREF</span><strong id="regPref">155,0 bar abs.</strong></div>
@@ -1742,10 +1745,10 @@
                 <tr><td><strong>QCHA</strong> — charge RCV</td><td>15 m³/h</td><td><span class="badge">ARRONDI</span>Ordre de grandeur documenté : 70–75 US gpm, soit 15,9–17,0 m³/h (<a href="https://www.govinfo.gov/content/pkg/GOVPUB-Y3_N88-PURL-gpo86796/pdf/GOVPUB-Y3_N88-PURL-gpo86796.pdf">NUREG/CR-2726</a>, <a href="https://www.nrc.gov/cdn/legacy/reading-rm/training/reactor-concepts-training-course.pdf">NRC Reactor Concepts</a>)</td></tr>
                 <tr><td>Température eau alimentaire MT4</td><td>245 °C</td><td><span class="badge">FIXÉ</span>Consigne</td></tr>
                 <tr><td>Secondaire 1300 MWe</td><td>4 GV · 65 bar · 281 °C · 1 909 t/h par GV</td><td><a href="https://www.irsn.fr/sites/default/files/documents/larecherche/publications-documentation/collection-ouvrages-irsn/6_LAG_chap02.pdf">IRSN, conception et fonctionnement d’un REP</a></td></tr>
-                <tr><td>Turbine / réseau à 100 %</td><td>3 817 MWth / 1 300 MWe</td><td>Calage REP 1300 MWe ; rendement global simplifié : 34,1 %. <a href="https://www.asn.fr/content/download/194157/file/Pi%C3%A8ce%20jointe%20n%C2%B01%20-%20EDF%20-%20%C3%89tude%20d%27impact%20du%20dossier%20de%20demande%20d%27autorisation%20de%20cr%C3%A9ation%20du%20r%C3%A9acteur%20de%20Flamanville%203%20-%20Mai%202006.pdf">EDF / dossier ASN</a></td></tr>
+                <tr><td>Turbine / réseau à 100 %</td><td>3 817 MWth / 1 300 MWe</td><td>Calage REP 1300 MWe ; rendement global simplifié : 34,1 %. <a href="references.html#ref-05">REF-05</a></td></tr>
                 <tr><td>Aspersion maximale totale</td><td>102 m³/h</td><td><a href="https://www.govinfo.gov/content/pkg/GOVPUB-Y3_N88-PURL-gpo72991/pdf/GOVPUB-Y3_N88-PURL-gpo72991.pdf">NUREG/IA-0020, Doel 4</a></td></tr>
                 <tr><td>Chaufferettes continues initiales</td><td>2 001,5 kW</td><td><span class="badge">CALÉ</span>360 kW de pertes + compensation de l’aspersion nominale</td></tr>
-                <tr><td>Décharge pressuriseur équivalente</td><td>Armement 166 bar · fermeture 160 bar · 50 kg/s max.</td><td><span class="badge">SIMPLIFIÉ</span>Seuil 166 bar cohérent avec l’étude 1300 MWe <a href="https://www.osti.gov/etdeweb/servlets/purl/20043827">CEA/IPSN–EDF</a>. À titre documentaire, une table P4/P’4 indique 95 t/h par soupape de décharge et 172,5 t/h par soupape de sûreté, soit 26,4 et 47,9 kg/s par unité (<a href="https://upcommons.upc.edu/bitstreams/cc527d50-26c9-4a48-b1a2-08cb7f2fd20c/download">Nuclear Power Plant Conceptual Simulator</a>) ; le modèle regroupe le train en une capacité équivalente arrondie à 50 kg/s.</td></tr>
+                <tr><td>Décharge pressuriseur équivalente</td><td>Armement 166 bar · fermeture 160 bar · 50 kg/s max.</td><td><span class="badge">SIMPLIFIÉ</span>Seuil 166 bar cohérent avec l’étude 1300 MWe <a href="references.html#ref-06">REF-06</a>. À titre documentaire, une table P4/P’4 indique 95 t/h par soupape de décharge et 172,5 t/h par soupape de sûreté, soit 26,4 et 47,9 kg/s par unité (<a href="https://upcommons.upc.edu/bitstreams/cc527d50-26c9-4a48-b1a2-08cb7f2fd20c/download">Nuclear Power Plant Conceptual Simulator</a>) ; le modèle regroupe le train en une capacité équivalente arrondie à 50 kg/s.</td></tr>
                 <tr><td>Volume total du CPP</td><td>408,6 m³</td><td><span class="badge">DONNÉE</span>Volume liquide + volume vapeur de référence</td></tr>
                 <tr><td>Volume liquide de référence</td><td>373,7 m³</td><td><span class="badge">DONNÉE</span>Inventaire liquide initial du CPP</td></tr>
                 <tr><td>Volume vapeur de référence</td><td>34,9 m³</td><td><span class="badge">DONNÉE</span>Espace vapeur initial du pressuriseur</td></tr>
@@ -1821,10 +1824,10 @@
   </dialog>
 
   <!-- Les modèles intégrés restent accessibles hors ligne et depuis file://. -->
-<script type="application/json" id="solutionDataTemperature">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-09-22T20:19:59.281Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":432.0191242532194,"y":-262.2051628092339,"label":"Bande morte","params":{"width":0.83,"hysteresis":0.28}},{"id":"N13","type":"gain","x":701.8651617536481,"y":-139.19638183631199,"label":"Vitesse grappes","params":{"k":62,"outputUnit":"pas/min"}},{"id":"N14","type":"limit","x":980.7127009110309,"y":18.87148654826658,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N15","type":"gain","x":1264.9538608221615,"y":151.31308155233862,"label":"K PAS→%","params":{"k":0.4386,"outputUnit":"%/min"}},{"id":"N19","type":"integrator","x":1537.473381383356,"y":320.85497129525925,"label":"Intégrateur","params":{"min":0,"max":100,"outputUnit":"%"}},{"id":"N20","type":"posg","x":1782.7676438805947,"y":458.53770413976525,"label":"RGL001MM","params":{}}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N2","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N14","to":"N15","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N15","to":"N19","toPort":0}],"nodeCounter":40,"viewport":{"x":277.91949072381817,"y":270.50475756564447,"zoom":0.4214784000000001}}</script>
-<script type="application/json" id="solutionDataLevel">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-09-22T20:18:51.377Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":426.0876221881076,"y":-256.27366074412214,"label":"Bande morte","params":{"width":0.83,"hysteresis":0.28}},{"id":"N13","type":"gain","x":634.6413751410067,"y":-160.94527101240914,"label":"Vitesse grappes","params":{"k":62,"outputUnit":"pas/min"}},{"id":"N14","type":"limit","x":962.9181947156957,"y":-2.877402627830577,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N15","type":"gain","x":1197.7300742095201,"y":129.56419237624146,"label":"K PAS→%","params":{"k":0.4386,"outputUnit":"%/min"}},{"id":"N19","type":"integrator","x":1470.2495947707146,"y":299.10608211916207,"label":"Intégrateur","params":{"min":0,"max":100,"outputUnit":"%"}},{"id":"N20","type":"posg","x":1715.5438572679534,"y":436.7888149636681,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":158.13459516847382,"y":211.57818001140396,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":419.6599893881725,"y":329.93006657620987,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":453.64834842389104,"y":228.7436311291005,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":735.969308753618,"y":408.422563211502,"label":"Erreur niveau","params":{"a":1,"b":-1}},{"id":"N25","type":"pi","x":987.9634822816652,"y":456.7205720399731,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qchaSignal","x":987.9634822816652,"y":639.8767217455572,"label":"QCHA","params":{}},{"id":"N27","type":"sum","x":1268.038080991157,"y":563.6775696126163,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1534.634098648099,"y":642.3021184440831,"label":"Limite QDEC","params":{"min":0,"max":30}},{"id":"N29","type":"qdecOut","x":1792.244176226734,"y":689.4769464624367,"label":"QDEC","params":{}},{"id":"N38","type":"tmoy","x":-89.96178062534011,"y":87.27647223289733,"label":"TMOY","params":{}}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N2","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N14","to":"N15","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N15","to":"N19","toPort":0}],"nodeCounter":40,"viewport":{"x":345.4767835354962,"y":-74.82493547954459,"zoom":0.37632000000000004}}</script>
-<script type="application/json" id="solutionDataPressure">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-09-22T20:18:15.106Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":426.0876221881076,"y":-256.27366074412214,"label":"Bande morte","params":{"width":0.83,"hysteresis":0.28}},{"id":"N13","type":"gain","x":634.6413751410067,"y":-160.94527101240914,"label":"Vitesse grappes","params":{"k":62,"outputUnit":"pas/min"}},{"id":"N14","type":"limit","x":962.9181947156957,"y":-2.877402627830577,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N15","type":"gain","x":1197.7300742095201,"y":129.56419237624146,"label":"K PAS→%","params":{"k":0.4386,"outputUnit":"%/min"}},{"id":"N19","type":"integrator","x":1470.2495947707146,"y":299.10608211916207,"label":"Intégrateur","params":{"min":0,"max":100,"outputUnit":"%"}},{"id":"N20","type":"posg","x":1715.5438572679534,"y":436.7888149636681,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":158.13459516847382,"y":211.57818001140396,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":419.6599893881725,"y":329.93006657620987,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":453.64834842389104,"y":228.7436311291005,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":735.969308753618,"y":408.422563211502,"label":"Erreur niveau","params":{"a":1,"b":-1}},{"id":"N25","type":"pi","x":987.9634822816652,"y":456.7205720399731,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qchaSignal","x":987.9634822816652,"y":639.8767217455572,"label":"QCHA","params":{}},{"id":"N27","type":"sum","x":1268.038080991157,"y":563.6775696126163,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1534.634098648099,"y":642.3021184440831,"label":"Limite QDEC","params":{"min":0,"max":30}},{"id":"N29","type":"qdecOut","x":1792.244176226734,"y":689.4769464624367,"label":"QDEC","params":{}},{"id":"N30","type":"constant","x":-208.35817262038688,"y":835.8012122292114,"label":"PREF","params":{"value":155,"unit":"bar abs."}},{"id":"N31","type":"mp1Signal","x":-204.346812584253,"y":660.8730430355401,"label":"MP1","params":{}},{"id":"N32","type":"sum","x":81.98549309120978,"y":775.4574363396309,"label":"Erreur pression","params":{"a":1,"b":-1}},{"id":"N33","type":"pid","x":357.28626485934745,"y":857.6923737360742,"label":"PID pression","params":{"kp":25,"ki":2,"kd":5,"tauD":2,"min":-100,"max":100,"outputUnit":"%"}},{"id":"N34","type":"curve","x":657.658697921225,"y":889.010332462391,"label":"Répartition PCHF","params":{"curveRole":"heater","xUnit":"%","yUnit":"kW","points":[{"x":-100,"y":2500},{"x":0,"y":2001.4680740277474},{"x":100,"y":0}]}},{"id":"N35","type":"pchauffOut","x":941.9852501266316,"y":975.2567033469572,"label":"PCHF","params":{}},{"id":"N36","type":"compare","x":657.658697921225,"y":1059.010332462391,"label":"Arrêt aspersion","params":{"relation":"≥","threshold":-5,"whenTrue":1,"whenFalse":0}},{"id":"N37","type":"qaspOut","x":938.9766566475419,"y":1130.2136624995198,"label":"QASP","params":{}},{"id":"N38","type":"tmoy","x":-89.96178062534011,"y":87.27647223289733,"label":"TMOY","params":{}}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N2","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N14","to":"N15","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N31","to":"N32","toPort":0},{"from":"N30","to":"N32","toPort":1},{"from":"N32","to":"N33","toPort":0},{"from":"N33","to":"N34","toPort":0},{"from":"N34","to":"N35","toPort":0},{"from":"N33","to":"N36","toPort":0},{"from":"N36","to":"N37","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N15","to":"N19","toPort":0}],"nodeCounter":40,"viewport":{"x":382.9767835354962,"y":144.34175153217416,"zoom":0.37632000000000004}}</script>
-<script type="application/json" id="solutionDataComplete">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-09-22T20:10:25.426Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N5","type":"pow1","x":-934.9724860798332,"y":-167.95947577974675,"label":"POW1","params":{}},{"id":"N6","type":"sum","x":-669.4532732594231,"y":-58.16278005361988,"label":"Écart puissance","params":{"a":1,"b":-1}},{"id":"N7","type":"highpass","x":-395.8487171051626,"y":29.95650242301585,"label":"D filtrée","params":{"tau":20}},{"id":"N8","type":"curve","x":-139.70648376388453,"y":49.14367467066441,"label":"Courbe G1","params":{"curveRole":"g1","xUnit":"% PN","yUnit":"°C","points":[{"x":-28.833,"y":-3},{"x":-5.5,"y":-0.2},{"x":-0.5,"y":0},{"x":0.5,"y":0},{"x":5.5,"y":0.2},{"x":28.833,"y":3}]}},{"id":"N9","type":"curve","x":-128.48349254108268,"y":200.47020251477178,"label":"Courbe G2","params":{"curveRole":"g2","xUnit":"% PN","yUnit":"","points":[{"x":0,"y":3.33},{"x":30,"y":3.33},{"x":40,"y":2.5},{"x":50,"y":2},{"x":60,"y":1.667},{"x":70,"y":1.429},{"x":80,"y":1.25},{"x":90,"y":1.111},{"x":100,"y":1}]}},{"id":"N10","type":"product","x":156.61443159030432,"y":150.92017934737757,"label":"Correction puissance","params":{}},{"id":"N11","type":"sum","x":433.0739250318664,"y":-197.43465602862963,"label":"Écart corrigé","params":{"a":1,"b":1}},{"id":"N12","type":"deadband","x":710.3053432770566,"y":-77.9755547410696,"label":"Bande morte","params":{"width":0.83,"hysteresis":0.28}},{"id":"N13","type":"gain","x":948.8695859569723,"y":109.14984766140206,"label":"Vitesse grappes","params":{"k":62,"outputUnit":"pas/min"}},{"id":"N14","type":"limit","x":1277.1464055316612,"y":267.21771604598064,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N15","type":"gain","x":1511.9582850254858,"y":399.6593110500527,"label":"K PAS→%","params":{"k":0.4386,"outputUnit":"%/min"}},{"id":"N16","type":"compare","x":1224.3064681586548,"y":512.3747265683392,"label":"POW1 ≥ 99 ?","params":{"relation":"≥","threshold":99,"whenTrue":0,"whenFalse":1}},{"id":"N17","type":"product","x":1746.4320324529203,"y":583.4987898952052,"label":"Vitesse autorisée","params":{}},{"id":"N18","type":"maximum","x":2081.8432953910087,"y":524.6051113882686,"label":"Inhibition extraction","params":{}},{"id":"N19","type":"integrator","x":2356.444076151028,"y":622.1609760118005,"label":"Intégrateur","params":{"min":0,"max":100,"outputUnit":"%"}},{"id":"N20","type":"posg","x":2601.738338648267,"y":759.8437088563065,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":452.6535525011627,"y":623.4616023180097,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":714.1789467208614,"y":741.8134888828156,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":748.1673057565799,"y":640.6270534357062,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":1030.4882660863068,"y":820.3059855181077,"label":"Erreur niveau","params":{"a":1,"b":-1}},{"id":"N25","type":"pi","x":1282.482439614354,"y":868.6039943465788,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qchaSignal","x":1282.482439614354,"y":1051.760144052163,"label":"QCHA","params":{}},{"id":"N27","type":"sum","x":1562.5570383238457,"y":975.560991919222,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1829.153055980788,"y":1054.185540750689,"label":"Limite QDEC","params":{"min":0,"max":30}},{"id":"N29","type":"qdecOut","x":2086.763133559423,"y":1101.3603687690425,"label":"QDEC","params":{}},{"id":"N30","type":"constant","x":86.16078471230202,"y":1247.6846345358172,"label":"PREF","params":{"value":155,"unit":"bar abs."}},{"id":"N31","type":"mp1Signal","x":90.1721447484359,"y":1072.756465342146,"label":"MP1","params":{}},{"id":"N32","type":"sum","x":376.5044504238987,"y":1187.3408586462367,"label":"Erreur pression","params":{"a":1,"b":-1}},{"id":"N33","type":"pid","x":651.8052221920364,"y":1269.57579604268,"label":"PID pression","params":{"kp":25,"ki":2,"kd":5,"tauD":2,"min":-100,"max":100,"outputUnit":"%"}},{"id":"N34","type":"curve","x":952.1776552539138,"y":1300.8937547689968,"label":"Répartition PCHF","params":{"curveRole":"heater","xUnit":"%","yUnit":"kW","points":[{"x":-100,"y":2500},{"x":0,"y":2001.4680740277474},{"x":100,"y":0}]}},{"id":"N35","type":"pchauffOut","x":1236.5042074593205,"y":1387.140125653563,"label":"PCHF","params":{}},{"id":"N36","type":"compare","x":952.1776552539138,"y":1470.8937547689968,"label":"Arrêt aspersion","params":{"relation":"≥","threshold":-5,"whenTrue":1,"whenFalse":0}},{"id":"N37","type":"qaspOut","x":1233.4956139802307,"y":1542.0970848061256,"label":"QASP","params":{}},{"id":"N38","type":"tmoy","x":204.5571767073488,"y":499.15989453950306,"label":"TMOY","params":{}},{"id":"N39","type":"ptur","x":-957.8751927983928,"y":270.5921329323959,"label":"PTUR","params":{}},{"id":"N40","type":"pow1","x":968.4109284530562,"y":408.30364216122416,"label":"POW1","params":{}}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N2","to":"N4","toPort":1},{"from":"N5","to":"N6","toPort":0},{"from":"N6","to":"N7","toPort":0},{"from":"N7","to":"N8","toPort":0},{"from":"N8","to":"N10","toPort":0},{"from":"N9","to":"N10","toPort":1},{"from":"N4","to":"N11","toPort":0},{"from":"N10","to":"N11","toPort":1},{"from":"N11","to":"N12","toPort":0},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N14","to":"N15","toPort":0},{"from":"N15","to":"N17","toPort":0},{"from":"N16","to":"N17","toPort":1},{"from":"N15","to":"N18","toPort":0},{"from":"N17","to":"N18","toPort":1},{"from":"N18","to":"N19","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N31","to":"N32","toPort":0},{"from":"N30","to":"N32","toPort":1},{"from":"N32","to":"N33","toPort":0},{"from":"N33","to":"N34","toPort":0},{"from":"N34","to":"N35","toPort":0},{"from":"N33","to":"N36","toPort":0},{"from":"N36","to":"N37","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N39","to":"N9","toPort":0},{"from":"N39","to":"N6","toPort":1},{"from":"N40","to":"N16","toPort":0}],"nodeCounter":40,"viewport":{"x":376.72052812251883,"y":143.68473668840613,"zoom":0.3}}</script>
+<script type="application/json" id="solutionDataTemperature">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-10-05T00:34:59.909Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":432.0191242532194,"y":-262.2051628092339,"label":"Hystérésis R · 0,83 / 0,55","params":{"width":0.69,"hysteresis":0.28,"mode":"entrée entière"}},{"id":"N13","type":"curve","x":701.8651617536481,"y":-139.19638183631199,"label":"Vitesse R · pas/min","params":{"curveRole":"rodSpeed","xUnit":"°C","yUnit":"pas/min","points":[{"x":-100,"y":72},{"x":-2.8,"y":72},{"x":-1.7333333333333334,"y":8},{"x":-0.55,"y":8},{"x":0,"y":0},{"x":0.55,"y":-8},{"x":1.7333333333333334,"y":-8},{"x":2.8,"y":-72},{"x":100,"y":-72}]},"role":"operator","meaning":"Loi statique définie par une table de points E1 → S avec interpolation linéaire"},{"id":"N14","type":"limit","x":980.7127009110309,"y":18.87148654826658,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N19","type":"integrator","x":1537.473381383356,"y":320.85497129525925,"label":"Position R · pas extraits","params":{"min":0,"max":260,"outputUnit":"pas extraits"}},{"id":"N20","type":"posg","x":1782.7676438805947,"y":458.53770413976525,"label":"RGL001MM","params":{}},{"id":"N41","type":"filter","label":"TREF filtrée · 60 s","params":{"tau":60},"x":0,"y":-745.3286627288333,"role":"operator","meaning":"Filtre du premier ordre"}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N41","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N14","to":"N19","toPort":0},{"from":"N2","to":"N41","toPort":0}],"nodeCounter":41,"viewport":{"x":277.91949072381817,"y":270.50475756564447,"zoom":0.4214784000000001}}</script>
+<script type="application/json" id="solutionDataLevel">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-10-05T00:34:59.911Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":426.0876221881076,"y":-256.27366074412214,"label":"Hystérésis R · 0,83 / 0,55","params":{"width":0.69,"hysteresis":0.28,"mode":"entrée entière"}},{"id":"N13","type":"curve","x":634.6413751410067,"y":-160.94527101240914,"label":"Vitesse R · pas/min","params":{"curveRole":"rodSpeed","xUnit":"°C","yUnit":"pas/min","points":[{"x":-100,"y":72},{"x":-2.8,"y":72},{"x":-1.7333333333333334,"y":8},{"x":-0.55,"y":8},{"x":0,"y":0},{"x":0.55,"y":-8},{"x":1.7333333333333334,"y":-8},{"x":2.8,"y":-72},{"x":100,"y":-72}]},"role":"operator","meaning":"Loi statique définie par une table de points E1 → S avec interpolation linéaire"},{"id":"N14","type":"limit","x":962.9181947156957,"y":-2.877402627830577,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N19","type":"integrator","x":1470.2495947707146,"y":299.10608211916207,"label":"Position R · pas extraits","params":{"min":0,"max":260,"outputUnit":"pas extraits"}},{"id":"N20","type":"posg","x":1715.5438572679534,"y":436.7888149636681,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":158.13459516847382,"y":211.57818001140396,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":419.6599893881725,"y":329.93006657620987,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":453.64834842389104,"y":228.7436311291005,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":735.969308753618,"y":408.422563211502,"label":"Erreur niveau","params":{"a":-1,"b":1}},{"id":"N25","type":"pi","x":987.9634822816652,"y":456.7205720399731,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qdecSignal","x":987.9634822816652,"y":639.8767217455572,"label":"QDEC · orifices","params":{}},{"id":"N27","type":"sum","x":1268.038080991157,"y":563.6775696126163,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1534.634098648099,"y":642.3021184440831,"label":"Limite QCHARGE","params":{"min":6,"max":36}},{"id":"N29","type":"qchargeOut","x":1792.244176226734,"y":689.4769464624367,"label":"QCHARGE","params":{}},{"id":"N38","type":"tmoy","x":-89.96178062534011,"y":87.27647223289733,"label":"TMOY","params":{}},{"id":"N41","type":"filter","label":"TREF filtrée · 60 s","params":{"tau":60},"x":0,"y":-745.3286627288333,"role":"operator","meaning":"Filtre du premier ordre"}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N41","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N14","to":"N19","toPort":0},{"from":"N2","to":"N41","toPort":0}],"nodeCounter":41,"viewport":{"x":345.4767835354962,"y":-74.82493547954459,"zoom":0.37632000000000004}}</script>
+<script type="application/json" id="solutionDataPressure">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-10-05T00:34:59.911Z","nodes":[{"id":"N1","type":"ptur","x":-422.6808575255819,"y":-370.109557053897,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-102.9390772999448,"y":-304.36540353545394,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-413.61295986334824,"y":-505.3286627288333,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":170.54828729999304,"y":-353.4991605311744,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N12","type":"deadband","x":426.0876221881076,"y":-256.27366074412214,"label":"Hystérésis R · 0,83 / 0,55","params":{"width":0.69,"hysteresis":0.28,"mode":"entrée entière"}},{"id":"N13","type":"curve","x":634.6413751410067,"y":-160.94527101240914,"label":"Vitesse R · pas/min","params":{"curveRole":"rodSpeed","xUnit":"°C","yUnit":"pas/min","points":[{"x":-100,"y":72},{"x":-2.8,"y":72},{"x":-1.7333333333333334,"y":8},{"x":-0.55,"y":8},{"x":0,"y":0},{"x":0.55,"y":-8},{"x":1.7333333333333334,"y":-8},{"x":2.8,"y":-72},{"x":100,"y":-72}]},"role":"operator","meaning":"Loi statique définie par une table de points E1 → S avec interpolation linéaire"},{"id":"N14","type":"limit","x":962.9181947156957,"y":-2.877402627830577,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N19","type":"integrator","x":1470.2495947707146,"y":299.10608211916207,"label":"Position R · pas extraits","params":{"min":0,"max":260,"outputUnit":"pas extraits"}},{"id":"N20","type":"posg","x":1715.5438572679534,"y":436.7888149636681,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":158.13459516847382,"y":211.57818001140396,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":419.6599893881725,"y":329.93006657620987,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":453.64834842389104,"y":228.7436311291005,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":735.969308753618,"y":408.422563211502,"label":"Erreur niveau","params":{"a":-1,"b":1}},{"id":"N25","type":"pi","x":987.9634822816652,"y":456.7205720399731,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qdecSignal","x":987.9634822816652,"y":639.8767217455572,"label":"QDEC · orifices","params":{}},{"id":"N27","type":"sum","x":1268.038080991157,"y":563.6775696126163,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1534.634098648099,"y":642.3021184440831,"label":"Limite QCHARGE","params":{"min":6,"max":36}},{"id":"N29","type":"qchargeOut","x":1792.244176226734,"y":689.4769464624367,"label":"QCHARGE","params":{}},{"id":"N30","type":"constant","x":-208.35817262038688,"y":835.8012122292114,"label":"PREF","params":{"value":155,"unit":"bar abs."}},{"id":"N31","type":"mp1Signal","x":-204.346812584253,"y":660.8730430355401,"label":"MP1","params":{}},{"id":"N32","type":"sum","x":81.98549309120978,"y":775.4574363396309,"label":"Erreur pression","params":{"a":1,"b":-1}},{"id":"N33","type":"pid","x":357.28626485934745,"y":857.6923737360742,"label":"PID pression","params":{"kp":1,"ki":0,"kd":0,"tauD":2,"min":-10,"max":10,"outputUnit":"bar"}},{"id":"N34","type":"curve","x":657.658697921225,"y":889.010332462391,"label":"Répartition PCHF","params":{"curveRole":"heater","xUnit":"bar","yUnit":"kW","points":[{"x":-10,"y":2160},{"x":-1.7,"y":2160},{"x":-1,"y":576},{"x":1,"y":0},{"x":10,"y":0}]}},{"id":"N35","type":"pchauffOut","x":941.9852501266316,"y":975.2567033469572,"label":"PCHF","params":{}},{"id":"N36","type":"curve","x":657.658697921225,"y":1059.010332462391,"label":"Ouverture aspersion","params":{"curveRole":"spray","xUnit":"bar","yUnit":"%","points":[{"x":-10,"y":0},{"x":2,"y":0},{"x":5.2,"y":100},{"x":10,"y":100}]}},{"id":"N37","type":"qaspOut","x":938.9766566475419,"y":1130.2136624995198,"label":"QASP","params":{}},{"id":"N38","type":"tmoy","x":-89.96178062534011,"y":87.27647223289733,"label":"TMOY","params":{}},{"id":"N41","type":"filter","label":"TREF filtrée · 60 s","params":{"tau":60},"x":0,"y":-745.3286627288333,"role":"operator","meaning":"Filtre du premier ordre"}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N41","to":"N4","toPort":1},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N31","to":"N32","toPort":0},{"from":"N30","to":"N32","toPort":1},{"from":"N32","to":"N33","toPort":0},{"from":"N33","to":"N34","toPort":0},{"from":"N34","to":"N35","toPort":0},{"from":"N33","to":"N36","toPort":0},{"from":"N36","to":"N37","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N4","to":"N12","toPort":0},{"from":"N14","to":"N19","toPort":0},{"from":"N2","to":"N41","toPort":0}],"nodeCounter":41,"viewport":{"x":382.9767835354962,"y":144.34175153217416,"zoom":0.37632000000000004}}</script>
+<script type="application/json" id="solutionDataComplete">{"format":"SimuREP-Regulation","version":1,"name":"Modèle de régulation","savedAt":"2026-10-05T00:34:59.912Z","nodes":[{"id":"N1","type":"ptur","x":-950,"y":-1200,"label":"PTUR","params":{}},{"id":"N2","type":"curve","x":-650,"y":-1200,"label":"Programme TREF","params":{"curveRole":"tref","xUnit":"% PN","yUnit":"°C","points":[{"x":0,"y":297.2},{"x":100,"y":306.5}]}},{"id":"N3","type":"tmoy","x":-350,"y":-990,"label":"TMOY","params":{}},{"id":"N4","type":"sum","x":-50,"y":-1100,"label":"Écart T","params":{"a":1,"b":-1}},{"id":"N5","type":"pow1","x":-950,"y":-750,"label":"POW1","params":{}},{"id":"N6","type":"sum","x":-350,"y":-650,"label":"Écart puissance","params":{"a":1,"b":-1}},{"id":"N7","type":"highpass","x":-50,"y":-650,"label":"D filtrée","params":{"tau":50}},{"id":"N8","type":"curve","x":250,"y":-650,"label":"Courbe G1","params":{"curveRole":"g1","xUnit":"% PN","yUnit":"°C","points":[{"x":-12.6,"y":-6},{"x":-8.47,"y":-6},{"x":-1,"y":-0.4},{"x":0,"y":0},{"x":1,"y":0.4},{"x":8.47,"y":6},{"x":12.6,"y":6}]}},{"id":"N9","type":"curve","x":250,"y":-390,"label":"Courbe G2","params":{"curveRole":"g2","xUnit":"% PN","yUnit":"","points":[{"x":0,"y":4},{"x":25,"y":4},{"x":50,"y":2},{"x":75,"y":1.3333333333333333},{"x":100,"y":1},{"x":126,"y":1}]}},{"id":"N10","type":"product","x":550,"y":-650,"label":"Correction puissance","params":{}},{"id":"N11","type":"sum","x":850,"y":-1100,"label":"Écart corrigé","params":{"a":1,"b":1}},{"id":"N12","type":"deadband","x":1150,"y":-1100,"label":"Hystérésis R · 0,83 / 0,55","params":{"width":0.69,"hysteresis":0.28,"mode":"entrée entière"}},{"id":"N13","type":"curve","x":1450,"y":-1100,"label":"Vitesse R · pas/min","params":{"curveRole":"rodSpeed","xUnit":"°C","yUnit":"pas/min","points":[{"x":-100,"y":72},{"x":-2.8,"y":72},{"x":-1.7333333333333334,"y":8},{"x":-0.55,"y":8},{"x":0,"y":0},{"x":0.55,"y":-8},{"x":1.7333333333333334,"y":-8},{"x":2.8,"y":-72},{"x":100,"y":-72}]},"role":"operator","meaning":"Loi statique définie par une table de points E1 → S avec interpolation linéaire"},{"id":"N14","type":"limit","x":1750,"y":-1100,"label":"Limite ±72","params":{"min":-72,"max":72}},{"id":"N16","type":"compare","x":1750,"y":-650,"label":"POW1 ≥ 99 ?","params":{"relation":"≥","threshold":99,"whenTrue":0,"whenFalse":1}},{"id":"N17","type":"product","x":2050,"y":-650,"label":"Vitesse autorisée","params":{}},{"id":"N18","type":"minimum","x":2050,"y":-1100,"label":"Inhibition extraction","params":{}},{"id":"N19","type":"integrator","x":2350,"y":-1100,"label":"Position R · pas extraits","params":{"min":0,"max":260,"outputUnit":"pas extraits"}},{"id":"N20","type":"posg","x":2650,"y":-1100,"label":"RGL001MM","params":{}},{"id":"N21","type":"curve","x":452.6535525011627,"y":623.4616023180097,"label":"Programme NREF","params":{"curveRole":"nref","xUnit":"°C","yUnit":"%","points":[{"x":297.2,"y":20},{"x":306.5,"y":41.8}]}},{"id":"N22","type":"nrefOut","x":714.1789467208614,"y":741.8134888828156,"label":"NREF","params":{}},{"id":"N23","type":"mn1Signal","x":748.1673057565799,"y":640.6270534357062,"label":"MN1","params":{}},{"id":"N24","type":"sum","x":1030.4882660863068,"y":820.3059855181077,"label":"Erreur niveau","params":{"a":-1,"b":1}},{"id":"N25","type":"pi","x":1282.482439614354,"y":868.6039943465788,"label":"PI niveau","params":{"kp":1.5,"ki":0.08,"min":-15,"max":15,"outputUnit":"m³/h"}},{"id":"N26","type":"qdecSignal","x":1282.482439614354,"y":1051.760144052163,"label":"QDEC · orifices","params":{}},{"id":"N27","type":"sum","x":1562.5570383238457,"y":975.560991919222,"label":"Débit demandé","params":{"a":1,"b":1}},{"id":"N28","type":"limit","x":1829.153055980788,"y":1054.185540750689,"label":"Limite QCHARGE","params":{"min":6,"max":36}},{"id":"N29","type":"qchargeOut","x":2086.763133559423,"y":1101.3603687690425,"label":"QCHARGE","params":{}},{"id":"N30","type":"constant","x":86.16078471230202,"y":1247.6846345358172,"label":"PREF","params":{"value":155,"unit":"bar abs."}},{"id":"N31","type":"mp1Signal","x":90.1721447484359,"y":1072.756465342146,"label":"MP1","params":{}},{"id":"N32","type":"sum","x":376.5044504238987,"y":1187.3408586462367,"label":"Erreur pression","params":{"a":1,"b":-1}},{"id":"N33","type":"pid","x":651.8052221920364,"y":1269.57579604268,"label":"PID pression","params":{"kp":1,"ki":0,"kd":0,"tauD":2,"min":-10,"max":10,"outputUnit":"bar"}},{"id":"N34","type":"curve","x":952.1776552539138,"y":1300.8937547689968,"label":"Répartition PCHF","params":{"curveRole":"heater","xUnit":"bar","yUnit":"kW","points":[{"x":-10,"y":2160},{"x":-1.7,"y":2160},{"x":-1,"y":576},{"x":1,"y":0},{"x":10,"y":0}]}},{"id":"N35","type":"pchauffOut","x":1236.5042074593205,"y":1387.140125653563,"label":"PCHF","params":{}},{"id":"N36","type":"curve","x":952.1776552539138,"y":1470.8937547689968,"label":"Ouverture aspersion","params":{"curveRole":"spray","xUnit":"bar","yUnit":"%","points":[{"x":-10,"y":0},{"x":2,"y":0},{"x":5.2,"y":100},{"x":10,"y":100}]}},{"id":"N37","type":"qaspOut","x":1233.4956139802307,"y":1542.0970848061256,"label":"QASP","params":{}},{"id":"N38","type":"tmoy","x":204.5571767073488,"y":499.15989453950306,"label":"TMOY","params":{}},{"id":"N39","type":"ptur","x":-950,"y":-490,"label":"PTUR","params":{}},{"id":"N40","type":"pow1","x":1450,"y":-650,"label":"POW1","params":{}},{"id":"N41","type":"filter","label":"TREF filtrée · 60 s","params":{"tau":60},"x":-350,"y":-1200,"role":"operator","meaning":"Filtre du premier ordre"},{"id":"N42","type":"filter","label":"Flux filtré · 2 s","params":{"tau":2},"x":-650,"y":-750,"role":"operator","meaning":"Filtre du premier ordre"},{"id":"N43","type":"filter","label":"Charge filtrée · 2 s","params":{"tau":2},"x":-650,"y":-490,"role":"operator","meaning":"Filtre du premier ordre"},{"id":"N44","type":"leadlag","label":"Compensation T · 50 / 6,7 s","params":{"tauZero":50,"tauPole":6.7},"x":250,"y":-1100,"role":"operator","meaning":"Compensation dynamique (1+τz s)/(1+τp s)"},{"id":"N45","type":"filter","label":"Écart T filtré · 1 s","params":{"tau":1},"x":550,"y":-1100,"role":"operator","meaning":"Filtre du premier ordre"}],"links":[{"from":"N1","to":"N2","toPort":0},{"from":"N3","to":"N4","toPort":0},{"from":"N41","to":"N4","toPort":1},{"from":"N42","to":"N6","toPort":0},{"from":"N6","to":"N7","toPort":0},{"from":"N7","to":"N8","toPort":0},{"from":"N8","to":"N10","toPort":0},{"from":"N9","to":"N10","toPort":1},{"from":"N45","to":"N11","toPort":0},{"from":"N10","to":"N11","toPort":1},{"from":"N11","to":"N12","toPort":0},{"from":"N12","to":"N13","toPort":0},{"from":"N13","to":"N14","toPort":0},{"from":"N16","to":"N17","toPort":1},{"from":"N17","to":"N18","toPort":1},{"from":"N18","to":"N19","toPort":0},{"from":"N19","to":"N20","toPort":0},{"from":"N21","to":"N22","toPort":0},{"from":"N23","to":"N24","toPort":0},{"from":"N22","to":"N24","toPort":1},{"from":"N24","to":"N25","toPort":0},{"from":"N25","to":"N27","toPort":0},{"from":"N26","to":"N27","toPort":1},{"from":"N27","to":"N28","toPort":0},{"from":"N28","to":"N29","toPort":0},{"from":"N31","to":"N32","toPort":0},{"from":"N30","to":"N32","toPort":1},{"from":"N32","to":"N33","toPort":0},{"from":"N33","to":"N34","toPort":0},{"from":"N34","to":"N35","toPort":0},{"from":"N33","to":"N36","toPort":0},{"from":"N36","to":"N37","toPort":0},{"from":"N38","to":"N21","toPort":0},{"from":"N39","to":"N9","toPort":0},{"from":"N43","to":"N6","toPort":1},{"from":"N40","to":"N16","toPort":0},{"from":"N14","to":"N17","toPort":0},{"from":"N14","to":"N18","toPort":0},{"from":"N2","to":"N41","toPort":0},{"from":"N5","to":"N42","toPort":0},{"from":"N39","to":"N43","toPort":0},{"from":"N4","to":"N44","toPort":0},{"from":"N44","to":"N45","toPort":0}],"nodeCounter":45,"viewport":{"x":376.72052812251883,"y":143.68473668840613,"zoom":0.3}}</script>
 
   <script>
     "use strict";
@@ -3220,7 +3223,14 @@
       },
       highpass: {
         label: "D filtrée", meaning: "Passe-haut de l’écart de puissance POW1 − PTUR", role: "operator",
-        params: { tau: 20 }, fields: [{ key: "tau", label: "Constante τ (s)", step: 0.5, min: 0.1 }]
+        params: { tau: 50 }, fields: [{ key: "tau", label: "Constante τ (s)", step: 0.5, min: 0.1 }]
+      },
+      leadlag: {
+        label: "Avance–retard", meaning: "Compensation dynamique (1+τz s)/(1+τp s)", role: "operator",
+        params: { tauZero: 50, tauPole: 6.7 }, fields: [
+          { key: "tauZero", label: "Zéro τz (s)", step: 0.1, min: 0 },
+          { key: "tauPole", label: "Pôle τp (s)", step: 0.1, min: 0.01 }
+        ]
       },
       derivative: {
         label: "Dérivée filtrée", meaning: "Vitesse de variation de l’entrée, filtrée au premier ordre ; sortie en unité d’entrée par seconde", role: "operator",
@@ -3228,7 +3238,7 @@
       },
       nonlinear: {
         label: "Courbe G1", meaning: "Atténuation des petits déséquilibres puis amplification des grands transitoires", role: "operator",
-        params: { deadband: 0.5, knee: 5, lowGain: 0.04, highGain: 0.12, max: 3 },
+        params: { deadband: 0, knee: 1, lowGain: 0.4, highGain: 0.75, max: 6 },
         fields: [
           { key: "deadband", label: "Zone neutre (% PN)", step: 0.1, min: 0 },
           { key: "knee", label: "Coude après zone neutre (% PN)", step: 0.5, min: 0 },
@@ -3239,7 +3249,7 @@
       },
       scheduledGain: {
         label: "Courbe G2", meaning: "Gain inversement proportionnel à la charge turbine, borné à basse puissance", role: "operator",
-        params: { reference: 100, floor: 30, min: 1, max: 3.33 },
+        params: { reference: 100, floor: 25, min: 1, max: 4 },
         fields: [
           { key: "reference", label: "Numérateur de charge (%)", step: 1, min: 0 },
           { key: "floor", label: "Charge minimale de calcul (%)", step: 1, min: 1 },
@@ -3252,8 +3262,10 @@
       },
       deadband: {
         label: "Bande morte", meaning: "Bande morte symétrique", role: "operator",
-        params: { width: 0.83, hysteresis: 0.28 },
-        fields: [{ key: "width", label: "Demi-largeur", step: 0.01, min: 0 }, { key: "hysteresis", label: "Hystérésis", step: 0.01, min: 0 }]
+        params: { width: 0.83, hysteresis: 0.28, mode: "écart réduit" },
+        fields: [{ key: "width", label: "Seuil central", step: 0.01, min: 0 },
+          { key: "hysteresis", label: "Hystérésis", step: 0.01, min: 0 },
+          { key: "mode", label: "Sortie active", type: "select", options: ["écart réduit", "entrée entière"] }]
       },
       limit: {
         label: "Saturation", meaning: "Limitation min/max", role: "operator",
@@ -3314,6 +3326,7 @@
       gv3SteamSignal: { label: "VAP3", meaning: "Débit vapeur GV3 (kg/s)", role: "sensor" },
       gv4SteamSignal: { label: "VAP4", meaning: "Débit vapeur GV4 (kg/s)", role: "sensor" },
       voltageSignal: { label: "TENSION", meaning: "Manque de tension (TOR)", role: "sensor" },
+      aarSignal: { label: "ÉTAT AAR", meaning: "Ordre AAR mémorisé (TOR)", role: "sensor" },
       fluxRateSignal: { label: "dPOW1/dt", meaning: "Variation du flux (% PN/s)", role: "sensor" },
       g3Out: { label: "G3", meaning: "Consigne du compteur GCP (pas de chevauchement)", role: "actuator" },
       gv1Out: { label: "ARE1", meaning: "Commande vanne GV1 (%)", role: "actuator" },
@@ -3322,6 +3335,7 @@
       gv4Out: { label: "ARE4", meaning: "Commande vanne GV4 (%)", role: "actuator" },
       aarOut: { label: "AAR", meaning: "Ordre d'arrêt automatique (TOR)", role: "actuator" },
       risOut: { label: "IS", meaning: "Ordre d'injection de sécurité (TOR)", role: "actuator" },
+      asgOut: { label: "ASG", meaning: "Ordre de démarrage de l’alimentation de secours des GV (TOR)", role: "actuator" },
       qdecOut: { label: "QDEC", meaning: "Ancienne sortie de décharge RCV (m³/h)", role: "actuator" },
       qchargeOut: { label: "QCHARGE", meaning: "Signal de commande de la charge RCV (m³/h)", role: "actuator" },
       pchauffOut: { label: "PCHF", meaning: "Signal de commande des chaufferettes (kW)", role: "actuator" },
@@ -3341,8 +3355,8 @@
         params: {
           curveRole: "g1", xUnit: "% PN", yUnit: "°C",
           points: [
-            { x: -28.833, y: -3 }, { x: -5.5, y: -0.2 }, { x: -0.5, y: 0 },
-            { x: 0.5, y: 0 }, { x: 5.5, y: 0.2 }, { x: 28.833, y: 3 }
+            { x: -12.6, y: -6 }, { x: -8.47, y: -6 }, { x: -1, y: -0.4 },
+            { x: 0, y: 0 }, { x: 1, y: 0.4 }, { x: 8.47, y: 6 }, { x: 12.6, y: 6 }
           ]
         }
       },
@@ -3351,9 +3365,8 @@
         params: {
           curveRole: "g2", xUnit: "% PN", yUnit: "",
           points: [
-            { x: 0, y: 3.33 }, { x: 30, y: 3.33 }, { x: 40, y: 2.5 },
-            { x: 50, y: 2 }, { x: 60, y: 1.667 }, { x: 70, y: 1.429 },
-            { x: 80, y: 1.25 }, { x: 90, y: 1.111 }, { x: 100, y: 1 }
+            { x: 0, y: 4 }, { x: 25, y: 4 }, { x: 50, y: 2 },
+            { x: 75, y: 1.3333333333333333 }, { x: 100, y: 1 }, { x: 126, y: 1 }
           ]
         }
       }
@@ -3414,15 +3427,15 @@
       "posgSignal", "qdecSignal", "nrefSignal", "gcpPowerSignal", "gvSetpointSignal", "constant",
       "g3CountSignal", "gv1LevelSignal", "gv2LevelSignal", "gv3LevelSignal", "gv4LevelSignal",
       "gv1SteamSignal", "gv2SteamSignal", "gv3SteamSignal", "gv4SteamSignal",
-      "voltageSignal", "fluxRateSignal"
+      "voltageSignal", "fluxRateSignal", "aarSignal"
     ]);
     const REG_MANUAL_OUTPUT_TYPES = new Set(["posg", "qdecOut", "qchargeOut", "pchauffOut", "qaspOut",
-      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut"]);
+      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut", "asgOut"]);
     const REG_MULTI_INPUT_TYPES = new Set(["sum", "maximum", "minimum", "and", "or", "voter"]);
     const REG_FIXED_INPUT_COUNTS = { product: 2, extractInhibit: 2 };
     const REG_LABELED_INPUT_TYPES = new Set([...REG_MULTI_INPUT_TYPES, ...Object.keys(REG_FIXED_INPUT_COUNTS)]);
     const REG_BLOCK_SYMBOLS = {
-      curve: "f(x)", constant: "C", affine: "f(x)", sum: "Σ", gain: "K", pi: "PI", pid: "PID", filter: "1/(1+τs)", highpass: "τs/(1+τs)",
+      curve: "f(x)", constant: "C", affine: "f(x)", sum: "Σ", gain: "K", pi: "PI", pid: "PID", filter: "1/(1+τs)", leadlag: "(1+τzs)/(1+τps)", highpass: "τs/(1+τs)",
       derivative: "s/(1+τs)",
       nonlinear: "G1", scheduledGain: "G2", product: "×", deadband: "DB",
       limit: "SAT", integrator: "1/s", extractInhibit: "IEX", compare: "≷", maximum: "MAX", minimum: "MIN",
@@ -3612,12 +3625,18 @@
           node.type="qchargeOut";node.label="QCHARGE";
         }
         if(legacyRcv&&node.type==="qchaSignal"){
-          node.type="qdecSignal";node.label="QDEC · 15 m³/h";
+          node.type="qdecSignal";node.label="QDEC · orifices";
         }
+        if(node.type==="qdecSignal"&&/QDEC.*(?:15|36) m³\/h/.test(node.label))
+          node.label="QDEC · orifices";
         if(legacyRcv&&node.type==="sum"&&/Erreur niveau/.test(node.label)){
           node.params.a=-1;node.params.b=1;
         }
-        if(legacyRcv&&node.type==="limit"&&/Limite QDEC/.test(node.label))node.label="Limite QCHARGE";
+        if(node.type==="limit"&&/Limite QDEC|Limite QCHARGE/.test(node.label)
+            &&Number(node.params.max)===30){
+          node.label="Limite QCHARGE";
+          node.params.min=6;node.params.max=36;
+        }
         if(node.type==="compare"&&/Arrêt aspersion/.test(node.label)){
           node.type="curve";node.label="Ouverture aspersion";
           node.params={curveRole:"spray",xUnit:"%",yUnit:"%",
@@ -3644,7 +3663,7 @@
       const pidDefault=pressurePid&&Number(pressurePid.params.kp)===25
         &&Number(pressurePid.params.ki)===2&&Number(pressurePid.params.kd)===5;
       if(heaterDefault&&sprayDefault&&pidDefault){
-        // Tableau 38 PEPC : écarts en bar, 576/2160 kW et 0→100 % d'aspersion.
+        // Tableau 38 REF-01 : écarts en bar, 576/2160 kW et 0→100 % d'aspersion.
         // L'ancien graphe exprimait l'écart en %, d'où ce changement coordonné.
         Object.assign(pressurePid.params,{kp:1,ki:0,kd:0,min:-10,max:10,outputUnit:"bar"});
         Object.assign(heaterCurve.params,{xUnit:"bar",points:[
@@ -3653,14 +3672,110 @@
         Object.assign(sprayCurve.params,{xUnit:"bar",points:[
           {x:-10,y:0},{x:2,y:0},{x:5.2,y:100},{x:10,y:100}]});
       }
+      migrateCenturionTemperature(model);
+    }
+
+    function migrateCenturionTemperature(model) {
+      // REF-01 : tableau 37 et figures 4–5 (PDF 112, 137–138).
+      // Mettre à jour les seuls réglages d'origine ; conserver les valeurs
+      // personnalisées et les chaînes dont les connexions ont été modifiées.
+      const nodes=model.nodes,links=model.links;
+      const pointsMatch=(node,points)=>node?.type==="curve"
+        &&node.params?.points?.length===points.length
+        &&node.params.points.every((p,i)=>Math.abs(Number(p.x)-points[i][0])<1e-6
+          &&Math.abs(Number(p.y)-points[i][1])<1e-6);
+      const g1=nodes.find(n=>n.type==="curve"&&n.params.curveRole==="g1");
+      const g2=nodes.find(n=>n.type==="curve"&&n.params.curveRole==="g2");
+      if(pointsMatch(g1,[[-28.833,-3],[-5.5,-.2],[-.5,0],[.5,0],[5.5,.2],[28.833,3]]))
+        g1.params.points=[[-12.6,-6],[-8.47,-6],[-1,-.4],[0,0],[1,.4],[8.47,6],[12.6,6]].map(([x,y])=>({x,y}));
+      if(pointsMatch(g2,[[0,3.33],[30,3.33],[40,2.5],[50,2],[60,1.667],[70,1.429],[80,1.25],[90,1.111],[100,1]]))
+        g2.params.points=[[0,4],[25,4],[50,2],[75,4/3],[100,1],[126,1]].map(([x,y])=>({x,y}));
+      const incoming=(node,port)=>links.find(l=>l.to===node?.id&&(l.toPort||0)===port);
+      const parent=(node,port)=>nodes.find(n=>n.id===incoming(node,port)?.from);
+      const tref=nodes.find(n=>n.type==="curve"&&n.params.curveRole==="tref");
+      const error=nodes.find(n=>n.type==="sum"&&parent(n,0)?.type==="tmoy"&&parent(n,1)?.id===tref?.id);
+      const speed=nodes.find(n=>(n.type==="gain"||n.type==="curve")&&/^Vitesse (?:grappes|R)/.test(n.label));
+      const gate=parent(speed,0),limiter=nodes.find(n=>n.type==="limit"&&parent(n,0)?.id===speed?.id);
+      if(speed?.type==="gain"&&Number(speed.params.k)===-62
+          &&gate?.type==="deadband"&&Number(gate.params.width)===.83
+          &&Number(gate.params.hysteresis)===.28
+          &&Number(limiter?.params.min)===-72&&Number(limiter?.params.max)===72){
+        Object.assign(gate.params,{width:.69,hysteresis:.28,mode:"entrée entière"});
+        gate.label="Hystérésis R · 0,83 / 0,55";
+        speed.type="curve";speed.label="Vitesse R · pas/min";
+        speed.role=BLOCK_TYPES.curve.role;speed.meaning=BLOCK_TYPES.curve.meaning;
+        speed.params={curveRole:"rodSpeed",xUnit:"°C",yUnit:"pas/min",points:[
+          [-100,72],[-2.8,72],[-1.7333333333333334,8],[-.55,8],[0,0],
+          [.55,-8],[1.7333333333333334,-8],[2.8,-72],[100,-72]
+        ].map(([x,y])=>({x,y}))};
+      }
+      const washout=parent(g1,0),powerError=parent(washout,0);
+      if(washout?.type==="highpass"&&Number(washout.params.tau)===20
+          &&powerError?.type==="sum")washout.params.tau=50;
+      const mixer=error?nodes.find(n=>n.type==="sum"&&parent(n,0)?.id===error.id
+        &&parent(n,1)?.type==="product"):null;
+      const factoryLayout=error&&Math.abs(error.x-170.54828729999304)<.01
+        &&Math.abs(error.y+353.4991605311744)<.01;
+      let next=Math.max(model.nodeCounter||0,...nodes.map(n=>Number(/^N(\d+)$/.exec(n.id)?.[1])||0));
+      let column=0;const top=Math.min(0,...nodes.map(n=>Number(n.y)||0))-240;
+      const add=(type,label,params)=>{
+        const node={id:`N${++next}`,type,label,params,x:300*column++,y:top,
+          role:BLOCK_TYPES[type].role,meaning:BLOCK_TYPES[type].meaning};
+        nodes.push(node);return node;
+      };
+      const filterInput=(node,port,tau,label,sourceType)=>{
+        const link=incoming(node,port),source=parent(node,port);
+        if(!link||source?.type!==sourceType)return null;
+        const filter=add("filter",label,{tau});
+        link.from=filter.id;links.push({from:source.id,to:filter.id,toPort:0});return filter;
+      };
+      let trefFilter=null,fluxFilter=null,loadFilter=null,lead=null,lag=null;
+      if(error&&parent(tref,0)?.type==="ptur")
+        trefFilter=filterInput(error,1,60,"TREF filtrée · 60 s","curve");
+      if(powerError?.type==="sum"){
+        fluxFilter=filterInput(powerError,0,2,"Flux filtré · 2 s","pow1");
+        loadFilter=filterInput(powerError,1,2,"Charge filtrée · 2 s","ptur");
+      }
+      if(mixer){
+        lead=add("leadlag","Compensation T · 50 / 6,7 s",{tauZero:50,tauPole:6.7});
+        lag=add("filter","Écart T filtré · 1 s",{tau:1});
+        incoming(mixer,0).from=lag.id;
+        links.push({from:error.id,to:lead.id,toPort:0},{from:lead.id,to:lag.id,toPort:0});
+      }
+      if(factoryLayout&&mixer&&lead&&lag&&trefFilter){
+        const position=(node,x,y)=>{if(node){node.x=x;node.y=y;}};
+        position(parent(tref,0),-950,-1200);position(tref,-650,-1200);
+        position(trefFilter,-350,-1200);position(parent(error,0),-350,-990);
+        position(error,-50,-1100);position(lead,250,-1100);position(lag,550,-1100);
+        position(mixer,850,-1100);position(gate,1150,-1100);
+        position(speed,1450,-1100);position(limiter,1750,-1100);
+        position(parent(fluxFilter,0),-950,-750);position(fluxFilter,-650,-750);
+        position(parent(loadFilter,0),-950,-490);position(loadFilter,-650,-490);
+        position(powerError,-350,-650);position(washout,-50,-650);
+        position(g1,250,-650);position(g2,250,-390);
+        position(parent(mixer,1),550,-650);
+        // Les identifiants suivants appartiennent à la solution d'origine.
+        for(const [id,x,y] of [["N40",1450,-650],["N16",1750,-650],["N17",2050,-650],
+            ["N18",2050,-1100],["N19",2350,-1100],["N20",2650,-1100]])
+          position(nodes.find(n=>n.id===id),x,y);
+      }
+      model.nodeCounter=next;
     }
 
     function migrateCenturionProtection(model) {
       if (CENTURION_EDITOR_MODE !== "protect") return;
+      // Compléter les anciens graphes par un ordre explicite ASG sur état AAR.
+      // Une sortie ASG déjà dessinée, même débranchée, reste à la main de l’utilisateur.
+      if(!model.nodes.some(node=>node.type==="asgOut")){
+        let counter=Math.max(model.nodeCounter||0,...model.nodes.map(node=>Number(/^N(\d+)$/.exec(node.id)?.[1])||0));
+        const y=Math.max(590,...model.nodes.map(node=>Number(node.y)||0))+180;
+        const input={id:`N${++counter}`,type:"aarSignal",label:"État AAR",x:0,y,params:{}};
+        const output={id:`N${++counter}`,type:"asgOut",label:"Démarrer ASG",x:750,y,params:{}};
+        model.nodes.push(input,output);model.links.push({from:input.id,to:output.id,toPort:0});model.nodeCounter=counter;
+      }
       const legacy = model.nodes.filter(node => node.type === "fluxRateSignal");
-      if (!legacy.length) return;
       let flux = model.nodes.find(node => node.type === "pow1");
-      if (!flux) {
+      if (!flux && legacy.length) {
         let next = model.nodeCounter || 0;
         while (model.nodes.some(node => node.id === `N${next + 1}`)) next++;
         flux = { id: `N${++next}`, type: "pow1", label: "POW1",
@@ -3676,6 +3791,46 @@
         if (!model.links.some(link => link.to === node.id))
           model.links.push({ from: flux.id, to: node.id, toPort: 0 });
       }
+      // Ajouter le seuil PLIN dans les graphes sauvegardés, sans remplacer
+      // une chaîne PLIN déjà construite par l'utilisateur ni ses seuils.
+      const reaches=(from,to)=>{
+        const pending=[from],seen=new Set();
+        while(pending.length){
+          const id=pending.pop();if(id===to)return true;
+          if(seen.has(id))continue;seen.add(id);
+          model.links.filter(link=>link.from===id).forEach(link=>pending.push(link.to));
+        }
+        return false;
+      };
+      const targets=model.nodes.filter(node=>node.type==="aarOut"
+        && !model.nodes.some(source=>source.type==="plinSignal" && reaches(source.id,node.id)));
+      if(!targets.length)return;
+      let next=Math.max(model.nodeCounter||0,...model.nodes.map(node=>
+        Number(/^N(\d+)$/.exec(node.id)?.[1])||0));
+      const y=Math.max(590,...model.nodes.map(node=>Number(node.y)||0))+170;
+      const add=(type,label,x,atY,params={})=>{
+        const node={id:`N${++next}`,type,label,x,y:atY,params};
+        model.nodes.push(node);return node;
+      };
+      const measure=add("plinSignal","PLIN max · 32 cotes",0,y);
+      const high=add("compare","PLIN > 435 W/cm",235,y,
+        {relation:">",threshold:435,whenTrue:1,whenFalse:0});
+      model.links.push({from:measure.id,to:high.id,toPort:0});
+      for(const target of targets){
+        const input=model.links.find(link=>link.to===target.id);
+        const driver=model.nodes.find(node=>node.id===input?.from);
+        if(driver?.type==="or"){
+          const port=1+Math.max(-1,...model.links.filter(link=>link.to===driver.id)
+            .map(link=>Number(link.toPort)||0));
+          model.links.push({from:high.id,to:driver.id,toPort:port});
+        }else if(input){
+          const merged=add("or","Demande AAR + PLIN",750,y);
+          model.links.push({from:input.from,to:merged.id,toPort:0},
+            {from:high.id,to:merged.id,toPort:1});
+          input.from=merged.id;
+        }else model.links.push({from:high.id,to:target.id,toPort:0});
+      }
+      model.nodeCounter=next;
     }
 
     function applyRegState(snapshot, options = {}) {
@@ -3687,6 +3842,7 @@
       });
       migrateCenturionRegulation(normalized);
       migrateCenturionProtection(normalized);
+      const wasEnabled = regulationEnabled;
       regHistorySuspended = true;
       regulationEnabled = false;
       regNodes = normalized.nodes;
@@ -3709,6 +3865,8 @@
       renderRegEditor();
       updateRegulationLive();
       regHistorySuspended = false;
+      if (wasEnabled && window.parent !== window)
+        window.parent.postMessage({type:"centurion-editor-enabled",mode:CENTURION_EDITOR_MODE,enabled:false},"*");
       if (options.autosave !== false) scheduleRegAutosave();
     }
 
@@ -3866,7 +4024,11 @@
         setRegSaveStatus(`Travail restauré · ${time} · ${model.nodes.length} bloc${model.nodes.length > 1 ? "s" : ""}, ${model.links.length} liaison${model.links.length > 1 ? "s" : ""}`);
         return true;
       } catch (_) {
-        setRegSaveStatus("Autosauvegarde illisible — canevas vide", true);
+        try {
+          const raw = localStorage.getItem(REG_AUTOSAVE_KEY);
+          if (raw) localStorage.setItem(`${REG_AUTOSAVE_KEY}-recovery-${Date.now()}`, raw);
+        } catch (_) {}
+        setRegSaveStatus("Autosauvegarde illisible — modèle fourni chargé", true);
         return false;
       }
     }
@@ -3971,14 +4133,17 @@
       if (node.type === "pi") return `Kp ${fmt(p.kp, 2)} · Ki ${fmt(p.ki, 2)}/min · [${fmt(p.min, 1)} ; ${fmt(p.max, 1)}]`;
       if (node.type === "pid") return `Kp ${fmt(p.kp, 1)} · Ki ${fmt(p.ki, 1)}/min · Kd ${fmt(p.kd, 1)} s · τD ${fmt(p.tauD, 1)} s`;
       if (node.type === "filter") return `τ = ${fmt(p.tau, 1)} s`;
+      if (node.type === "leadlag") return `τz ${fmt(p.tauZero, 1)} s · τp ${fmt(p.tauPole, 1)} s`;
       if (node.type === "highpass") return `τ = ${fmt(p.tau, 1)} s`;
       if (node.type === "derivative") return `dE1/dt · τ = ${fmt(p.tau, 2)} s`;
       if (node.type === "nonlinear") return `DB ${fmt(p.deadband, 1)} · coude ${fmt(p.knee, 1)} · max ±${fmt(p.max, 1)} °C`;
       if (node.type === "scheduledGain") return `${fmt(p.reference, 0)}/max(PTUR, ${fmt(p.floor, 0)}) · [${fmt(p.min, 2)} ; ${fmt(p.max, 2)}]`;
       if (node.type === "product") return "A × B";
-      if (node.type === "deadband") return `±${fmt(p.width, 2)} ; hyst. ${fmt(p.hysteresis, 2)}`;
+      if (node.type === "deadband") return p.mode === "entrée entière"
+        ? `Marche ${fmt(p.width+p.hysteresis/2,2)} · arrêt ${fmt(Math.max(0,p.width-p.hysteresis/2),2)}`
+        : `±${fmt(p.width, 2)} ; hyst. ${fmt(p.hysteresis, 2)}`;
       if (node.type === "limit") return `[${fmt(p.min, 1)} ; ${fmt(p.max, 1)}]`;
-      if (node.type === "integrator") return `∫ %/min ; [${fmt(p.min, 0)} ; ${fmt(p.max, 0)}] %`;
+      if (node.type === "integrator") return `∫ /min ; [${fmt(p.min, 0)} ; ${fmt(p.max, 0)}] ${p.outputUnit || ""}`;
       if (node.type === "extractInhibit") return `blocage extraction ≥ ${fmt(p.threshold, 1)} % · hyst. ${fmt(p.hysteresis, 1)}`;
       if (node.type === "compare") return `E1 ${p.relation} ${fmt(p.threshold, 1)} ? ${fmt(p.whenTrue, 1)} : ${fmt(p.whenFalse, 1)}`;
       if (node.type === "voter") return `${p.required}/${p.total}`;
@@ -4066,6 +4231,11 @@
         transfer: "Filtre passe-bas du premier ordre ; dt et τ sont exprimés en secondes.",
         code: `const alpha = 1 - Math.exp(-dt / ${jsNumber(p.tau)});\nS += alpha * (E1 - S);`
       };
+      if (node.type === "leadlag") return {
+        formula: `H(s) = (1 + ${jsNumber(p.tauZero)} s) / (1 + ${jsNumber(p.tauPole)} s)`,
+        transfer: "Avance–retard au gain statique unitaire. Le passe-bas interne est initialisé à l'entrée courante ; il reste figé en pause.",
+        code: `const tauP = Math.max(0.000001, ${jsNumber(p.tauPole)});\nLP += (1 - Math.exp(-dt / tauP)) * (E1 - LP);\nS = LP + (${jsNumber(p.tauZero)} / tauP) * (E1 - LP);`
+      };
       if (node.type === "highpass") return {
         formula: `H(s) = ${jsNumber(p.tau)} s / (1 + ${jsNumber(p.tau)} s)`,
         transfer: "Filtre passe-haut (washout) obtenu en retirant à E1 sa composante passe-bas.",
@@ -4092,9 +4262,11 @@
         code: "S = E1 * E2;"
       };
       if (node.type === "deadband") return {
-        formula: `S = 0 dans ±${jsNumber(p.width)} ; hystérésis = ${jsNumber(p.hysteresis)}`,
+        formula: p.mode === "entrée entière"
+          ? `S = E1 si active, sinon 0 ; marche |E1| > ${jsNumber(p.width+p.hysteresis/2)} ; arrêt |E1| < ${jsNumber(Math.max(0,p.width-p.hysteresis/2))}`
+          : `S = 0 dans ±${jsNumber(p.width)} ; hystérésis = ${jsNumber(p.hysteresis)}`,
         transfer: "Bande morte symétrique avec mémoire d’état afin d’éviter les commutations rapides au voisinage des seuils.",
-        code: `const a = Math.abs(E1);\nif (a > ${jsNumber(p.width)} + ${jsNumber(p.hysteresis)} / 2) etat = Math.sign(E1);\nif (a < Math.max(0, ${jsNumber(p.width)} - ${jsNumber(p.hysteresis)} / 2)) etat = 0;\nS = etat ? Math.sign(E1) * Math.max(0, a - ${jsNumber(p.width)}) : 0;`
+        code: `const a = Math.abs(E1);\nif (a > ${jsNumber(p.width)} + ${jsNumber(p.hysteresis)} / 2) etat = Math.sign(E1);\nif (a < Math.max(0, ${jsNumber(p.width)} - ${jsNumber(p.hysteresis)} / 2)) etat = 0;\nS = etat ? ${p.mode === "entrée entière" ? "E1" : `Math.sign(E1) * Math.max(0, a - ${jsNumber(p.width)})`} : 0;`
       };
       if (node.type === "limit") return {
         formula: `S = clamp(E1, ${jsNumber(p.min)}, ${jsNumber(p.max)})`,
@@ -4103,7 +4275,7 @@
       };
       if (node.type === "integrator") return {
         formula: `S = clamp(∫E1 dt, ${jsNumber(p.min)}, ${jsNumber(p.max)})`,
-        transfer: "Intégrateur discret. Dans la chaîne des grappes, E1 est une vitesse en %/min.",
+        transfer: "Intégrateur discret. Dans la chaîne de R, E1 est une vitesse en pas/min et S une position en pas extraits.",
         code: `S = clamp(S + E1 * dt / 60, ${jsNumber(Math.min(p.min, p.max))}, ${jsNumber(Math.max(p.min, p.max))});`
       };
       if (node.type === "extractInhibit") return {
@@ -4587,7 +4759,7 @@
         qdecOut: () => `${fmt(s.letdown, 1)} m³/h`,
         qchargeOut: () => centurionInput?.signals?.qchaSignal
           ? `${fmt(centurionInput.signals.qchaSignal[0], 1)} m³/h` : `${fmt(C.CHARGE_FLOW_M3H, 1)} m³/h`,
-        pchauffOut: () => `${fmt(s.heater, 1)} kW`,
+        pchauffOut: () => `${fmt(centurionInput?.signals?.pchauffSignal?.[0] ?? s.heater, 1)} kW`,
         qaspOut: () => centurionInput?.signals?.qaspSignal
           ? `${fmt(centurionInput.signals.qaspSignal[0], 1)} %` : (s.spray ? "100 %" : "0 %")
       };
@@ -4635,7 +4807,9 @@
     function initialIntegratorValue(node) {
       if (regNodes.some(output => output.type === "posg" && hasRegPath(node.id, output.id)))
         return centurionInput?.signals?.posgSignal?.[0]
-          ?? (window.parent !== window ? 220 : s.rods);
+          ?? (window.parent !== window ? 233 : s.rods);
+      if (regNodes.some(output => output.type === "qchargeOut" && hasRegPath(node.id, output.id)))
+        return centurionInput?.signals?.qchaSignal?.[0] ?? 36;
       if (regNodes.some(output => output.type === "qdecOut" && hasRegPath(node.id, output.id))) return s.letdown;
       if (regNodes.some(output => output.type === "pchauffOut" && hasRegPath(node.id, output.id))) return s.heater;
       if (regNodes.some(output => output.type === "qaspOut" && hasRegPath(node.id, output.id))) return s.spray ? 1 : 0;
@@ -4717,8 +4891,9 @@
             if (magnitude > width + hysteresis / 2) direction = Math.sign(firstValue);
             if (magnitude < Math.max(0, width - hysteresis / 2)) direction = 0;
             state.direction = direction;
-          } else if (!direction && magnitude > width) direction = Math.sign(firstValue);
-          result = { value: direction ? Math.sign(firstValue) * Math.max(0, magnitude - width) : 0, unit: first.unit };
+          } else if (!direction && magnitude > width + (node.params.mode === "entrée entière" ? hysteresis/2 : 0)) direction = Math.sign(firstValue);
+          result = { value: direction ? (node.params.mode === "entrée entière"
+            ? firstValue : Math.sign(firstValue) * Math.max(0, magnitude - width)) : 0, unit: first.unit };
         } else if (node.type === "limit") {
           result = { value: clamp(firstValue, Math.min(node.params.min, node.params.max), Math.max(node.params.min, node.params.max)), unit: first.unit };
         } else if (node.type === "compare") result = { value: compareOperatorValue(node.params, firstValue), unit: "TOR" };
@@ -4735,6 +4910,13 @@
             state.output += (1 - Math.exp(-dt / tau)) * (firstValue - state.output);
           }
           result = { value: state.output, unit: first.unit };
+        } else if (node.type === "leadlag") {
+          if (!Number.isFinite(state.lowpass)) state.lowpass = firstValue;
+          const tauPole=Math.max(1e-6,Number(node.params.tauPole)||0);
+          if (advanceDynamicStates && dt > 0)
+            state.lowpass+=(1-Math.exp(-dt/tauPole))*(firstValue-state.lowpass);
+          const ratio=Math.max(0,Number(node.params.tauZero)||0)/tauPole;
+          result={value:state.lowpass+ratio*(firstValue-state.lowpass),unit:first.unit};
         } else if (node.type === "highpass") {
           if (!Number.isFinite(state.lowpass)) state.lowpass = firstValue;
           if (advanceDynamicStates && dt > 0) {
@@ -4789,7 +4971,10 @@
           const min = Math.min(Number(node.params.min), Number(node.params.max));
           const max = Math.max(Number(node.params.min), Number(node.params.max));
           if (!Number.isFinite(state.output)) state.output = clamp(initialIntegratorValue(node), min, max);
-          if (advanceDynamicStates && dt > 0) state.output = clamp(state.output + firstValue * dt / 60, min, max);
+          const trackR=centurionInput?.rManualOverride && regNodes.some(output=>
+            output.type==="posg"&&hasRegPath(node.id,output.id));
+          if(trackR)state.output=clamp(initialIntegratorValue(node),min,max);
+          else if (advanceDynamicStates && dt > 0) state.output = clamp(state.output + firstValue * dt / 60, min, max);
           result = { value: state.output, unit: integratedUnit(first.unit, node.params.outputUnit) };
         } else if (node.type === "extractInhibit") {
           const speed = Number(inputs[0]?.value) || 0;
@@ -4808,7 +4993,7 @@
         } else if (REG_MANUAL_OUTPUT_TYPES.has(node.type)) {
           const outputUnits = { posg: "pas extraits", qdecOut: "m³/h", qchargeOut: "m³/h", pchauffOut: "kW", qaspOut: "%",
             g3Out: "pas", gv1Out: "%", gv2Out: "%", gv3Out: "%", gv4Out: "%",
-            aarOut: "TOR", risOut: "TOR" };
+            aarOut: "TOR", risOut: "TOR", asgOut: "TOR" };
           result = links.length ? { value: firstValue, unit: outputUnits[node.type] } : null;
         }
 
@@ -5202,17 +5387,17 @@
     function temperatureChainReady() {
       const ptur = regNodes.find(node => node.type === "ptur");
       const pow1 = regNodes.find(node => node.type === "pow1");
-      const tref = regNodes.find(node => node.type === "trefOut");
+      const tref = regNodes.find(node => node.type === "curve" && node.params.curveRole === "tref"
+        && ptur && hasRegPath(ptur.id,node.id));
       const tmoy = regNodes.find(node => node.type === "tmoy");
       const posg = regNodes.find(node => node.type === "posg");
       const integrator = regNodes.find(node => node.type === "integrator" && posg && hasRegPath(node.id, posg.id));
       const limiter = regNodes.find(node => node.type === "limit" && integrator && hasRegPath(node.id, integrator.id));
-      const affine = regNodes.find(node => node.type === "curve" && node.params.curveRole === "tref" && ptur && tref
-        && hasRegPath(ptur.id, node.id) && hasRegPath(node.id, tref.id));
       const errorSum = regNodes.find(node => node.type === "sum" && tmoy && tref
-        && hasDirectRegLink(tmoy.id, node.id) && hasDirectRegLink(tref.id, node.id));
+        && hasRegPath(tmoy.id, node.id) && hasRegPath(tref.id, node.id));
       const mixerSum = regNodes.find(node => node.type === "sum" && node.id !== errorSum?.id
-        && errorSum && posg && hasDirectRegLink(errorSum.id, node.id) && hasRegPath(node.id, posg.id));
+        && errorSum && posg && hasRegPath(errorSum.id, node.id) && hasRegPath(node.id, posg.id)
+        && regNodes.some(p=>p.type==="product"&&hasDirectRegLink(p.id,node.id)));
       const product = mixerSum
         ? regNodes.find(node => node.type === "product" && hasDirectRegLink(node.id, mixerSum.id))
         : null;
@@ -5227,7 +5412,7 @@
         : null;
       const powerSum = highpass
         ? regNodes.find(node => node.type === "sum" && pow1 && ptur
-          && hasDirectRegLink(pow1.id, node.id) && hasDirectRegLink(ptur.id, node.id)
+          && hasRegPath(pow1.id, node.id) && hasRegPath(ptur.id, node.id)
           && hasDirectRegLink(node.id, highpass.id))
         : null;
       const anticipatoryBranchUsed = Boolean(product);
@@ -5236,31 +5421,29 @@
       const controlSignal = mixerSum || errorSum;
       const deadband = regNodes.find(node => node.type === "deadband" && controlSignal
         && hasRegPath(controlSignal.id, node.id));
-      const gains = regNodes.filter(node => node.type === "gain");
-      const speedGain = gains.find(node => deadband && limiter
+      const speedGain = regNodes.find(node => (node.type === "gain"
+          ||node.type === "curve"&&node.params.curveRole === "rodSpeed")&&deadband&&limiter
         && hasRegPath(deadband.id, node.id) && hasRegPath(node.id, limiter.id));
-      const conversionGain = gains.find(node => limiter && integrator
-        && hasRegPath(limiter.id, node.id) && hasRegPath(node.id, integrator.id));
       const extractionGuard = regNodes.find(node => node.type === "compare" && pow1
-        && hasDirectRegLink(pow1.id, node.id));
+        && hasDirectRegLink(pow1.id, node.id)&&posg&&hasRegPath(node.id,posg.id));
       const permissionProduct = regNodes.find(node => node.type === "product" && node.id !== product?.id
-        && extractionGuard && conversionGain && integrator
-        && hasDirectRegLink(conversionGain.id, node.id) && hasDirectRegLink(extractionGuard.id, node.id)
+        && extractionGuard && limiter && integrator
+        && hasDirectRegLink(limiter.id, node.id) && hasDirectRegLink(extractionGuard.id, node.id)
         && hasRegPath(node.id, integrator.id));
-      const extractionMaximum = regNodes.find(node => node.type === "maximum" && permissionProduct && conversionGain && integrator
-        && hasDirectRegLink(conversionGain.id, node.id) && hasDirectRegLink(permissionProduct.id, node.id)
+      const extractionMinimum = regNodes.find(node => node.type === "minimum" && permissionProduct && limiter && integrator
+        && hasDirectRegLink(limiter.id, node.id) && hasDirectRegLink(permissionProduct.id, node.id)
         && hasRegPath(node.id, integrator.id));
-      const okay = Boolean(ptur && pow1 && tref && tmoy && posg && integrator && limiter && affine
-        && errorSum && deadband && speedGain && conversionGain && extractionGuard && permissionProduct && extractionMaximum
-        && anticipatoryBranchOkay);
+      const guardOkay=!extractionGuard||Boolean(permissionProduct&&extractionMinimum);
+      const okay = Boolean(ptur && tref && tmoy && posg && integrator && limiter
+        && errorSum && deadband && speedGain && guardOkay && anticipatoryBranchOkay);
       return okay
         ? {
             okay: true,
             message: anticipatoryBranchUsed
-              ? "Température : chaîne lente + correction anticipatrice G1×G2 + autorisation d’extraction par comparateur cohérentes jusqu’à RGL001MM."
-              : "Température : chaîne simplifiée TMOY−TREF + autorisation d’extraction cohérentes jusqu’à RGL001MM ; branche G1×G2 non utilisée."
+              ? "Température : chaîne filtrée + correction anticipatrice G1×G2 + commande de R en pas cohérentes jusqu’à RGL001MM."
+              : "Température : chaîne TMOY−TREF cohérente jusqu’à RGL001MM ; branche G1×G2 non utilisée."
           }
-        : { okay: false, message: "Température incomplète : exemple attendu PTUR→TREF, TMOY−TREF → DB → K → SAT → K, puis MAX(vitesse, CMP(POW1)×vitesse) → ∫ → RGL001MM. Une branche G1×G2 reliée au sommateur final doit être complète." };
+        : { okay: false, message: "Température incomplète : relier le programme TREF et TMOY à l'écart de température, puis la compensation, l'hystérésis, la vitesse R en pas/min et l'intégrateur en pas à RGL001MM. Toute branche G1×G2 utilisée doit être complète." };
     }
 
     function levelChainReady() {
@@ -5317,11 +5500,11 @@
     function applyG1Curve(params, value) {
       const sign = Math.sign(value);
       const amplitude = Math.abs(value);
-      const deadband = Math.max(0, params?.deadband ?? 0.5);
-      const knee = Math.max(0, params?.knee ?? 5);
-      const lowGain = Math.max(0, params?.lowGain ?? 0.04);
-      const highGain = Math.max(0, params?.highGain ?? 0.12);
-      const maximum = Math.max(0, params?.max ?? 3);
+      const deadband = Math.max(0, params?.deadband ?? 0);
+      const knee = Math.max(0, params?.knee ?? 1);
+      const lowGain = Math.max(0, params?.lowGain ?? 0.4);
+      const highGain = Math.max(0, params?.highGain ?? 0.75);
+      const maximum = Math.max(0, params?.max ?? 6);
       if (amplitude <= deadband) return 0;
       const effective = amplitude - deadband;
       const shaped = effective <= knee
@@ -5332,9 +5515,9 @@
 
     function applyG2Curve(params, loadPct) {
       const reference = Math.max(0, params?.reference ?? 100);
-      const floor = Math.max(1e-6, params?.floor ?? 30);
-      const minimum = Math.min(params?.min ?? 1, params?.max ?? 3.33);
-      const maximum = Math.max(params?.min ?? 1, params?.max ?? 3.33);
+      const floor = Math.max(1e-6, params?.floor ?? 25);
+      const minimum = Math.min(params?.min ?? 1, params?.max ?? 4);
+      const maximum = Math.max(params?.min ?? 1, params?.max ?? 4);
       return clamp(reference / Math.max(Math.abs(loadPct), floor), minimum, maximum);
     }
 
@@ -5586,7 +5769,9 @@
       const pow1 = firstGraphNode("pow1");
       const extractionGuard = firstGraphNode("compare", node => pow1 && hasRegPath(pow1.id, node.id));
       const guardSignal = graphSignal(evaluation, extractionGuard);
-      const trefSignal = graphSignal(evaluation, trefCurve);
+      const referenceInput=regLinks.find(link=>link.to===temperatureSum?.id&&(link.toPort||0)===1);
+      const referenceNode=regNodes.find(node=>node.id===referenceInput?.from);
+      const trefSignal = graphSignal(evaluation, referenceNode || trefCurve);
       const temperatureSignal = graphSignal(evaluation, temperatureSum);
       const correctionSignal = graphSignal(evaluation, powerProduct);
       const posgSignal = evaluation.outputs.posg;
@@ -5600,6 +5785,7 @@
         inhibitThreshold: extractionGuard?.params.threshold,
         position: posgSignal?.value
       };
+      $("regLiveLabel1").textContent=referenceNode?.type==="filter"?"TREF filtrée":"Consigne TREF";
       extractionInhibited = regulationCommand.extractionInhibited;
 
       const nrefCurve = firstGraphNode("curve", node => node.params.curveRole === "nref");
@@ -5654,7 +5840,7 @@
       synopticButton.classList.toggle("primary", regulationEnabled);
       const activeOutputs = [
         regOutputConnected("posg") ? "RGL001MM" : null,
-        regOutputConnected("qdecOut") ? "QDEC" : null,
+        regOutputConnected("qchargeOut") ? "QCHARGE" : null,
         regOutputConnected("pchauffOut") ? "PCHF" : null,
         regOutputConnected("qaspOut") ? "QASP" : null
         ,regOutputConnected("g3Out") ? "G3" : null
@@ -5664,6 +5850,7 @@
         ,regOutputConnected("gv4Out") ? "ARE4" : null
         ,regOutputConnected("aarOut") ? "AAR" : null
         ,regOutputConnected("risOut") ? "IS" : null
+        ,regOutputConnected("asgOut") ? "ASG" : null
       ].filter(Boolean);
       $("regModeState").textContent = CENTURION_EDITOR_MODE === "protect"
         ? (regulationEnabled ? `PROTECTION ACTIVE · ${activeOutputs.join(" + ") || "aucune sortie reliée"}` : "PROTECTION INACTIVE")
@@ -5673,7 +5860,7 @@
       $("regModeState").classList.toggle("active", regulationEnabled);
     }
 
-    function setRegulationEnabled(enabled) {
+    function setRegulationEnabled(enabled, notifyParent = true) {
       if (enabled) {
         resetRegRuntime();
         const preview = evaluateRegulationGraph(0, false);
@@ -5691,11 +5878,11 @@
       updateRegulationModeUI();
       updateUI();
       $("regStatus").textContent = CENTURION_EDITOR_MODE === "protect"
-        ? (enabled ? "Protection active : les sorties AAR et IS exécutent le graphe dessiné."
+        ? (enabled ? "Protection active : les sorties AAR, IS et ASG exécutent le graphe dessiné."
           : "Protection inactive.")
         : (enabled ? "Régulations actives : chaque sortie reliée exécute strictement le graphe dessiné."
           : "Régulations désactivées : les commandes manuelles reprennent aux valeurs courantes.");
-      if (window.parent !== window) window.parent.postMessage({type:"centurion-editor-enabled",
+      if (notifyParent && window.parent !== window) window.parent.postMessage({type:"centurion-editor-enabled",
         mode:CENTURION_EDITOR_MODE,enabled:regulationEnabled},"*");
       return true;
     }
@@ -5948,6 +6135,7 @@
       updateRegulationLive();
       fitRegulationView();
       recordRegMutation(before, "Canevas effacé");
+      setRegulationEnabled(false);
       $("regStatus").textContent = "Zone de travail effacée.";
     });
     $("saveRegModel").addEventListener("click", exportRegModel);
@@ -6035,7 +6223,7 @@
     renderAlarmModelTable();
     renderRegEditor();
     updateRegulationLive();
-    restoreRegAutosave();
+    const regAutosaveRestored = restoreRegAutosave();
     regUndoStack = [];
     regRedoStack = [];
     updateRegHistoryButtons();
@@ -6098,34 +6286,44 @@
         const fall=add("compare","Baisse ≤ −5 % PN/s",500,450,{relation:"≤",threshold:-5,whenTrue:1,whenFalse:0});
         connect(flux,rate);connect(rate,rise);connect(rate,fall);
         const voltage=add("voltageSignal","Manque de tension",0,590);
+        const plin=add("plinSignal","PLIN max · 32 cotes",0,760);
+        const highPlin=add("compare","PLIN > 435 W/cm",235,760,
+          {relation:">",threshold:435,whenTrue:1,whenFalse:0});
+        connect(plin,highPlin);
         const or=add("or","Demande AAR",750,240);
-        [low,high,rise,fall,voltage].forEach((id,i)=>connect(id,or,i));
+        [low,high,rise,fall,voltage,highPlin].forEach((id,i)=>connect(id,or,i));
         const aar=add("aarOut","AAR",1000,240);connect(or,aar);
         const risLow=add("compare","P primaire < 120",750,590,{relation:"<",threshold:120,whenTrue:1,whenFalse:0});
         connect(pressure,risLow);
         const ris=add("risOut","IS",1000,590);connect(risLow,ris);
+        const aarState=add("aarSignal","État AAR",0,940);
+        const asg=add("asgOut","Démarrer ASG",1000,940);connect(aarState,asg);
       }
       model.nodeCounter=next;
       return model;
     }
-    try {
-      if (!localStorage.getItem(REG_AUTOSAVE_KEY)) {
-        applyRegState(centurionDefaultModel(),{name:CENTURION_EDITOR_MODE === "protect"
-          ? "Protection AAR et IS" : "Régulations historiques + G3 et GV"});
-      }
-    } catch (_) { applyRegState(centurionDefaultModel(),{autosave:false}); }
+    if (!regAutosaveRestored) {
+      // Une sauvegarde invalide ne doit pas empêcher le chargement du graphe.
+      // Le contenu conservé dans le navigateur reste intact pour récupération.
+      applyRegState(centurionDefaultModel(),{autosave:false,name:CENTURION_EDITOR_MODE === "protect"
+        ? "Protection AAR et IS" : "Régulations historiques + G3 et GV"});
+    }
     fitRegulationView();
-    setRegulationEnabled(CENTURION_EDITOR_MODE === "protect");
+    setRegulationEnabled(CENTURION_EDITOR_MODE === "protect", false);
     window.addEventListener("message", event => {
       const data=event.data;
       if(!data)return;
+      if(data.type==="centurion-editor-connect"){
+        window.parent.postMessage({type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE},"*");return;
+      }
       if(data.type==="centurion-editor-enable"){
-        setRegulationEnabled(Boolean(data.enabled));return;
+        if(data.signals)centurionInput=data;
+        setRegulationEnabled(Boolean(data.enabled), false);return;
       }
       if(data.type==="centurion-editor-reset"){
         centurionInput=data;
         if(data.signals?.posgInternalPct)s.rods=Number(data.signals.posgInternalPct[0]);
-        setRegulationEnabled(Boolean(data.enabled));return;
+        setRegulationEnabled(Boolean(data.enabled), false);return;
       }
       if(data.type!=="centurion-editor-tick")return;
       centurionInput=data;

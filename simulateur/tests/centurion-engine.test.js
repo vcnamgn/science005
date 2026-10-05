@@ -33,8 +33,9 @@ test('échange des crayons à K fixe : bilan identique sans débit ou avec déno
     m.state.fuelC+=20;
     m.state.primaryMassKg*=massFraction;
     if(stopped){
+      m.controls.naturalCirculationKgSPerLoop=0;
       m.state.primaryPumpsStopped=true;
-      m.state.loops.forEach(loop=>{loop.flowKgS=0;});
+      m.state.loops.forEach(loop=>{loop.flowKgS=0;loop.forcedFlowKgS=0;});
     }
     const initialFuel=m.state.fuelC,initialWater=m.state.tavgC;
     E.step(m,0.1);
@@ -49,7 +50,7 @@ test('après AAR et arrêt des GMPP, un cœur noyé conserve son échange thermi
   const m=E.make();
   E.initiate(m,'ris');
   E.advance(m,180);
-  assert.equal(m.state.coreFlowFraction,0);
+  assert.ok(m.state.coreFlowFraction>0&&m.state.coreFlowFraction<.1);
   assert.equal(m.state.coveragePct,100);
   assert.ok(m.state.fuelC-m.state.tavgC<25);
   assert.ok(Math.abs(10*(m.state.fuelC-m.state.tavgC)-m.state.thermalPowerMW)<10);
@@ -68,9 +69,9 @@ test('G3 et recouvrements : G1 commence seul puis entraîne G2, N1 et N2', () =>
   assert.deepEqual(E.gcpPositions(210), [0, 0, 50, 205]);
 });
 
-test('poids initiaux des neuf groupes choisis pour l’étude : marge à 85 % PN', () => {
+test('poids initiaux des neuf groupes choisis pour l’étude : réponse à 85 % PN', () => {
   assert.deepEqual(E.ROD_WORTH_PCM,{
-    R:1500,G1:135,G2:300,N1:450,N2:500,
+    R:1500,G1:200,G2:480,N1:750,N2:1200,
     SA:500,SB:700,SC:900,SD:300
   });
   const m=E.make(),u=m.controls;
@@ -86,7 +87,8 @@ test('poids initiaux des neuf groupes choisis pour l’étude : marge à 85 % PN
     E.advance(m,1);
   }
   assert.equal(m.state.rods.G1,47.5);
-  assert.ok(m.state.rods.R<250,`R à ${m.state.rods.R.toFixed(1)} pas`);
+  assert.ok(m.state.rods.R>=233&&m.state.rods.R<=260,
+    `R à ${m.state.rods.R.toFixed(1)} pas`);
 });
 
 test('le poids R réglé est appliqué au bilan de réactivité après déplacement', () => {
@@ -95,7 +97,7 @@ test('le poids R réglé est appliqué au bilan de réactivité après déplacem
   m.controls.rManualPas=240;
   E.advance(m,20);
   assert.equal(m.state.rods.R,240);
-  const relativeIntegral=E.rodIntegral(240)-E.rodIntegral(220);
+  const relativeIntegral=E.rodIntegral(240)-E.rodIntegral(233);
   assert.ok(Math.abs(m.state.reactivityParts.rod-1500*relativeIntegral)<1e-9);
   m.controls.rodWorthPcm.R=1000;
   E.advance(m,0.1);
@@ -109,6 +111,17 @@ test('IL R varie avec la puissance et la moitié du cycle', () => {
   assert.equal(E.rInsertionLimit(100, 'seconde'), 198);
 });
 
+test('IL R : le graphe peut insérer sous la limite, signalée sans blocage',()=>{
+  const m=E.make();m.controls.protectionsEnabled=false;
+  m.controls.rMode='graph';m.controls.rGraphPas=100;
+  E.advance(m,120);
+  assert.equal(m.state.rods.R,100);
+  assert.ok(m.state.rods.R<m.state.rLimitPas);
+  assert.equal(m.state.signals.rBelowLimit,true);
+  E.initiate(m,'trip');E.advance(m,1);
+  assert.equal(m.state.signals.rBelowLimit,false,'pas d’alarme IL pendant l’AAR');
+});
+
 test('RCV : dilution manuelle livrée après le délai de conduite', () => {
   const m = E.make();
   E.prepareRcvTank(m, 0, 0);
@@ -116,8 +129,9 @@ test('RCV : dilution manuelle livrée après le délai de conduite', () => {
   assert.ok(Math.abs(m.state.boronPpm - 1200) < 1e-6);
   E.advance(m, 25);
   assert.ok(m.state.boronPpm < 1200);
-  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3, 15);
-  assert.equal(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3, 15);
+  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3, 36);
+  assert.equal(m.state.rcvSealKgS*3600/E.C.primaryDensityKgM3, 6);
+  assert.equal(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3, 36);
 });
 
 test('RCV : le graphe peut régler la charge sans modifier la décharge fixe', () => {
@@ -126,17 +140,20 @@ test('RCV : le graphe peut régler la charge sans modifier la décharge fixe', (
   m.controls.rcvChargeGraphM3h = 22;
   E.advance(m, 1);
   assert.ok(Math.abs(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3-22)<1e-9);
-  assert.ok(Math.abs(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3-15)<1e-9);
+  assert.ok(Math.abs(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3-36)<1e-9);
   m.controls.rcvChargeGraphM3h = null;
   E.advance(m, 1);
   assert.ok(Math.abs(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3-8)<1e-9);
+  m.controls.rcvChargeM3h=0;
+  E.advance(m,1);
+  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3,6);
 });
 
 test('hors CC-REGUL aucune commande automatique ne déplace R ou G3', () => {
   const m = E.make();
   m.controls.demandPct = 90;
   E.advance(m, 5);
-  assert.equal(m.state.rods.R, 220);
+  assert.equal(m.state.rods.R, 233);
   assert.equal(m.state.g3Count, 780);
   assert.equal(m.state.sprayPct, E.C.nominalSprayPct);
 });
@@ -152,7 +169,7 @@ test('pressuriseur nominal : vannes fermées et aspersion continue équilibrée'
   assert.ok(Math.abs(m.state.pressureBar-155)<0.02);
 });
 
-test('graphe CC-RÉGUL initial : chaufferettes et aspersion suivent les seuils VD3', () => {
+test('graphe CC-RÉGUL initial : chaufferettes et aspersion suivent les seuils REF-01', () => {
   const html=fs.readFileSync(path.join(__dirname,'..','centurion-cc-regul.html'),'utf8');
   const raw=html.match(/<script type="application\/json" id="solutionDataComplete">([^<]+)<\/script>/);
   assert.ok(raw);
@@ -210,7 +227,8 @@ test('une GMPP arrêtée fait décroître son débit et divise son apport à l�
   m.controls.manualSprayPct = 100;
   m.state.loops[0].pumpStopped = true;
   E.advance(m, 60);
-  assert.equal(m.state.loops[0].flowKgS, 0);
+  assert.equal(m.state.loops[0].forcedFlowKgS, 0);
+  assert.ok(m.state.loops[0].naturalFlowKgS>0);
   assert.ok(Math.abs(m.state.sprayFlowM3h-125.23)<1);
   assert.ok(Math.abs(m.state.sprayDriveBar-1.75)<0.1);
 });
@@ -257,7 +275,7 @@ test('au démarrage R répond en manuel sans activer la régulation', () => {
   assert.ok(m.state.powerPct > 100);
 });
 
-test('la demande IS entraîne AAR et arrêt des GMPP, puis QPRI atteint zéro', () => {
+test('la demande IS entraîne AAR et arrêt des GMPP, puis le thermosiphon prend le relais', () => {
   const m = E.make();
   E.initiate(m, 'ris');
   assert.notEqual(m.state.risDemandAt, null);
@@ -265,9 +283,9 @@ test('la demande IS entraîne AAR et arrêt des GMPP, puis QPRI atteint zéro', 
   assert.equal(m.state.primaryPumpsStopped, true);
   E.advance(m, 60);
   assert.notEqual(m.state.tripAt, null);
-  assert.equal(m.state.coreFlowFraction, 0);
+  assert.ok(m.state.coreFlowFraction>0&&m.state.coreFlowFraction<.1);
   assert.equal(m.state.sprayFlowPct, 0);
-  assert.ok(m.state.loops.every(loop => loop.flowKgS === 0));
+  assert.ok(m.state.loops.every(loop => loop.forcedFlowKgS===0&&loop.naturalFlowKgS>0));
 });
 
 test('un défaut ARE sur GV1 baisse son niveau sans vider les trois autres', () => {
@@ -275,13 +293,18 @@ test('un défaut ARE sur GV1 baisse son niveau sans vider les trois autres', () 
   m.controls.gvManualFeedPct[0] = 0;
   E.advance(m, 60);
   assert.ok(m.state.gv[0].levelPct < 45);
-  assert.ok(m.state.gv.slice(1).every(g => Math.abs(g.levelPct - 55) < 0.2));
+  // Le primaire commun modifie légèrement les pressions et les débits vapeur
+  // des GV sains, même avec leurs vannes ARE inchangées en manuel.
+  assert.ok(m.state.gv.slice(1).every(g => g.levelPct>50&&g.levelPct<60
+    &&g.waterKg>.95*E.C.gvNominalWaterKg));
 });
 
-test('saturation secondaire : points de contrôle IAPWS-IF97 et seuil GCT-A à 297,2 °C', () => {
+test('saturation secondaire : points IAPWS-IF97 et consigne GCT-A initiale à 88,6 bar', () => {
   for (const [kelvin, bar] of [[300,0.0353658941],[500,26.3889776],[600,123.443146]])
     assert.ok(Math.abs(E.saturationPressureBar(kelvin-273.15)-bar)<5e-7);
-  assert.ok(Math.abs(E.C.gctAPressureBar-82.540582)<1e-6);
+  assert.equal(E.C.gctAPressureBar,88.6);
+  assert.equal(E.make().controls.gctAOpeningPressureBar,88.6);
+  assert.ok(Math.abs(E.saturationPressureBar(E.C.gctATempC)-88.6)<1e-8);
   assert.ok(Math.abs(E.saturationTemperatureC(65)-280.858851)<1e-6);
 });
 
@@ -318,19 +341,19 @@ test('GCT-A : fermé sous le seuil, vapeur retirée des bilans au dépassement',
   const m=E.make();m.controls.protectionsEnabled=false;
   const g=m.state.gv[0];
   m.controls.gvSteamValvePct[0]=0;g.steamValvePct=0;
-  g.tempC=296.2;g.pressureBar=E.saturationPressureBar(g.tempC);
+  g.tempC=E.C.gctATempC-1;g.pressureBar=E.saturationPressureBar(g.tempC);
   E.step(m,0.1);
   assert.equal(g.gctAValvePct,0);
   assert.equal(g.dumpKgS,0);
-  g.tempC=298.2;g.pressureBar=E.saturationPressureBar(g.tempC);
+  g.tempC=E.C.gctATempC+1;g.pressureBar=E.saturationPressureBar(g.tempC);
   const previousWater=g.waterKg,previousTemp=g.tempC;
   E.step(m,0.1);
   assert.ok(g.gctAValvePct>0&&g.dumpKgS>0);
   assert.equal(g.turbineSteamKgS,0);
   assert.equal(g.steamKgS,g.dumpKgS);
   assert.ok(Math.abs(g.waterKg-previousWater-(g.feedKgS-g.dumpKgS)*0.1)<1e-8);
-  const expectedHeat=g.heatMW-g.dumpKgS*E.C.steamEnthalpyJkg/1e6;
-  assert.ok(Math.abs((g.tempC-previousTemp)*E.C.gvHeatCapacityJk/1e6/0.1-expectedHeat)<1e-6);
+  const expectedHeat=g.heatMW-g.dumpKgS*g.steamLatentJkg/1e6-g.areCoolingMW-g.asgCoolingMW;
+  assert.ok(Math.abs((g.tempC-previousTemp)*g.thermalCapacityJk/1e6/0.1-expectedHeat)<1e-6);
   E.advance(m,90);
   assert.ok(g.pressureBar>E.C.gctAPressureBar);
   assert.ok(g.pressureBar<E.C.gctAPressureBar+1);
@@ -340,7 +363,7 @@ test('GCT-A : fermé sous le seuil, vapeur retirée des bilans au dépassement',
 test('vapeur mesurée : turbine + GCT-A, avec des bilans conservatifs et une puissance électrique distincte', () => {
   const m=E.make();m.controls.protectionsEnabled=false;
   const g=m.state.gv[2];
-  g.tempC=298.2;g.pressureBar=E.saturationPressureBar(g.tempC);
+  g.tempC=E.C.gctATempC+1;g.pressureBar=E.saturationPressureBar(g.tempC);
   const previousWater=g.waterKg,previousTemp=g.tempC;
   E.step(m,0.1);
   assert.ok(g.turbineSteamKgS>0&&g.dumpKgS>0);
@@ -348,17 +371,49 @@ test('vapeur mesurée : turbine + GCT-A, avec des bilans conservatifs et une pui
   assert.equal(m.state.totalSteamKgS,m.state.gv.reduce((q,gv)=>q+gv.steamKgS,0));
   assert.equal(m.state.totalTurbineSteamKgS,m.state.gv.reduce((q,gv)=>q+gv.turbineSteamKgS,0));
   assert.ok(m.state.totalSteamKgS>m.state.totalTurbineSteamKgS);
-  assert.equal(m.state.electricMW,E.C.nominalElectricMW*m.state.totalTurbineSteamKgS
-    /(4*E.C.nominalSteamKgSPerGV));
+  assert.ok(Math.abs(m.state.electricMW-E.C.nominalElectricMW*m.state.totalTurbineSteamKgS
+    /(4*E.C.nominalSteamKgSPerGV))<1e-9);
   assert.ok(Math.abs(g.waterKg-previousWater-(g.feedKgS-g.steamKgS)*0.1)<1e-8);
-  const expectedHeat=g.heatMW-g.steamKgS*E.C.steamEnthalpyJkg/1e6;
-  assert.ok(Math.abs((g.tempC-previousTemp)*E.C.gvHeatCapacityJk/1e6/0.1-expectedHeat)<1e-6);
+  const expectedHeat=g.heatMW-g.steamKgS*g.steamLatentJkg/1e6-g.areCoolingMW-g.asgCoolingMW;
+  assert.ok(Math.abs((g.tempC-previousTemp)*g.thermalCapacityJk/1e6/0.1-expectedHeat)<1e-6);
 
   m.controls.demandPct=0;m.state.turbinePct=0;
   E.step(m,0.1);
   assert.equal(m.state.totalTurbineSteamKgS,0);
   assert.equal(m.state.electricMW,0);
   assert.ok(m.state.totalSteamKgS>0);
+});
+
+test('le limiteur turbine maintient la puissance réseau demandée malgré une surpuissance du cœur', () => {
+  for(const demandPct of [100,80]){
+    const m=E.make();
+    m.controls.protectionsEnabled=false;
+    m.controls.demandPct=demandPct;
+    m.controls.rManualPas=186;
+    m.state.rods.R=186;
+    // Avec le Doppler renforcé, 150 ppm de dilution produisent la surpuissance d'essai.
+    m.state.boronPpm=1050;
+    m.state.boronInventory=1050*m.state.primaryMassKg;
+    E.advance(m,60);
+    assert.ok(m.state.powerPct>130);
+    assert.equal(m.state.rods.R,186);
+    assert.ok(m.state.gv.every(g=>g.pressureBar>E.C.steamPressureBar));
+    assert.ok(Math.abs(m.state.electricMW-13*demandPct)<1e-6);
+    assert.ok(m.state.electricMW<=E.C.nominalElectricMW);
+    assert.ok(Math.abs(m.state.totalTurbineSteamKgS
+      -4*E.C.nominalSteamKgSPerGV*demandPct/100)<1e-6);
+    assert.ok(m.state.gv.every(g=>g.steamKgS===g.turbineSteamKgS+g.dumpKgS));
+  }
+});
+
+test('une consigne turbine supérieure à 100 % reste limitée à 1 300 MWe', () => {
+  const m=E.make();
+  m.controls.protectionsEnabled=false;
+  m.controls.demandPct=110;
+  m.state.gv.forEach(g=>{g.tempC=290;g.pressureBar=E.saturationPressureBar(290);});
+  E.advance(m,1);
+  assert.equal(m.state.turbinePct,100);
+  assert.ok(m.state.electricMW<=E.C.nominalElectricMW);
 });
 
 test('en mode graphe la surveillance reçoit la variation filtrée de CC-PROTECT', () => {
@@ -378,22 +433,124 @@ test('initiateurs éjection et perte de tension donnent des ordres de protection
     E.initiate(m, name, details);
     E.advance(m, 20);
     assert.ok(m.state.tripAt !== null, name);
-    assert.ok(m.state.rods.SA < 1 && m.state.rods.R < 1, name);
+    if(m.state.endState) {
+      assert.equal(m.state.endState,'melted');
+      assert.ok(m.state.peakLinearWcm>590,'la fin pédagogique peut précéder la fin de la chute');
+    }else assert.ok(m.state.rods.SA < 1 && m.state.rods.R < 1, name);
     assert.ok(Number.isFinite(m.state.powerPct));
   }
 });
 
-test('la vue axiale fournit six mesures et 32 mailles finies', () => {
+test('le cœur axial conserve POW1 et initialise le DPAX à environ −1 % PN', () => {
   const m = E.make();
   E.advance(m, 3);
+  const s=m.state;
+  assert.equal(s.axialShape32.length, 32);
+  assert.equal(s.axialZonePowerPctPn32.length, 32);
+  assert.equal(s.iodine32.length, 32);
+  assert.equal(s.xenon32.length, 32);
+  assert.ok(Math.abs(s.axialShape32.reduce((a,b)=>a+b,0)-32)<1e-8);
+  assert.ok(Math.abs(s.axialZonePowerPctPn32.reduce((a,b)=>a+b,0)-s.powerPct)<1e-8);
+  assert.equal(s.axialShape6.length, 6);
+  assert.equal(s.axialZonePowerPctPn6.length, 6);
+  assert.ok(Math.abs(s.axialShape6.reduce((a,b)=>a+b,0)-6)<1e-8);
+  assert.ok(Math.abs(s.axialZonePowerPctPn6.reduce((a,b)=>a+b,0)-s.powerPct)<1e-8);
+  const lower=s.axialZonePowerPctPn6.slice(0,3).reduce((a,b)=>a+b,0);
+  const upper=s.axialZonePowerPctPn6.slice(3).reduce((a,b)=>a+b,0);
+  assert.ok(Math.abs(s.dpaxPctPn-(upper-lower))<1e-9);
+  assert.ok(s.dpaxPctPn>-1.2&&s.dpaxPctPn<-0.8);
   assert.equal(m.state.axialFlux32.length, 32);
   assert.equal(m.state.fluxDetectors6.length, 6);
   assert.ok(m.state.axialFlux32.every(Number.isFinite));
   assert.ok(m.state.peakLinearWcm > 0);
+  assert.ok(Math.abs(s.peakLinearWcm-E.C.nominalAverageLinearWcm
+    *(s.thermalPowerMW/E.C.nominalThermalMW)
+    *Math.max(...s.axialShape32)*m.controls.fxYUngraped)<1e-8);
+  assert.ok(Number.isFinite(s.history.at(-1).dpax));
+  assert.ok(Math.abs(s.history.at(-1).dpax-s.dpaxPctPn)<0.05);
 });
 
-test('les cinq programmes de charge restent numériques et ne déclenchent pas d’AAR au réglage initial', () => {
-  for (const name of ['temperature', 'down', 'frequency', 'step', 'lowstep']) {
+test('G3 crée les bosses de G1 puis G2, et rend N1 visible à basse puissance', () => {
+  const m=E.make(),rods={...m.state.rods},xenon=m.state.xenon32;
+  const noTemperature=Array(32).fill(0);
+  const dpaxAt=power=>{
+    const [G1,G2,N1,N2]=E.gcpPositions(E.g3Target(power,'debut'));
+    const shape=E.solveAxialShape({...rods,G1,G2,N1,N2},xenon,noTemperature);
+    return power*(shape.slice(16).reduce((a,b)=>a+b,0)
+      -shape.slice(0,16).reduce((a,b)=>a+b,0))/32;
+  };
+  const g1Minimum=Math.min(...Array.from({length:41},(_,i)=>dpaxAt(80+i/2)));
+  assert.ok(g1Minimum<-5,'bosse G1 sur 80–100 % PN');
+  assert.ok(dpaxAt(85)>g1Minimum+2,'retour après G1');
+  assert.ok(dpaxAt(65)<dpaxAt(85)-4,'bosse G2 vers 65 % PN');
+  assert.ok(dpaxAt(45)>dpaxAt(65)+4,'retour après G2');
+  const [G1,G2,N1,N2]=E.gcpPositions(E.g3Target(15,'debut'));
+  const withoutN1=E.solveAxialShape({...rods,G1,G2,N1,N2},xenon,noTemperature,
+    undefined,{...E.AXIAL_ROD_ABSORPTION,N1:0});
+  const dpaxWithoutN1=15*(withoutN1.slice(16).reduce((a,b)=>a+b,0)
+    -withoutN1.slice(0,16).reduce((a,b)=>a+b,0))/32;
+  assert.ok(dpaxAt(15)<dpaxWithoutN1-1,'déformation de N1 à basse puissance');
+});
+
+test('xénon axial : une baisse maintenue puis le retour de charge donnent une oscillation DPAX',()=>{
+  const m=E.make(),s=m.state,initialR=s.rods.R;
+  const noTemperature=Array(32).fill(0),points={};
+  const dpax=power=>power*(s.axialShape32.slice(16).reduce((a,b)=>a+b,0)
+    -s.axialShape32.slice(0,16).reduce((a,b)=>a+b,0))/32;
+  for(let minute=0;minute<=24*60;minute++){
+    const power=minute<=20?100-2*minute:minute<=440?60
+      :minute<=470?60+40*(minute-440)/30:100;
+    s.powerPct=power;s.rods.R=initialR;
+    [s.rods.G1,s.rods.G2,s.rods.N1,s.rods.N2]=
+      E.gcpPositions(E.g3Target(power,'debut'));
+    s.axialShape32=E.solveAxialShape(s.rods,s.xenon32,noTemperature,s.axialShape32);
+    E.evolveAxialPoisons(s,60);
+    s.axialShape32=E.solveAxialShape(s.rods,s.xenon32,noTemperature,s.axialShape32);
+    if([0,20,440,470,900,1440].includes(minute))points[minute]=dpax(power);
+  }
+  assert.ok(points[440]<points[20]-2,'dérive xénon pendant sept heures à 60 %');
+  assert.ok(points[900]>0,'dépassement du DPAX de référence après remontée');
+  assert.ok(points[1440]<points[900],'retour après le premier dépassement');
+  assert.ok(s.xenonTop!==s.xenonBottom,'répartition du xénon non uniforme');
+});
+
+test('le calage axial modifie le DPAX sans ajouter de réactivité globale', () => {
+  const m=E.make();
+  m.state.rods.G1=130;
+  E.refreshAxial(m);
+  const withG1=m.state.dpaxPctPn;
+  const reactivity=m.state.reactivityPcm;
+  m.controls.axialRodAbsorption.G1=0;
+  E.refreshAxial(m);
+  assert.ok(m.state.dpaxPctPn>withG1+1.5);
+  assert.equal(m.state.reactivityPcm,reactivity);
+  assert.equal(m.state.powerPct,100);
+});
+
+test('xénon : −3 000 pcm à 100 % stabilisé, compensés au nominal puis variables', () => {
+  const m=E.make(),s=m.state;
+  assert.equal(s.xenonWorthPcm,-3000);
+  assert.equal(s.reactivityParts.coreReference,3000);
+  assert.equal(s.reactivityPcm,0);
+  E.advance(m,60);
+  assert.ok(Math.abs(s.xenonWorthPcm+3000)<0.01);
+  s.xenon32.fill(1.1);
+  s.xenonTop=1.1;s.xenonBottom=1.1;
+  E.advance(m,0.1);
+  assert.ok(Math.abs(s.xenonWorthPcm+3300)<0.1);
+  assert.ok(s.reactivityPcm<-299);
+  assert.ok(s.powerPct<100);
+});
+
+test('programme de pilotage : rampe 100 → 10 % à 5 % PN/min', () => {
+  assert.equal(E.transientDemand('pilotage',0),100);
+  assert.equal(E.transientDemand('pilotage',60),95);
+  assert.equal(E.transientDemand('pilotage',1080),10);
+  assert.equal(E.transientDemand('pilotage',1800),10);
+});
+
+test('les six programmes de charge restent numériques et ne déclenchent pas d’AAR au réglage initial', () => {
+  for (const name of ['temperature', 'down', 'frequency', 'step', 'lowstep', 'pilotage']) {
     const m = E.make();
     E.startTransient(m, name);
     E.advance(m, E.TRANSIENTS[name].duration);
