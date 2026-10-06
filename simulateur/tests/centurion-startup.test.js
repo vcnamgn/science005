@@ -74,6 +74,10 @@ test('démarrage complet : initialisation, Démarrer, horloge et publication des
   const page=application();
   assert.equal(page.pendingFrames,1,'initialisation terminée et animation programmée');
   assert.equal(page.get('runButton').textContent,'Démarrer');
+  assert.equal(page.get('protectionsEnabled').checked,false);
+  assert.equal(page.get('toggleProtectionSynoptic').textContent,'Activer protection');
+  page.receive({type:'centurion-editor-ready',mode:'protect'});
+  assert.equal(page.messages.findLast(m=>m.type==='centurion-editor-enable')?.enabled,false);
   assert.equal(page.get('simClock').textContent,'00:00:00');
   assert.equal(page.get('rcvFlowValue').textContent,'36,0 m³/h');
   assert.equal(page.get('rcvLetdownValue').textContent,'36,0 m³/h');
@@ -84,6 +88,25 @@ test('démarrage complet : initialisation, Démarrer, horloge et publication des
   assert.ok(page.snapshot.time>7,'le moteur physique avance après le clic');
   assert.notEqual(page.get('simClock').textContent,'00:00:00');
   assert.equal(page.pendingFrames,1,'la boucle poursuit ses trames après l’affichage');
+});
+
+test('Modèle : Détails par chapitres, paramètres et alarmes conservés, codes discrets',()=>{
+  const page=application();
+  assert.equal(page.query('[data-model-page="principes"]'),null);
+  assert.equal(page.query('[data-model-page="physique"]'),null);
+  assert.ok(page.get('model-details').classList.contains('active'));
+  page.query('[data-detail-page="5"]').fire('click');
+  assert.ok(page.get('model-detail-5').classList.contains('active'));
+  assert.equal(page.get('model-detail-1').classList.contains('active'),false);
+  page.query('[data-detail-page="complements"]').fire('click');
+  assert.ok(page.get('model-detail-complements').classList.contains('active'));
+  assert.equal(page.query('.teacher-solutions').getAttribute('open'),undefined);
+  page.query('[data-model-page="parametres"]').fire('click');
+  assert.ok(page.get('model-parametres').classList.contains('active'));
+  assert.ok(page.get('moderatorCoefficient'));assert.ok(page.get('xenonWorth'));
+  page.query('[data-model-page="alarmes"]').fire('click');
+  assert.ok(page.get('model-alarmes').classList.contains('active'));
+  assert.ok(page.get('alarmRows'));
 });
 
 test('application complète : nouvelles vues, fenêtres P–T et commandes manuelles de sûreté',()=>{
@@ -169,7 +192,8 @@ const {editorSurface}=require('./helpers/editor-surface');
 function connectedApplication(){
   // Les éditeurs ont déjà chargé : leurs notifications initiales sont perdues.
   // La page principale doit donc établir elle-même la connexion.
-  const regul=editorSurface('regul'),protect=editorSurface('protect'),queue=[];
+  const regul=editorSurface('regul',{saved:referenceModel('regul')}),
+    protect=editorSurface('protect',{saved:referenceModel('protect')}),queue=[];
   const editors={regulationEditor:regul,protectionEditor:protect};
   const page=application(app,(id,data)=>{if(editors[id])queue.push([id,data]);});
   let delivered={regulationEditor:regul.messages.length,protectionEditor:protect.messages.length};
@@ -183,7 +207,12 @@ function connectedApplication(){
       while(delivered[id]<editor.messages.length)page.receive(editor.messages[delivered[id]++]);
     }
   }
-  flush();return {page,regul,protect,flush};
+  flush();page.click('toggleProtectionSynoptic');flush();return {page,regul,protect,flush};
+}
+
+function referenceModel(mode){
+  return JSON.parse(fs.readFileSync(path.join(__dirname,mode==='protect'
+    ? '../modele-de-protection.simurep_complet.json' : '../modele-de-regulation.simurep_complet.json'),'utf8'));
 }
 
 test('application : commandes groupées hors CIA et aspersion auxiliaire toujours manuelle',()=>{
@@ -283,7 +312,7 @@ test('éditeur complet : activation suit la position réelle, graphes sauvegard�
 });
 
 test('éditeur complet : filtres de température actifs, TREF filtrée affichée et sauvegarde portable',()=>{
-  const editor=editorSurface('regul'),model=E.make();
+  const editor=editorSurface('regul',{saved:referenceModel('regul')}),model=E.make();
   let signals=E.controlSignals(model);
   editor.receive({type:'centurion-editor-enable',enabled:true,signals});
   editor.receive({type:'centurion-editor-tick',dt:0,signals});
@@ -311,7 +340,7 @@ test('éditeur complet : filtres de température actifs, TREF filtrée affichée
   assert.equal(empty.messages.findLast(m=>m.type==='centurion-editor-outputs').outputs.posg,undefined);
 });
 
-test('autosauvegarde incompatible : un vrai graphe de secours remplace le canevas vide',()=>{
+test('autosauvegarde incompatible : conserver la récupération et ouvrir un exercice vide',()=>{
   const saved={format:'ancien-incompatible',version:1,nodes:[],links:[]};
   const editor=editorSurface('regul',{saved});
   const recovery=[...editor.storage.entries()].find(([key])=>key.includes('-recovery-'));
@@ -320,8 +349,9 @@ test('autosauvegarde incompatible : un vrai graphe de secours remplace le caneva
   editor.receive({type:'centurion-editor-enable',enabled:true,signals});
   editor.receive({type:'centurion-editor-tick',dt:1,signals});
   const output=editor.messages.findLast(m=>m.type==='centurion-editor-outputs');
-  assert.equal(output.outputs.g3Out,780);assert.ok(Number.isFinite(output.outputs.qchargeOut));
-  assert.ok(Number.isFinite(output.outputs.gv4Out));
+  assert.equal(Object.keys(output.outputs).length,0);
+  assert.equal(editor.state().nodes.length,0);
+  assert.equal(editor.state().links.length,0);
 });
 
 test('application complète : Pause fige la physique, reprise avance et Réinitialiser arrête',()=>{

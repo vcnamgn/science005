@@ -80,7 +80,7 @@ const notes={
   renderBoard:'Application : affiche mesures réalisées, informations calculées, alarmes et positions.',
   evaluateRegulationGraph:'Atelier : évalue les blocs reliés, mémorise les états dynamiques et détecte les cycles algébriques ; retourne signaux, sorties et diagnostics.',
   regSourceSignal:'Atelier : lit d’abord les mesures Centurion ; repli hérité pour les usages isolés de la page.',
-  centurionDefaultModel:'Atelier : construit le modèle initial propre au mode regul/protect.',
+  centurionDefaultModel:'Atelier : construit un canevas étudiant vide, propre au mode regul/protect ; aucune correction automatique.',
   migrateCenturionRegulation:'Atelier : migration idempotente des anciennes chaînes standard en préservant les paramètres personnalisés.',
   migrateCenturionTemperature:'Atelier : migration de la chaîne de température vers pas/min et compensation/filtrage actuels.',
   migrateCenturionProtection:'Atelier : migration des logigrammes de protection et ajout des fonctions prévues au graphe standard.',
@@ -164,6 +164,40 @@ function renderMarkdown(markdown){
   return out.join('\n');
 }
 const body=renderMarkdown(fs.readFileSync(path.join(root,'docs/CONCEPTION.md'),'utf8'));
+// La note demeure la source unique des explications dans l'onglet Modèle.
+const chapterLabels=['Présentation','Architecture','Données et unités','Horloge','Lois physiques',
+  'Contrôle-commande','Liaisons et mesures','États et incidents','Sauvegardes','Maintenance','Références'];
+const chapters=[...body.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2 |$)/g)];
+const tiers=JSON.parse(fs.readFileSync(path.join(root,'scripts/cc-solution-tiers.json'),'utf8'));
+const codes=mode=>Object.values(tiers[mode]).map(t=>`<tr><td>${htmlEscape(t.label)}</td><td><code>${[...t.reverseCode].reverse().join('')}</code></td></tr>`).join('');
+const detailBody=chapters.map(([,id,title,content],i)=>{
+  const chapter=(`<h2>${title}</h2>${content}`).replace(/id="([^"]+)"/g,'id="detail-$1"')
+    .replace(/href="\.\.\/simulateur\//g,'href="')
+    .replace(/href="(CONCEPTION\.md|NETTOYAGE\.md|index\.html)"/g,'href="../docs/$1"');
+  return `<article class="model-detail-page${i===0?' active':''}" id="model-detail-${i+1}" aria-label="${chapterLabels[i]}">${chapter}</article>`;
+}).join('\n');
+const detailFragment=`<div class="model-details-layout">
+  <nav class="model-detail-nav" aria-label="Chapitres de la note de conception">
+    ${chapters.map((_,i)=>`<button type="button" class="model-detail-tab${i===0?' active':''}" data-detail-page="${i+1}" aria-pressed="${i===0}">${chapterLabels[i]}</button>`).join('\n')}
+    <button type="button" class="model-detail-tab model-detail-complements" data-detail-page="complements" aria-pressed="false">Compléments</button>
+  </nav>
+  <div class="model-detail-content">${detailBody}
+    <article class="model-detail-page" id="model-detail-complements"><h2>Compléments</h2>
+      <p><a href="../docs/index.html" target="_blank" rel="noopener">Documentation complète du code : fonctions, API et dictionnaire des signaux</a></p>
+      <details class="teacher-solutions"><summary>Solutions des ateliers · aide-mémoire</summary>
+        <p>Dans l’atelier concerné, cliquez sur <strong>Solutions</strong>, choisissez un palier et saisissez son code. Un chargement remplace le canevas et désactive ce CC ; l’autre atelier est conservé. Annuler permet de retrouver le schéma précédent.</p>
+        <h3>CC-RÉGUL</h3><div class="table-scroll"><table><thead><tr><th>Solution</th><th>Code</th></tr></thead><tbody>${codes('regul')}</tbody></table></div>
+        <h3>CC-PROTECT</h3><div class="table-scroll"><table><thead><tr><th>Couverture</th><th>Code</th></tr></thead><tbody>${codes('protect')}</tbody></table></div>
+        <p>Les niveaux GV et G3 sont des solutions ciblées. Le palier Complet réunit toutes les chaînes du JSON final. Pour repartir d’un canevas vide, utilisez Effacer ; les schémas se sauvegardent automatiquement dans ce navigateur.</p>
+      </details>
+    </article>
+  </div>
+</div>`;
+const simulatorFile=path.join(root,'simulateur/centurion.html');
+const simulator=fs.readFileSync(simulatorFile,'utf8');
+if(!simulator.includes('<!-- MODEL_DETAILS_START -->'))throw Error('Emplacement Détails absent du simulateur.');
+fs.writeFileSync(simulatorFile,simulator.replace(/<!-- MODEL_DETAILS_START -->[\s\S]*?<!-- MODEL_DETAILS_END -->/,
+  ()=>`<!-- MODEL_DETAILS_START -->\n${detailFragment}\n<!-- MODEL_DETAILS_END -->`));
 const functionCount=index.modules.reduce((n,m)=>n+m.functions.length,0);
 const apiCount=index.modules[0].functions.filter(f=>f.publicApi).length;
 const toc=headings.filter(h=>h.level===2).map(h=>`<a href="#${h.id}">${htmlEscape(h.title)}</a>`).join('');

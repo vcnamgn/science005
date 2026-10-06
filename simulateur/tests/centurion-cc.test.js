@@ -123,9 +123,10 @@ function editorFunction(name) {
   return tail.slice(0,end.index+6);
 }
 function editor(mode='protect',fullGraph=false) {
-  const baseModelText=fullGraph
-    ? html.match(/<script type="application\/json" id="solutionDataComplete">([\s\S]*?)<\/script>/)[1]
-    : JSON.stringify({nodes:[],links:[],nodeCounter:0});
+  // Les essais physiques chargent explicitement la correction complète ;
+  // le démarrage des ateliers étudiants est testé sur la page entière.
+  const baseModelText=fs.readFileSync(path.join(__dirname,mode==='protect'
+    ? '../modele-de-protection.simurep_complet.json' : '../modele-de-regulation.simurep_complet.json'),'utf8');
   const context=vm.createContext({console,baseModelText});
   const specs=html.slice(html.indexOf('    const BLOCK_TYPES ='),html.indexOf('    const SPECIAL_CURVE_PRESETS ='));
   const functions=['regSignalDisplay','regSourceSignal','compareOperatorValue','runtimeStateFor',
@@ -160,7 +161,7 @@ function editor(mode='protect',fullGraph=false) {
     };
   `,context);
   const cc=context.cc;
-  const model=cc.defaults();if(fullGraph)cc.migrateRegulation(model);
+  const model=JSON.parse(baseModelText);if(fullGraph)cc.migrateRegulation(model);
   cc.setModel(model);cc.setInput(100);
   return {cc,model};
 }

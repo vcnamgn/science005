@@ -58,7 +58,8 @@ function editorSurface(mode='regul',{saved=null}={}){
     closest(s){let n=this;while(n&&!matches(n,s))n=n.parentElement;return n;}
     addEventListener(k,fn){(this.listeners[k]??=[]).push(fn);}
     fire(k,extra={}){for(const fn of this.listeners[k]||[])fn({target:this,preventDefault(){},...extra});}
-    focus(){}click(){this.fire('click');}setPointerCapture(){}releasePointerCapture(){}
+    focus(){}select(){}click(){this.fire('click');}setPointerCapture(){}releasePointerCapture(){}
+    showModal(){this.setAttribute('open','');}close(){this.removeAttribute('open');}
     getBoundingClientRect(){return {left:0,top:0,right:1200,bottom:700,width:1200,height:700};}
     getContext(){return new Proxy({measureText:t=>({width:String(t).length*7})},{get:(o,k)=>o[k]||(()=>{})});}
   }
@@ -98,6 +99,8 @@ function editorSurface(mode='regul',{saved=null}={}){
   const main=root.querySelectorAll('script').find(n=>!n.hasAttribute('src')&&!n.hasAttribute('type'));
   vm.runInContext(main.textContent,context,{filename:'centurion-cc-regul.html'});
   return {messages,storage,get:id=>document.getElementById(id),get pendingFrames(){return frames.length;},
+    query:s=>document.querySelector(s),queryAll:s=>document.querySelectorAll(s),
+    flushTimers(){while(timers.length)timers.shift()();},
     receive(data){for(const fn of events.message||[])fn({data,source:parent});},
     frame(time=100){const fn=frames.shift();if(!fn)throw Error('aucune trame');fn(time);},
     state:()=>vm.runInContext('({nodes:regNodes,links:regLinks,enabled:regulationEnabled,signals:regLastSignals})',context)};

@@ -42,7 +42,7 @@
   let diagram="rcp",selectedGv=1,activeView="synoptiques",svgDoc=null;
   let historyFollowing=true,historyEndS=null;
   let pendingInitiator=null,initiatorTimer=null;
-  let regulationActive=false,protectionActive=true;
+  let regulationActive=false,protectionActive=false;
   const alarmDefaults=[
     {id:"boardPower",tag:"POW1",unit:"% PN",limits:[null,null,102,109],value:s=>s.powerPct},
     {id:"boardPressure",tag:"002MP",unit:"bar",limits:[130,150,160,165],value:s=>s.pressureBar},
@@ -294,6 +294,15 @@
   function setModelPage(page){
     document.querySelectorAll(".model-tab").forEach(b=>b.classList.toggle("active",b.dataset.modelPage===page));
     document.querySelectorAll(".model-page").forEach(p=>p.classList.toggle("active",p.id===`model-${page}`));
+  }
+
+  function setModelDetailPage(page){
+    document.querySelectorAll(".model-detail-tab").forEach(b=>{
+      const active=b.dataset.detailPage===page;
+      b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));
+    });
+    document.querySelectorAll(".model-detail-page").forEach(v=>
+      v.classList.toggle("active",v.id===`model-detail-${page}`));
   }
   function renderSignals() {
     const s=model.state,u=model.controls;
@@ -1003,6 +1012,7 @@
   }
   function bindControls() {
     document.querySelectorAll(".model-tab").forEach(b=>b.addEventListener("click",()=>setModelPage(b.dataset.modelPage)));
+    document.querySelectorAll(".model-detail-tab").forEach(b=>b.addEventListener("click",()=>setModelDetailPage(b.dataset.detailPage)));
     $("alarmRows").addEventListener("change",e=>{
       const input=e.target,values=alarmLimits[input.dataset.alarm];
       if(!values)return;
@@ -1231,6 +1241,7 @@
     requestAnimationFrame(frame);
   }
   model.controls.protectionGraphMode=true;
+  model.controls.protectionsEnabled=protectionActive;
   renderAlarmTable();bindControls();syncInputs();render();
   for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])connectEditor(mode,id);
   requestAnimationFrame(frame);

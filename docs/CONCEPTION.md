@@ -20,7 +20,7 @@ La simulation combine une cinétique neutronique globale, une forme axiale à 32
 | CC-PROTECT | Construction des logigrammes AAR, IS et démarrage ASG |
 | Initiateurs | Brèche, éjection, retrait intempestif et perte de tension, après un décompte réel de 5 s |
 | Transitoires | Programmes de charge, pause/reprise/interruption ; seul le suivi de charge boucle |
-| Modèle | Explications, seuils d'affichage et paramètres physiques modifiables |
+| Modèle | Détails par chapitres (cette note), seuils d'alarme et paramètres physiques modifiables |
 
 ## 2. Architecture logicielle
 
@@ -263,15 +263,46 @@ La brèche utilise le minimum d'une loi d'orifice et d'un flux critique borné. 
 
 ## 6. Contrôle-commande et priorité
 
+### Parcours étudiant et corrections
+
+Lors d'une première ouverture, les deux ateliers ont un canevas vide et sont inactifs. L'élève choisit les mesures, assemble les blocs et relie les sorties aux actionneurs. Une sauvegarde existante est restaurée sans être effacée ; sa commande reste inactive au chargement. Le bouton Effacer permet de commencer un nouvel exercice, avec possibilité d'annuler.
+
+Le bouton Solutions ouvre des paliers protégés par un code pédagogique. L'aide-mémoire est rangé dans Modèle → Détails → Compléments, dans un volet fermé. Ces codes organisent le déroulement du TP ; ils ne contrôlent pas l'accès aux fichiers publics.
+
+| Atelier | Paliers |
+| --- | --- |
+| CC-RÉGUL | Trois historiques : température simplifiée ; température + niveau PZR ; température + niveau + pression PZR. Deux chaînes ciblées : niveaux des quatre GV ; GCP/G3. Enfin Complet : toutes les chaînes, avec les correcteurs G1/G2 de température. |
+| CC-PROTECT | Les principaux AAR ; AAR + IS ; AAR + IS + ASG complet. |
+
+Les solutions complètes sont les deux fichiers `modele-de-regulation.simurep_complet.json` et `modele-de-protection.simurep_complet.json`. Leurs blocs, paramètres et positions sont conservés. Les chaînes ciblées et paliers de protection sont extraits de ces graphes. Le premier palier de protection exclut la branche IS et la commande ASG. Le deuxième reprend la branche IS, y compris sa demande d'AAR ; seul le troisième ajoute ASG.
+
+Charger une solution remplace le graphe du seul atelier concerné et désactive sa commande. Une confirmation est affichée si le canevas contient déjà des blocs. Annuler retrouve le travail précédent. Les solutions ciblées remplacent le canevas : elles ne s'ajoutent pas au graphe courant. Aucun ordre de protection n'est greffé automatiquement à un nouveau schéma ou à un palier partiel.
+
 ### Évaluateur de graphes
 
 Un graphe comporte des nœuds `{id, type, x, y, label, params}` et des liaisons `{from, to, toPort}`. La palette possède des sources, des opérateurs statiques, des tables, filtres, dérivateurs filtrés, intégrateurs, PI/PID et opérateurs logiques. Les états des blocs dynamiques sont stockés par identifiant de nœud, séparément du modèle sérialisé.
 
 `evaluateRegulationGraph` parcourt les liaisons entrantes, mémorise les résultats du tick et détecte les cycles algébriques. Une valeur finie et une unité accompagnent chaque signal. Les sorties envoyées au parent sont numériques et doivent être connectées. Les diagnostics sont retournés ; une entrée manquante peut valoir zéro selon le bloc, ce qui nécessite une vérification du graphe par son auteur.
 
-Les deux instances ont des graphes, états dynamiques et sauvegardes distincts. Les migrations des anciens réglages standard sont idempotentes et cherchent à préserver les valeurs personnalisées. Le JSON de test historique vérifie ce contrat sans publier l'ancien simulateur complet.
+Les deux instances ont des graphes, états dynamiques et sauvegardes distincts. Les migrations s'appliquent aux anciennes chaînes identifiables (ancienne sortie de décharge, conversion pas→% ou source dérivée obsolète) et cherchent à préserver les valeurs personnalisées. Le JSON de test historique vérifie ce contrat sans publier l'ancien simulateur complet.
 
-### Application des sorties
+### Chaîne de température de référence
+
+La correction complète conserve la chaîne filtrée et compensée. Ses paramètres restent visibles et modifiables dans les blocs. Les fonctions G1/G2 du correcteur ci-dessous sont distinctes des groupes de grappes portant les mêmes noms.
+
+| Branche | Traitement de la correction complète |
+| --- | --- |
+| Consigne | PTUR → programme TREF (297,2 à 306,5 °C) → filtre de 60 s |
+| Température | TMOY − TREF filtrée → avance–retard (1 + 50s)/(1 + 6,7s) → filtre de 1 s |
+| Puissance | POW1 et PTUR filtrés séparément à 2 s → différence → passe-haut de 50 s → G1 × G2 |
+| G1, fonction du correcteur | 0,4 °C par % PN près de zéro, puis pente accrue, plateau ±6 °C |
+| G2, gain programmé | 4 sous 25 % ; 2 à 50 % ; 4/3 à 75 % ; 1 à 100 % |
+| Mouvement R | Somme des deux branches → hystérésis : démarrage à 0,83 °C, arrêt à 0,55 °C |
+| Vitesse et position | 8 à 72 pas/min suivant l'écart → inhibition d'extraction à haute puissance → intégration de 0 à 260 pas extraits |
+
+Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'extraction ; une insertion commandée reste possible. Le tableau de bord affiche le programme TREF instantané, tandis que l'atelier affiche la TREF filtrée utilisée par la boucle. Avec xénon actif après baisse de puissance, la dilution reste une action manuelle.
+
+### Correspondance sorties → commandes
 
 | Sortie CC | Cible | Conditions / unité |
 | --- | --- | --- |

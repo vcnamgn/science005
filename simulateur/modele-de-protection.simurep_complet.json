@@ -1,0 +1,269 @@
+{
+  "format": "SimuREP-Regulation",
+  "version": 1,
+  "name": "Protection AAR et IS",
+  "savedAt": "2026-10-06T16:45:52.234Z",
+  "nodes": [
+    {
+      "id": "N41",
+      "type": "mp1Signal",
+      "x": -249.19062717013892,
+      "y": -275.5878352864584,
+      "label": "002MP",
+      "params": {}
+    },
+    {
+      "id": "N42",
+      "type": "compare",
+      "x": 224.35216403537328,
+      "y": -108.84442155626085,
+      "label": "P primaire < 130",
+      "params": {
+        "relation": "<",
+        "threshold": 130,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N43",
+      "type": "pow1",
+      "x": -540.5793142361113,
+      "y": -164.4333691840278,
+      "label": "POW1",
+      "params": {}
+    },
+    {
+      "id": "N44",
+      "type": "compare",
+      "x": 167.06622986111108,
+      "y": 40.81357309027776,
+      "label": "POW1 ≥ 109",
+      "params": {
+        "relation": "≥",
+        "threshold": 109,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N45",
+      "type": "derivative",
+      "x": -271.80956909722227,
+      "y": 125.20951775173612,
+      "label": "dPOW1/dt filtré",
+      "params": {
+        "tau": 0.5
+      }
+    },
+    {
+      "id": "N46",
+      "type": "compare",
+      "x": 138.65021458333328,
+      "y": 172.68691718749997,
+      "label": "Hausse ≥ 5 % PN/s",
+      "params": {
+        "relation": "≥",
+        "threshold": 5,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N47",
+      "type": "compare",
+      "x": 28.800057986111028,
+      "y": 288.1153142361111,
+      "label": "Baisse ≤ −5 % PN/s",
+      "params": {
+        "relation": "≤",
+        "threshold": -5,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N48",
+      "type": "voltageSignal",
+      "x": -260.7679362847223,
+      "y": 380.5110805121527,
+      "label": "Manque de tension",
+      "params": {}
+    },
+    {
+      "id": "N49",
+      "type": "or",
+      "x": 797.6981993055556,
+      "y": 323.83307065972224,
+      "label": "Demande AAR",
+      "params": {}
+    },
+    {
+      "id": "N50",
+      "type": "aarOut",
+      "x": 1092.5054326388888,
+      "y": 468.3729729166667,
+      "label": "AAR",
+      "params": {}
+    },
+    {
+      "id": "N51",
+      "type": "compare",
+      "x": 523.1005872395834,
+      "y": 727.7539913628473,
+      "label": "P primaire < 120",
+      "params": {
+        "relation": "<",
+        "threshold": 120,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N52",
+      "type": "risOut",
+      "x": 1015.8997173611111,
+      "y": 668.0515555555555,
+      "label": "IS",
+      "params": {}
+    },
+    {
+      "id": "N53",
+      "type": "aarSignal",
+      "x": 638.322021701389,
+      "y": 909.79520078125,
+      "label": "État AAR",
+      "params": {}
+    },
+    {
+      "id": "N54",
+      "type": "asgOut",
+      "x": 898.8808854166667,
+      "y": 968.5077408854166,
+      "label": "Démarrer ASG",
+      "params": {}
+    },
+    {
+      "id": "N55",
+      "type": "plinSignal",
+      "x": -269.3791673611112,
+      "y": 560.287039236111,
+      "label": "PLIN max · 32 cotes",
+      "params": {}
+    },
+    {
+      "id": "N56",
+      "type": "compare",
+      "x": 52.87968385416663,
+      "y": 490.4809331597222,
+      "label": "PLIN > 435 W/cm",
+      "params": {
+        "relation": ">",
+        "threshold": 435,
+        "whenTrue": 1,
+        "whenFalse": 0
+      }
+    },
+    {
+      "id": "N57",
+      "type": "mp1Signal",
+      "x": 142.8323986979167,
+      "y": 828.509944032118,
+      "label": "002MP",
+      "params": {}
+    }
+  ],
+  "links": [
+    {
+      "from": "N41",
+      "to": "N42",
+      "toPort": 0
+    },
+    {
+      "from": "N43",
+      "to": "N44",
+      "toPort": 0
+    },
+    {
+      "from": "N43",
+      "to": "N45",
+      "toPort": 0
+    },
+    {
+      "from": "N45",
+      "to": "N46",
+      "toPort": 0
+    },
+    {
+      "from": "N45",
+      "to": "N47",
+      "toPort": 0
+    },
+    {
+      "from": "N42",
+      "to": "N49",
+      "toPort": 0
+    },
+    {
+      "from": "N44",
+      "to": "N49",
+      "toPort": 1
+    },
+    {
+      "from": "N46",
+      "to": "N49",
+      "toPort": 2
+    },
+    {
+      "from": "N47",
+      "to": "N49",
+      "toPort": 3
+    },
+    {
+      "from": "N48",
+      "to": "N49",
+      "toPort": 4
+    },
+    {
+      "from": "N49",
+      "to": "N50",
+      "toPort": 0
+    },
+    {
+      "from": "N51",
+      "to": "N52",
+      "toPort": 0
+    },
+    {
+      "from": "N53",
+      "to": "N54",
+      "toPort": 0
+    },
+    {
+      "from": "N55",
+      "to": "N56",
+      "toPort": 0
+    },
+    {
+      "from": "N56",
+      "to": "N49",
+      "toPort": 5
+    },
+    {
+      "from": "N57",
+      "to": "N51",
+      "toPort": 0
+    },
+    {
+      "from": "N51",
+      "to": "N49",
+      "toPort": 6
+    }
+  ],
+  "nodeCounter": 57,
+  "viewport": {
+    "x": 551.1688834022711,
+    "y": 61.616186934629695,
+    "zoom": 0.5124817784256559
+  }
+}
