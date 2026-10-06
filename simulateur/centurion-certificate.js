@@ -5,7 +5,7 @@
   else root.CenturionCertificate=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
-  const VERSION="20261007-certificat-compact";
+  const VERSION="20261007-certificat-reinitialisation";
   const clone=value=>JSON.parse(JSON.stringify(value));
   const fmt=(value,d=0)=>Number(value).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
   function duration(seconds){
@@ -110,22 +110,43 @@
     const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(image,0,0,canvas.width,canvas.height);return canvas;
   }
-  function captureSvg(file,snapshot){
+  function captureSvg(file,snapshot,signal){
     return new Promise((resolve,reject)=>{
-      const object=document.createElement("object"),requestId=`certificate-${Date.now()}-${Math.random()}`;
-      object.type="image/svg+xml";object.className="certificate-offscreen";object.setAttribute("aria-hidden","true");
-      object.data=file+"?v="+VERSION;let timeout;
-      const cleanup=()=>{clearTimeout(timeout);window.removeEventListener("message",receive);object.remove();};
-      const request=()=>object.contentWindow?.postMessage({type:"centurion-svg-capture-request",requestId,snapshot},"*");
+      // Une iframe possède une fenêtre de message stable dès son insertion,
+      // y compris quand le navigateur recharge le SVG depuis son cache.
+      const frame=document.createElement("iframe"),requestId=`certificate-${Date.now()}-${Math.random()}`;
+      frame.className="certificate-offscreen";frame.setAttribute("aria-hidden","true");frame.tabIndex=-1;
+      frame.title="Capture du synoptique pour le certificat";
+      let timeout,retry,settled=false;
+      const cleanup=()=>{
+        clearTimeout(timeout);clearInterval(retry);window.removeEventListener("message",receive);
+        frame.removeEventListener("load",request);frame.removeEventListener("error",failed);
+        signal?.removeEventListener("abort",cancel);frame.remove();
+      };
+      const finish=(error,svg)=>{
+        if(settled)return;settled=true;cleanup();if(error)reject(error);else resolve(svg);
+      };
+      const request=()=>{
+        if(settled)return;
+        try{frame.contentWindow?.postMessage({type:"centurion-svg-capture-request",requestId,snapshot},"*");}
+        catch(error){finish(new Error("Impossible de communiquer avec le synoptique : "+error.message));}
+      };
+      const cancel=()=>finish(Object.assign(new Error("Création annulée après réinitialisation de la partie."),{name:"AbortError"}));
+      const failed=()=>finish(new Error("Le synoptique n’a pas pu être chargé."));
       function receive(event){
-        if(event.source!==object.contentWindow)return;
+        if(settled||event.source!==frame.contentWindow)return;
         if(event.data?.type==="centurion-svg-ready")request();
         if(event.data?.type==="centurion-svg-capture-result"&&event.data.requestId===requestId){
-          const svg=event.data.svg;cleanup();resolve(svg);}
+          finish(null,event.data.svg);}
       }
-      window.addEventListener("message",receive);object.addEventListener("load",request);
-      timeout=setTimeout(()=>{cleanup();reject(new Error("Le synoptique n’a pas répondu. Réessayez après son chargement."));},12000);
-      document.body.append(object);
+      if(signal?.aborted){cancel();return;}
+      window.addEventListener("message",receive);frame.addEventListener("load",request);frame.addEventListener("error",failed);
+      signal?.addEventListener("abort",cancel,{once:true});
+      timeout=setTimeout(()=>finish(new Error("Le synoptique n’a pas répondu. Réessayez après son chargement.")),12000);
+      // La demande est idempotente. Une notification ready/load manquée ou
+      // reçue avant l'installation du bridge ne bloque plus la capture.
+      retry=setInterval(request,250);
+      frame.src=file+(file.includes("?")?"&":"?")+"v="+VERSION;document.body.append(frame);
     });
   }
   function fit(ctx,image,x,y,w,h){
@@ -190,9 +211,18 @@
   }
   function create({E,getModel,svgFiles,ptCurves,prepare}){
     const archive=createArchive(E),$=id=>document.getElementById(id);
-    let capture=null,capturedModel=null,busy=false,result=null;
+    let capture=null,capturedModel=null,observedModel=null,busy=false,result=null,generation=null;
     const status=text=>{$("certificateStatus").textContent=text;};
-    function observe(model){archive.observe(model);if(capturedModel&&capturedModel!==model){capture=null;capturedModel=null;result=null;}}
+    function observe(model){
+      archive.observe(model);
+      if(observedModel&&observedModel!==model){
+        generation?.abort();generation=null;busy=false;capture=null;capturedModel=null;result=null;
+        outputs(false);$("certificatePreview").hidden=true;$("certificatePreview").removeAttribute("src");
+        $("certificateGenerate").disabled=false;$("certificateArtist").disabled=false;
+        $("certificateDialog").close();status("Nouvelle partie · le certificat sera disponible à la fin du scénario.");
+      }
+      observedModel=model;
+    }
     function outputs(enabled){for(const id of ["certificateDownload","certificatePrint"])$(id).disabled=!enabled;}
     function open(){
       if(!getModel().state.endState)return;
@@ -200,22 +230,26 @@
       status("Choisissez le nom à afficher, puis générez le certificat.");
     }
     async function generate(){
-      if(busy)return;busy=true;$("certificateGenerate").disabled=true;$("certificateArtist").disabled=true;outputs(false);
+      if(busy)return;
+      const model=getModel();observe(model);
+      const attempt=new AbortController();generation=attempt;busy=true;
+      $("certificateGenerate").disabled=true;$("certificateArtist").disabled=true;outputs(false);
+      $("certificatePreview").hidden=true;
       try{
-        const model=getModel(),summary=certificateSummary(model,$("certificateArtist").value);
-        const ensureCurrent=()=>{if(getModel()!==model)throw new Error("La partie a été réinitialisée pendant la création du certificat.");};
-        observe(model);
+        const summary=certificateSummary(model,$("certificateArtist").value);
+        const ensureCurrent=()=>{if(attempt.signal.aborted||getModel()!==model)throw new Error("La partie a été réinitialisée pendant la création du certificat.");};
         if(!capture||capturedModel!==model){
           status("Préparation du diagramme P–T et des événements…");prepare();
           const snapshot={...E.instrumentSnapshot(model),ptHistory:ptTrail(model),ptCurves};
-          const pt=await rasterize(await captureSvg(svgFiles.pt,snapshot),1800);
+          const pt=await rasterize(await captureSvg(svgFiles.pt,snapshot,attempt.signal),1800);
           ensureCurrent();
           const records=archive.getRecords();
           const selected=[records.find(r=>r.key==="initial"),records.find(r=>r.key==="final"),
             ...records.filter(r=>["aar","is","relief","warning"].includes(r.key))].filter(Boolean).slice(0,6);
           const thumbnails=[];
           for(const record of selected){
-            const svg=record.diagram==="core"?coreSvg(record,E):await captureSvg(svgFiles[record.diagram],record.snapshot);
+            ensureCurrent();
+            const svg=record.diagram==="core"?coreSvg(record,E):await captureSvg(svgFiles[record.diagram],record.snapshot,attempt.signal);
             thumbnails.push({record,image:await rasterize(svg,900)});
           }
           ensureCurrent();
@@ -269,8 +303,8 @@
         result=compose(summary,capture.screen,capture.thumbnails,capture.created,capture.layout);
         $("certificatePreview").src=result.toDataURL("image/png");$("certificatePreview").hidden=false;
         outputs(true);status("Certificat prêt · téléchargement PNG ou PDF.");
-      }catch(error){status("Création impossible : "+error.message);}
-      finally{busy=false;$("certificateGenerate").disabled=false;$("certificateArtist").disabled=false;}
+      }catch(error){if(generation===attempt)status("Création impossible : "+error.message);}
+      finally{if(generation===attempt){generation=null;busy=false;$("certificateGenerate").disabled=false;$("certificateArtist").disabled=false;}}
     }
     $("openCertificate").addEventListener("click",open);
     $("certificateClose").addEventListener("click",()=>$("certificateDialog").close());
@@ -291,5 +325,5 @@
     });
     return {observe};
   }
-  return {duration,certificateSummary,pdfBytes,ptTrail,createArchive,coreSvg,create};
+  return {duration,certificateSummary,pdfBytes,ptTrail,createArchive,coreSvg,captureSvg,create};
 });
