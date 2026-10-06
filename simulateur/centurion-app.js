@@ -43,6 +43,7 @@
   let historyFollowing=true,historyEndS=null;
   let pendingInitiator=null,initiatorTimer=null;
   let regulationActive=false,protectionActive=false;
+  let pendingCcStep=null,ccTickId=0;
   const alarmDefaults=[
     {id:"boardPower",tag:"POW1",unit:"% PN",limits:[null,null,102,109],value:s=>s.powerPct},
     {id:"boardPressure",tag:"002MP",unit:"bar",limits:[130,150,160,165],value:s=>s.pressureBar},
@@ -906,8 +907,8 @@
   }
   function changeManualROverride(enabled) {
     // Suivre la position actuelle dans l'intégrateur R avant de lui rendre la main.
-    if(!enabled&&editorReady.regul)$("regulationEditor").contentWindow?.postMessage({
-      type:"centurion-editor-tick",dt:0,signals:editorSignals(),rManualOverride:true},"*");
+    if(!enabled&&editorReady.regul)dispatchEditor("regul",{
+      type:"centurion-editor-tick",dt:0,signals:editorSignals(),rManualOverride:true});
     E.setRManualOverride(model,enabled);
     model.controls.rMode=regulationActive&&!enabled?"graph":"manual";
     $("rManualInput").value=model.controls.rManualPas;
@@ -944,15 +945,79 @@
   function editorSignals() {
     return E.controlSignals(model);
   }
+  const editorFrames={regul:"regulationEditor",protect:"protectionEditor"};
+  function editorBridge(mode) {
+    try{return $(editorFrames[mode]).contentWindow?.CenturionCC||null;}
+    catch(_){return null;}
+  }
+  function dispatchEditor(mode,payload) {
+    const bridge=editorBridge(mode);
+    if(bridge)return bridge.receive(payload);
+    $(editorFrames[mode]).contentWindow?.postMessage(payload,"*");
+    return null;
+  }
   function sendEditorTick(dt=0) {
-    const payload={type:"centurion-editor-tick",dt,signals:editorSignals(),
+    if(pendingCcStep)return;
+    // Rafraîchissement d'affichage uniquement : le calcul des CC appartient
+    // aux sous-pas physiques, jamais à la cadence de dessin du navigateur.
+    const payload={type:"centurion-editor-tick",dt:0,displayOnly:true,signals:editorSignals(),
       rManualOverride:model.controls.rManualOverride||model.controls.allRodsTargetPas!==null};
-    for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
-      if(editorReady[mode])$(id).contentWindow?.postMessage(payload,"*");
+    for(const mode of ["regul","protect"])
+      if(editorReady[mode]){
+        const response=dispatchEditor(mode,payload);
+        if(response&&!running)applyEditorOutputs(response);
+      }
+  }
+  function advanceControlledStep() {
+    if(pendingCcStep)return false;
+    const modes=[...(regulationActive?["regul"]:[]),...(protectionActive?["protect"]:[])]
+      .filter(mode=>editorReady[mode]);
+    E.step(model,0.1);carry-=0.1;
+    if(!modes.length||model.state.endState)return true;
+    const tick={id:++ccTickId,modes,responses:{}};
+    pendingCcStep=tick;
+    const payload={type:"centurion-editor-tick",dt:0.1,refresh:false,tickId:tick.id,
+      signals:editorSignals(),
+      rManualOverride:model.controls.rManualOverride||model.controls.allRodsTargetPas!==null};
+    for(const mode of modes){
+      const response=dispatchEditor(mode,payload);
+      if(response)tick.responses[mode]=response;
+    }
+    if(modes.every(mode=>tick.responses[mode]))finishCcStep(tick);
+    return true;
+  }
+  function finishCcStep(tick) {
+    // Ordre déterministe : commandes de régulation, puis protections prioritaires.
+    for(const mode of tick.modes)applyEditorOutputs(tick.responses[mode]);
+    pendingCcStep=null;
+  }
+  function receiveCcStepOutput(message) {
+    const tick=pendingCcStep;
+    if(!tick||message.tickId!==tick.id||!tick.modes.includes(message.mode))return;
+    tick.responses[message.mode]=message;
+    if(tick.modes.every(mode=>tick.responses[mode])){
+      finishCcStep(tick);
+      // En mode fichier local, poursuivre dès la réponse des deux CC, sans
+      // attendre l'image suivante ni avancer avec une commande périmée.
+      advanceSimulationTime();
+    }
+  }
+  function advanceSimulationTime() {
+    let steps=0;
+    while(running&&carry>=0.1&&steps<150&&!model.state.endState){
+      if(!advanceControlledStep())break;
+      steps++;
+      if(model.state.coreDamageWarning&&speed!==1){
+        speed=1;$("simSpeed").value="1";carry=0;lastPaint=0;break;
+      }
+    }
+    if(steps===150)carry=Math.min(carry,1);
   }
   function connectEditor(mode,id) {
+    if(pendingCcStep?.modes.includes(mode))pendingCcStep=null;
     editorReady[mode]=false;
-    $(id).contentWindow?.postMessage({type:"centurion-editor-connect"},"*");
+    const response=dispatchEditor(mode,{type:"centurion-editor-connect"});
+    if(response)handleEditorMessage(response);
   }
   function setRegulationActive(enabled,notifyEditor=true){
     regulationActive=Boolean(enabled);
@@ -970,8 +1035,9 @@
       $("rManualInput").value=u.rManualPas;
     }
     if(notifyEditor&&editorReady.regul)
-      $("regulationEditor").contentWindow.postMessage({type:"centurion-editor-enable",enabled:regulationActive,
-        signals:editorSignals(),rManualOverride:model.controls.rManualOverride},"*");
+      dispatchEditor("regul",{type:"centurion-editor-enable",enabled:regulationActive,
+        signals:editorSignals(),rManualOverride:model.controls.rManualOverride});
+    sendEditorTick(0);
     render();
   }
   function setProtectionActive(enabled,notifyEditor=true){
@@ -980,8 +1046,9 @@
     model.controls.protectionsEnabled=protectionActive;
     if(!protectionActive)model.controls.protectionGraphFluxRatePctS=null;
     if(notifyEditor&&editorReady.protect)
-      $("protectionEditor").contentWindow.postMessage({type:"centurion-editor-enable",enabled:protectionActive,
-        signals:editorSignals()},"*");
+      dispatchEditor("protect",{type:"centurion-editor-enable",enabled:protectionActive,
+        signals:editorSignals()});
+    sendEditorTick(0);
     render();
   }
   function applyEditorOutputs(message){
@@ -1008,6 +1075,28 @@
       if(out.aarOut>=.5)E.initiate(model,"trip",{source:"cc-protect"});
       if(out.risOut>=.5)E.initiate(model,"ris",{source:"cc-protect"});
       if(out.asgOut>=.5)E.initiate(model,"asg",{source:"cc-protect"});
+    }
+  }
+  function handleEditorMessage(data) {
+    if(data?.type==="centurion-editor-ready"){
+      const mode=data.mode;
+      if(!["regul","protect"].includes(mode))return;
+      if(editorReady[mode])return;
+      editorReady[mode]=true;
+      dispatchEditor(mode,{type:"centurion-editor-enable",
+        enabled:mode==="regul"?regulationActive:protectionActive,
+        signals:editorSignals(),rManualOverride:model.controls.rManualOverride});
+      sendEditorTick(0);
+    }
+    if(data?.type==="centurion-editor-enabled"){
+      if(data.mode==="regul"&&regulationActive!==Boolean(data.enabled))
+        setRegulationActive(data.enabled,false);
+      if(data.mode==="protect"&&protectionActive!==Boolean(data.enabled))
+        setProtectionActive(data.enabled,false);
+    }
+    if(data?.type==="centurion-editor-outputs"){
+      if(data.tickId!==undefined)receiveCcStepOutput(data);
+      else if(!running&&!pendingCcStep)applyEditorOutputs(data);
     }
   }
   function bindControls() {
@@ -1079,34 +1168,18 @@
     window.addEventListener("message",e=>{
       if(e.data?.type==="centurion-svg-navigate") setDiagram(e.data.diagram,e.data.gv||selectedGv);
       if(e.data?.type==="centurion-svg-ready") updateSvg();
-      if(e.data?.type==="centurion-editor-ready"){
-        const mode=e.data.mode;
-        if(!["regul","protect"].includes(mode))return;
-        editorReady[mode]=true;
-        const frame=$(mode==="regul"?"regulationEditor":"protectionEditor");
-        frame.contentWindow.postMessage({type:"centurion-editor-enable",
-          enabled:mode==="regul"?regulationActive:protectionActive,
-          signals:editorSignals(),rManualOverride:model.controls.rManualOverride},"*");
-        sendEditorTick(0);
-      }
-      if(e.data?.type==="centurion-editor-enabled"){
-        if(e.data.mode==="regul"&&regulationActive!==Boolean(e.data.enabled))
-          setRegulationActive(e.data.enabled,false);
-        if(e.data.mode==="protect"&&protectionActive!==Boolean(e.data.enabled))
-          setProtectionActive(e.data.enabled,false);
-      }
-      if(e.data?.type==="centurion-editor-outputs")applyEditorOutputs(e.data);
+      handleEditorMessage(e.data);
     });
     $("runButton").addEventListener("click",()=>{if(model.state.endState)return;running=!running;render();});
-    $("resetButton").addEventListener("click",()=>{cancelInitiator();running=false;model=E.make();
+    $("resetButton").addEventListener("click",()=>{cancelInitiator();running=false;pendingCcStep=null;model=E.make();
       historyFollowing=true;historyEndS=null;
       model.controls.protectionGraphMode=true;
       model.controls.protectionsEnabled=protectionActive;
       carry=0;syncInputs();render();
       const signals=editorSignals();
       for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
-        if(editorReady[mode])$(id).contentWindow.postMessage({type:"centurion-editor-reset",
-          enabled:mode==="regul"?regulationActive:protectionActive,signals},"*");
+        if(editorReady[mode])dispatchEditor(mode,{type:"centurion-editor-reset",
+          enabled:mode==="regul"?regulationActive:protectionActive,signals});
       sendEditorTick(0);
     });
     $("simSpeed").addEventListener("change",e=>{
@@ -1225,19 +1298,11 @@
   function frame(now) {
     const elapsed=Math.min(.15,Math.max(0,(now-last)/1000));last=now;
     if(running){
-      carry+=elapsed*speed;
-      let steps=0;
-      while(carry>=0.1 && steps<150&&!model.state.endState){
-        E.step(model,0.1);carry-=0.1;steps++;
-        if(model.state.coreDamageWarning&&speed!==1){
-          // Abandonner le reliquat de temps accéléré dès le franchissement.
-          speed=1;$("simSpeed").value="1";carry=0;lastPaint=0;break;
-        }
-      }
-      if(steps===150)carry=Math.min(carry,1);
-      if(steps)sendEditorTick(steps*.1);
+      // Borner aussi le retard du raccordement local par messages.
+      carry=Math.min(30,carry+elapsed*speed);
+      advanceSimulationTime();
     }
-    if(now-lastPaint>120){if(!running)sendEditorTick(0);render();lastPaint=now;}
+    if(now-lastPaint>120){sendEditorTick(0);render();lastPaint=now;}
     requestAnimationFrame(frame);
   }
   model.controls.protectionGraphMode=true;

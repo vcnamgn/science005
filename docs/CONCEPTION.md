@@ -123,9 +123,11 @@ Cette projection ne constitue pas une copie profondément immuable de tout le mo
 
 L'application accumule le temps réel multiplié par la vitesse sélectionnée, puis appelle `step(model, 0.1)` autant de fois que nécessaire. Un paquet est limité à 150 pas, soit 15 s simulées par image navigateur. Le delta réel par image est plafonné à 0,15 s. Ce mécanisme évite une accumulation sans limite après une suspension de l'onglet.
 
-Après le paquet physique, l'application envoie un tick aux éditeurs. Les réponses sont asynchrones et s'appliquent aux pas suivants. Les CC ne sont donc pas exécutés en synchronisme avec chacun des sous-pas de 0,1 s. À ×200, le pas d'un filtre CC peut atteindre 15 s alors que la physique conserve ses sous-pas. Ce choix est une limite de résolution des boucles à grande accélération.
+Chaque sous-pas physique de 0,1 s est suivi d'une évaluation des deux CC actifs avec les mesures actualisées et le même pas de 0,1 s. Les sorties de régulation sont appliquées avant les ordres prioritaires de protection ; elles servent au pas physique suivant. Le facteur ×1 à ×200 et la cadence des images ne modifient ni le pas des filtres ni celui des intégrateurs.
 
-Le dessin est rafraîchi environ toutes les 120 ms réelles. En pause, les éditeurs reçoivent encore les mesures avec `dt=0` : affichages et changements de paramètres restent visibles, sans faire évoluer les mémoires dynamiques des blocs.
+Sur un hébergement de même origine, l'application appelle directement `CenturionCC.receive` dans les deux éditeurs. Pour les fichiers locaux dont les documents ont une origine opaque, elle utilise les mêmes commandes par `postMessage`, avec un `tickId` commun : aucun nouveau pas physique n'est exécuté avant les réponses des CC actifs. Les réponses retardées d'une partie réinitialisée sont ignorées. Le calcul des blocs est identique dans les deux modes ; aucune autre régulation n'est substituée au graphe de l'étudiant.
+
+Le dessin est rafraîchi environ toutes les 120 ms réelles. Les ticks d'affichage utilisent `dt=0` et `displayOnly=true`, aussi bien en marche qu'en pause : affichages et changements de paramètres restent visibles, sans faire évoluer les mémoires dynamiques des blocs. Les ticks de calcul utilisent `refresh=false` pour éviter un redessin des ateliers à chaque sous-pas.
 
 ### Ordre d'un pas physique
 
@@ -339,8 +341,8 @@ Les alarmes du tableau de bord et les clignotements de domaine ne déclenchent p
 | `centurion-editor-ready` | Éditeur → parent | `mode`: `regul` ou `protect` |
 | `centurion-editor-enable` | Parent → éditeur | `enabled`, `signals`, éventuellement `rManualOverride` |
 | `centurion-editor-enabled` | Éditeur → parent | État de commande après action dans l'atelier |
-| `centurion-editor-tick` | Parent → éditeur | `dt`, `signals`, `rManualOverride` |
-| `centurion-editor-outputs` | Éditeur → parent | `mode`, `enabled`, `outputs`, `fluxRatePctS`, `diagnostics` |
+| `centurion-editor-tick` | Parent → éditeur | `dt`, `signals`, `rManualOverride`, `tickId` pour le calcul ; `displayOnly` pour l'affichage, `refresh` |
+| `centurion-editor-outputs` | Éditeur → parent | `mode`, `enabled`, `outputs`, `fluxRatePctS`, `diagnostics`, `tickId` repris de la demande |
 | `centurion-editor-reset` | Parent → éditeur | Mesures initiales et état d'activation |
 | `centurion-state` | Parent → SVG | Projection instrumentale, courbes/trace P–T si nécessaires |
 | `centurion-svg-ready` | SVG → parent | Vue chargée, demande de rafraîchissement |
@@ -411,7 +413,7 @@ Créer le bloc de sortie, l'exposer dans l'évaluateur, l'appliquer dans `applyE
 | Point | Conséquence / prochaine séparation utile |
 | --- | --- |
 | Atelier CC monolithique avec éléments hérités inactifs | Extraire à terme évaluateur, palette, stockage et UI ; le nettoyage public retire les dépendances externes obsolètes sans réécrire cet atelier |
-| CC asynchrones après paquets de pas | À grande accélération, vérifier les réponses des filtres ; une exécution CC en cadence physique fixe serait une évolution distincte |
+| Calcul CC à 0,1 s, indépendant du dessin | La vitesse effective peut être limitée par le processeur ; le calcul attend les réponses en mode fichier local et conserve la même trajectoire physique |
 | Messages adressés à `*` | Nécessaires au fonctionnement local actuel ; le pont SVG vérifie le parent, mais les échanges de l'application et de l'atelier n'ont pas tous une validation d'origine/source stricte |
 | Forme axiale homogénéisée et RPN idéales | Absence de modèle radial et de réponse ex-cœur réelle ; les Fxy tabulés ne constituent pas une reconstruction instrumentale complète |
 | Lois hydrauliques/diphasique réduites | Densité/Cp effectifs, capacités schématiques, brèche et DNBR à documenter lors de tout recalage |

@@ -6240,11 +6240,12 @@
     fitRegulationView();
     setRegulationEnabled(false, false);
     if (!regAutosaveRestored) $("regStatus").textContent = "Construisez votre schéma avec la palette. Les solutions sont accessibles par code.";
-    window.addEventListener("message", event => {
-      const data=event.data;
+    // Même évaluateur pour l'appel synchrone et le raccordement par messages
+    // (nécessaire aux fichiers locaux dont les iframes ont une origine opaque).
+    function receiveCenturionCommand(data) {
       if(!data)return;
       if(data.type==="centurion-editor-connect"){
-        window.parent.postMessage({type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE},"*");return;
+        return {type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE};
       }
       if(data.type==="centurion-editor-enable"){
         if(data.signals)centurionInput=data;
@@ -6260,8 +6261,10 @@
       if(data.signals?.posgInternalPct) s.rods=Number(data.signals.posgInternalPct[0]);
       if(data.signals?.qdecSignal) s.letdown=Number(data.signals.qdecSignal[0]);
       if(data.signals?.pchauffSignal) s.heater=Number(data.signals.pchauffSignal[0]);
-      const evaluation=evaluateRegulationGraph(Math.max(0,Math.min(15,Number(data.dt)||0)),regulationEnabled);
-      updateRegulationLive();
+      const evaluation=evaluateRegulationGraph(Math.max(0,Math.min(15,Number(data.dt)||0)),
+        regulationEnabled&&!data.displayOnly);
+      if(data.displayOnly){regLastSignals=new Map(evaluation.signals);regLastDiagnostics=evaluation.diagnostics;}
+      if(data.refresh!==false)updateRegulationLive();
       const outputs=Object.fromEntries(Object.entries(evaluation.outputs)
         .filter(([,signal])=>signal&&Number.isFinite(signal.value))
         .map(([key,signal])=>[key,signal.value]));
@@ -6273,8 +6276,15 @@
         && regLinks.some(link=>link.to===node.id
           && regNodes.some(source=>source.id===link.from&&source.type==="pow1")));
       const fluxRatePctS=fluxDerivative?evaluation.signals.get(fluxDerivative.id)?.value:null;
-      window.parent.postMessage({type:"centurion-editor-outputs",mode:CENTURION_EDITOR_MODE,
-        enabled:regulationEnabled,outputs,fluxRatePctS,diagnostics:evaluation.diagnostics},"*");
+      return {type:"centurion-editor-outputs",mode:CENTURION_EDITOR_MODE,
+        enabled:regulationEnabled,outputs,fluxRatePctS,diagnostics:evaluation.diagnostics,
+        tickId:data.tickId};
+    }
+    window.CenturionCC=Object.freeze({receive:receiveCenturionCommand});
+    window.addEventListener("message", event => {
+      if(event.source&&event.source!==window.parent)return;
+      const response=receiveCenturionCommand(event.data);
+      if(response)window.parent.postMessage(response,"*");
     });
     window.parent.postMessage({type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE},"*");
     requestAnimationFrame(frame);

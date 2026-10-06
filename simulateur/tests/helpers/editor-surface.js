@@ -98,7 +98,7 @@ function editorSurface(mode='regul',{saved=null}={}){
     Blob,URL});
   const main=root.querySelectorAll('script').find(n=>!n.hasAttribute('src')&&!n.hasAttribute('type'));
   vm.runInContext(main.textContent,context,{filename:'centurion-cc-regul.html'});
-  return {messages,storage,get:id=>document.getElementById(id),get pendingFrames(){return frames.length;},
+  return {messages,storage,bridge:window.CenturionCC,get:id=>document.getElementById(id),get pendingFrames(){return frames.length;},
     query:s=>document.querySelector(s),queryAll:s=>document.querySelectorAll(s),
     flushTimers(){while(timers.length)timers.shift()();},
     receive(data){for(const fn of events.message||[])fn({data,source:parent});},

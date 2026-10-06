@@ -7,7 +7,7 @@ const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
 
 // Exécution de l'application entière : vrais événements et vrais pas physiques.
 // Seule la surface DOM/Canvas est remplacée ; aucune fonction applicative n'est extraite.
-function application(source=app,onPostMessage=null,engine=E){
+function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {svgUpdates=true}={}){
   const ids=new Map(),nodes=[],frames=[],windowEvents={},messages=[];
   let now=0,currentSvg=svgSurface('synoptique-RCP-1300.svg');
   const attributes=tag=>Object.fromEntries([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(([,k,v])=>[k,v]));
@@ -41,8 +41,8 @@ function application(source=app,onPostMessage=null,engine=E){
         getBoundingClientRect:()=>({width:800,height:450}),
         getContext:()=>new Proxy({measureText:text=>({width:String(text).length*7})},{get:(o,k)=>o[k]||(()=>{})}),
         get innerHTML(){return inner;},set innerHTML(value){inner=String(value);register(inner);},
-        contentDocument:null,contentWindow:{postMessage(data){messages.push(data);onPostMessage?.(node.id,data);
-          if(data.type==='centurion-state')currentSvg.update(data);}}};
+        contentDocument:null,contentWindow:{CenturionCC:editorBridges[attrs.id],postMessage(data){messages.push(data);onPostMessage?.(node.id,data);
+          if(svgUpdates&&data.type==='centurion-state')currentSvg.update(data);}}};
       nodes.push(node);if(node.id)ids.set(node.id,node);
     }
   }
@@ -189,20 +189,21 @@ test('application complète : état AN/GV affiché et alarme du cas fourni, puis
 });
 
 const {editorSurface}=require('./helpers/editor-surface');
-function connectedApplication(){
+function connectedApplication({synchronous=false,engine=E,svgUpdates=true}={}){
   // Les éditeurs ont déjà chargé : leurs notifications initiales sont perdues.
   // La page principale doit donc établir elle-même la connexion.
   const regul=editorSurface('regul',{saved:referenceModel('regul')}),
     protect=editorSurface('protect',{saved:referenceModel('protect')}),queue=[];
   const editors={regulationEditor:regul,protectionEditor:protect};
-  const page=application(app,(id,data)=>{if(editors[id])queue.push([id,data]);});
+  const bridges=synchronous?Object.fromEntries(Object.entries(editors).map(([id,editor])=>[id,editor.bridge])):{};
+  const page=application(app,(id,data)=>{if(editors[id])queue.push([id,data]);},engine,bridges,{svgUpdates});
   let delivered={regulationEditor:regul.messages.length,protectionEditor:protect.messages.length};
   function flush(){
     let guard=0;
     for(const [id,editor] of Object.entries(editors))
       while(delivered[id]<editor.messages.length)page.receive(editor.messages[delivered[id]++]);
     while(queue.length){
-      assert.ok(++guard<100,'le dialogue ne doit pas tourner en boucle');
+      assert.ok(++guard<10000,'le dialogue ne doit pas tourner en boucle');
       const [id,data]=queue.shift(),editor=editors[id];editor.receive(data);
       while(delivered[id]<editor.messages.length)page.receive(editor.messages[delivered[id]++]);
     }
@@ -366,4 +367,50 @@ test('application complète : Pause fige la physique, reprise avance et Réiniti
   page.click('resetButton');page.frame(200);
   assert.equal(page.snapshot.time,0);assert.equal(page.get('simClock').textContent,'00:00:00');
   assert.equal(page.get('runButton').textContent,'Démarrer');
+});
+
+test('cadence CC : mêmes états à ×1, ×20 et ×200, y compris avec des images irrégulières et les fichiers locaux',()=>{
+  function run(speed,frames,synchronous,seconds=60){
+    let model,count=0;const trace=[];
+    const engine={...E,make(){return model=E.make();},step(m,dt){
+      const state=E.step(m,dt);count++;
+      if(count%50===0&&count<=seconds*10)trace.push([state.tavgC,state.powerPct,state.rods.R,
+        state.pressureBar,state.gv[0].levelPct]);return state;}};
+    const {page,flush}=connectedApplication({synchronous,engine,svgUpdates:false});
+    page.click('toggleRegulationSynoptic');flush();
+    page.get('simSpeed').value=String(speed);page.get('simSpeed').fire('change');
+    page.get('demandInput').value='80';page.get('demandInput').fire('input');page.click('runButton');
+    let image=0;
+    while(count<seconds*10){assert.ok(image<20000,'la simulation doit progresser');
+      page.frame(frames[image++%frames.length]);flush();}
+    assert.equal(model.state.tripAt,null);assert.equal(model.state.endState,null);
+    return {trace,model};
+  }
+  const reference=run(1,[100],true);
+  for(const [speed,frames,sync] of [[20,[100],true],[200,[16,50,150],true],[200,[100],false]]){
+    const result=run(speed,frames,sync);
+    assert.equal(result.trace.length,reference.trace.length);
+    result.trace.forEach((row,i)=>row.forEach((value,j)=>assert.ok(
+      Math.abs(value-reference.trace[i][j])<1e-8,
+      `×${speed}, ${sync?'synchrone':'messages locaux'} : écart à ${5*(i+1)} s, mesure ${j}`)));
+  }
+  // Vérifier aussi la stabilisation, et pas seulement l'égalité des trajectoires.
+  const stable=run(200,[16,50,150],true,600).trace.slice(-12);
+  const span=j=>Math.max(...stable.map(r=>r[j]))-Math.min(...stable.map(r=>r[j]));
+  assert.ok(span(0)<.3,`TMOY : étendue ${span(0)} °C dans la dernière minute`);
+  assert.ok(span(1)<.5,`PN : étendue ${span(1)} % dans la dernière minute`);
+});
+
+test('CC par messages : attendre les réponses avant le pas suivant, Pause et Réinitialiser sans réponse périmée',()=>{
+  let model;const {page,flush}=connectedApplication({svgUpdates:false,
+    engine:{...E,make(){return model=E.make();}}});
+  page.click('toggleRegulationSynoptic');flush();
+  page.get('simSpeed').value='200';page.get('simSpeed').fire('change');page.click('runButton');
+  page.frame(100);const waiting=model.state.time;
+  assert.equal(waiting,.1,'un seul pas physique avant la réponse des deux CC');
+  page.frame(100);assert.equal(model.state.time,waiting,'aucune avance avec des commandes anciennes');
+  page.click('runButton');flush();assert.equal(model.state.time,waiting,'Pause fige la physique malgré les réponses');
+  page.click('runButton');page.frame(100);
+  page.click('resetButton');flush();assert.equal(model.state.time,0,'les réponses de la partie précédente sont ignorées');
+  page.frame(200);assert.equal(model.state.time,0);
 });
