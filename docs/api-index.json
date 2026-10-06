@@ -928,7 +928,7 @@
       "file": "simulateur/centurion-cc-regul.html",
       "title": "Ateliers CC",
       "description": "Édition, évaluation, stockage et code hérité inactif.",
-      "sha256": "2b788ab1c0d47107d5d8ea26464dfe94affb230b5985df2344f5cecab03ee341",
+      "sha256": "6e7edda09a87f7a7678a235086cf54cb47f2667908d51da06904ba028f3d0e0f",
       "functions": [
         {
           "name": "saturationPressureMPa",

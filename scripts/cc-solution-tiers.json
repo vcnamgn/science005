@@ -5,11 +5,11 @@
     "pressure": {"dataId":"solutionDataPressure","reverseCode":"0661","label":"3 · Température + niveau + pression PZR","description":"Ajoute les chaufferettes PCHF et les vannes d’aspersion QASP."},
     "gv": {"dataId":"solutionDataGv","reverseCode":"4044","label":"Niveaux des quatre GV","description":"Solution ciblée : quatre boucles de niveau avec correction par le débit vapeur et commande ARE."},
     "gcp": {"dataId":"solutionDataGcp","reverseCode":"0087","label":"GCP · programme G3","description":"Solution ciblée : puissance recalée par le décalibrage manuel → courbe G3 → pas de chevauchement."},
-    "complete": {"dataId":"solutionDataComplete","reverseCode":"0057","label":"Complet · R, PZR, GV et GCP","description":"Ton JSON final : température avec correcteurs G1/G2, niveau et pression PZR, niveaux GV et G3."}
+    "complete": {"dataId":"solutionDataComplete","reverseCode":"0057","label":"Complet · R, PZR, GV et GCP","description":"Toutes les chaînes : température avec correcteurs G1/G2, niveau et pression PZR, niveaux GV et G3."}
   },
   "protect": {
     "aar": {"dataId":"solutionDataProtectAar","reverseCode":"1031","label":"Les principaux AAR","description":"Pression primaire, puissance nucléaire, dérivée filtrée, manque de tension et PLIN élevée."},
     "aarIs": {"dataId":"solutionDataProtectIs","reverseCode":"2031","label":"AAR + IS","description":"Ajoute l’injection de sécurité sur basse pression et sa demande associée d’AAR."},
-    "complete": {"dataId":"solutionDataProtectComplete","reverseCode":"3031","label":"AAR + IS + ASG complet","description":"Ton JSON final : ensemble AAR et IS, avec démarrage ASG sur l’état AAR."}
+    "complete": {"dataId":"solutionDataProtectComplete","reverseCode":"3031","label":"AAR + IS + ASG complet","description":"Protection complète : ensemble AAR et IS, avec démarrage ASG sur l’état AAR."}
   }
 }
