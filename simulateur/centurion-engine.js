@@ -428,8 +428,28 @@
   }
   function rcvChargeBoronPpm(model) {
     const u=model.controls;
-    return u.rcvInjectionMode==="dilution" ? 0 : u.rcvInjectionMode==="borication"
+    const mode=rcvInjectionMode(model);
+    return mode==="dilution" ? 0 : mode==="borication"
       ? C.reaBoronPpm : clamp(Number(u.rcvTankBoronPpm)||0,0,C.reaBoronPpm);
+  }
+  function rcvInjectionMode(model) {
+    return model.controls.rcvInjectionGraphMode??model.controls.rcvInjectionMode;
+  }
+  function setRcvGraphInjection(model,borication,dilution) {
+    const u=model.controls,s=model.state;
+    const controlled=Number.isFinite(borication)||Number.isFinite(dilution);
+    const b=Number.isFinite(borication)&&borication>=.5,d=Number.isFinite(dilution)&&dilution>=.5;
+    // Deux ordres simultanés sont contradictoires : ni dilution ni borication.
+    const mode=controlled?(b===d?"off":b?"borication":"dilution"):null;
+    if(mode!==u.rcvInjectionGraphMode||Boolean(u.rcvInjectionGraphConflict)!==Boolean(b&&d)){
+      if(controlled)u.rcvInjectionMode="off";
+      u.rcvInjectionGraphMode=mode;
+      u.rcvInjectionGraphConflict=Boolean(b&&d);
+      addEvent(s,b&&d?"alarm":"action",b&&d?"CC RCV : ordres de dilution et borication simultanés · apport suspendu"
+        :mode===null?"RCV : retour à la commande manuelle"
+        :`CC RCV : ${mode==="off"?"arrêt dilution/borication":mode}`);
+    }
+    s.rcvTankBoronPpm=rcvChargeBoronPpm(model);
   }
   function rodIntegral(position) {
     return (1 - Math.cos(Math.PI * clamp(position, 0, 260) / 260)) / 2;
@@ -583,6 +603,7 @@
         rcvTankBoronPpm: C.boronInitialPpm,
         rcvLetdownOrifices: [true,true,false],
         rcvInjectionMode: "off",
+        rcvInjectionGraphMode: null,
         risBoronPpm: 2500,risPumpMode:"auto",risSourceMode:"direct",
         rodWorthPcm: {...ROD_WORTH_PCM},
         axialRodAbsorption: {...AXIAL_ROD_ABSORPTION},
@@ -1306,7 +1327,7 @@
     s.rcvSealKgS=C.rcvSealM3h*C.primaryDensityKgM3/3600;
     s.rcvLetdownKgS=letdown;
     pumpToPipe(s.rcvPipe,s.time+C.rcvTransitS,rcvFlow*dt,s.rcvTankBoronPpm,
-      {mode:u.rcvInjectionMode,litres:rcvFlow*dt*1000/C.primaryDensityKgM3,tempC:s.tavgC});
+      {mode:rcvInjectionMode(model),litres:rcvFlow*dt*1000/C.primaryDensityKgM3,tempC:s.tavgC});
     const arrivedRcv=deliverPipe(s.rcvPipe,s.time,s.rcvInjectionLitres);
     s.rcvDeliveredKgS=arrivedRcv.massKg/dt;
 
@@ -1545,6 +1566,7 @@
       qsvpSignal:[s.reliefKgS,"kg/s"],posgSignal:[s.rods.R,"pas extraits"],
       posgInternalPct:[100*(260-s.rods.R)/260,"% insertion"],
       gcpPowerSignal:[Math.min(100,s.demandPct+u.gcpCalibrationPct),"% PN"],
+      gcpCalibrationSignal:[u.gcpCalibrationPct,"% PN"],
       gvSetpointSignal:[u.gvLevelSetpointPct,"%"],g3CountSignal:[s.g3Count,"pas"],
       voltageSignal:[s.lossOfVoltage?1:0,"TOR"],fluxRateSignal:[s.fluxRatePctS,"% PN/s"],
       aarSignal:[s.tripDemandAt!==null||s.tripAt!==null?1:0,"TOR"],
@@ -1566,7 +1588,7 @@
     saturationPressureBar,saturationTemperatureC,gvLevels,asgFlowKgS,
     SPIN_FXY32,spinFxy32,coreProtectionProfile,
     dpaxRightLimit,isDpaxRightExceeded,rcvLetdownM3h,rcvChargeBoronPpm,
-    setRManualOverride,setRcvInjection,
+    setRManualOverride,setRcvInjection,rcvInjectionMode,setRcvGraphInjection,
     startTransient,transientDemand,isTransientActive,pauseTransient,resumeTransient,
     interruptTransient,initiate,prepareRcvTank,refreshAxial,refreshReactivity };
 });

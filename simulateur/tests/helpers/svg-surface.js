@@ -23,7 +23,7 @@ function svgSurface(filename) {
     qualifiedName:name,localName:name.split(':').pop(),attributes,children:[],parentElement:null,
     style:Object.fromEntries((attributes.style||'').split(';').filter(s=>s.includes(':')).map(s=>{
       const colon=s.indexOf(':');return [s.slice(0,colon).trim(),s.slice(colon+1).trim()];})),
-    listeners:{},
+    listeners:{},captureListeners:{},captured:new Set(),
     get id(){return this.attributes.id||'';},
     get textContent(){return leaves(this).map(n=>n.nodeValue).join('');},
     set textContent(value){const n=textLeaf(String(value));n.parentElement=this;this.children=[n];},
@@ -32,8 +32,10 @@ function svgSurface(filename) {
     hasAttribute(key){return key in this.attributes;},
     querySelectorAll(selector){return elements(this).slice(1).filter(n=>selector.split(',').some(s=>matches(n,s.trim())));},
     querySelector(selector){return this.querySelectorAll(selector)[0]||null;},
-    addEventListener(name,fn){(this.listeners[name]??=[]).push(fn);},
-    getBoundingClientRect(){return {left:0,right:0,top:0,bottom:0};}
+    addEventListener(name,fn,options){((options===true?this.captureListeners:this.listeners)[name]??=[]).push(fn);},
+    setPointerCapture(id){this.captured.add(id);},hasPointerCapture(id){return this.captured.has(id);},
+    releasePointerCapture(id){this.captured.delete(id);},
+    getBoundingClientRect(){return {left:0,right:800,top:0,bottom:600,width:800,height:600};}
   });
   const stack=[];let root;
   for(const match of source.replace(/<!--[\s\S]*?-->/g,'').matchAll(/<\/?([\w:-]+)\b([^>]*?)>|([^<]+)/g)) {
@@ -48,13 +50,13 @@ function svgSurface(filename) {
       if(!match[0].endsWith('/>'))stack.push(n);
     }
   }
-  let onMessage;
+  const onMessage=[];
   const parent={postMessage(message){messages.push(message);}};
   const context=vm.createContext({
     document:{documentElement:root,getElementById:id=>ids.get(id)||null,
       createTreeWalker:()=>{const all=leaves(root);let i=0;return {currentNode:null,nextNode(){this.currentNode=all[i++];return Boolean(this.currentNode);}};}},
     location:{pathname:file},NodeFilter:{SHOW_TEXT:4},
-    window:{parent,addEventListener(name,fn){if(name==='message')onMessage=fn;}}
+    window:{parent,addEventListener(name,fn){if(name==='message')onMessage.push(fn);}}
   });
   vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../centurion-svg-bridge.js'),'utf8'),context);
   const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
@@ -66,7 +68,14 @@ function svgSurface(filename) {
     return `<${node.qualifiedName}${Object.entries(attributes).map(([k,v])=>` ${k}="${escape(v)}"`).join('')}>${node.children.map(serialize).join('')}</${node.qualifiedName}>`;
   }
   return {get:id=>ids.get(id),root,messages,
-    update:data=>onMessage({source:parent,data:{type:'centurion-state',...data}}),
+    update:data=>onMessage.forEach(fn=>fn({source:parent,data:{type:'centurion-state',...data}})),
+    receive:data=>onMessage.forEach(fn=>fn({source:parent,data})),
+    fire(name,details={}){
+      const event={target:root,preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;},...details};
+      for(const fn of [...(root.captureListeners[name]||[]),...(root.listeners[name]||[])]){
+        fn(event);if(event.stopped)break;
+      }return event;
+    },
     click(id,key){let node=ids.get(id),stopped=false;
       const event={type:key?'keydown':'click',key,preventDefault(){},stopPropagation(){stopped=true;}};
       while(node&&!stopped){for(const fn of node.listeners[event.type]||[])fn(event);node=node.parentElement;}},

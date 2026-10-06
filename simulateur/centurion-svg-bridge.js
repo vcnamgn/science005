@@ -13,6 +13,71 @@
   const nodes=selector=>Array.from(root.querySelectorAll(selector));
   let gv=1;
 
+  // Le zoom appartient au document SVG : les événements traversent ainsi
+  // correctement les <object>, même avec l'origine opaque de file://.
+  function bindViewport() {
+    const base=(root.getAttribute("viewBox")||"").trim().split(/[\s,]+/).map(Number);
+    if(base.length!==4||!base.every(Number.isFinite)||base[2]<=0||base[3]<=0)return;
+    let box=[...base],zoom=1,drag=null,suppressClick=false;
+    const publish=()=>window.parent?.postMessage({type:"centurion-svg-viewport",kind,zoom},"*");
+    const apply=()=>{
+      box[0]=Math.max(base[0]-box[2]*.85,Math.min(base[0]+base[2]-box[2]*.15,box[0]));
+      box[1]=Math.max(base[1]-box[3]*.85,Math.min(base[1]+base[3]-box[3]*.15,box[1]));
+      root.setAttribute("viewBox",box.join(" "));
+    };
+    const mapping=()=>{
+      const r=root.getBoundingClientRect(),scale=Math.min(r.width/box[2],r.height/box[3]);
+      return {scale,left:r.left+(r.width-box[2]*scale)/2,top:r.top+(r.height-box[3]*scale)/2};
+    };
+    const zoomAt=(factor,clientX,clientY)=>{
+      const m=mapping();if(!(m.scale>0))return;
+      const ax=Number.isFinite(clientX)?clientX:m.left+box[2]*m.scale/2;
+      const ay=Number.isFinite(clientY)?clientY:m.top+box[3]*m.scale/2;
+      const px=box[0]+(ax-m.left)/m.scale,py=box[1]+(ay-m.top)/m.scale;
+      const next=Math.max(.75,Math.min(6,zoom*factor)),ratio=zoom/next;
+      box=[px-(px-box[0])*ratio,py-(py-box[1])*ratio,box[2]*ratio,box[3]*ratio];
+      zoom=next;apply();publish();
+    };
+    root.style.cursor="grab";root.style.userSelect="none";root.style.touchAction="none";
+    root.addEventListener("wheel",event=>{
+      if(!event.deltaY)return;
+      event.preventDefault();
+      const delta=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?400:1);
+      zoomAt(Math.exp(-Math.max(-200,Math.min(200,delta))*.002),event.clientX,event.clientY);
+    },{passive:false});
+    root.addEventListener("pointerdown",event=>{
+      if(event.button!==0)return;
+      suppressClick=false;
+      drag={id:event.pointerId,x:event.clientX,y:event.clientY,box:[...box],scale:mapping().scale,moved:false};
+    });
+    root.addEventListener("pointermove",event=>{
+      if(!drag||drag.id!==event.pointerId||!(drag.scale>0))return;
+      const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
+      if(!drag.moved&&Math.hypot(dx,dy)<4)return;
+      if(!drag.moved){drag.moved=true;root.setPointerCapture(event.pointerId);root.style.cursor="grabbing";}
+      event.preventDefault();
+      box=[drag.box[0]-dx/drag.scale,drag.box[1]-dy/drag.scale,box[2],box[3]];apply();
+    });
+    const finish=event=>{
+      if(!drag||drag.id!==event.pointerId)return;
+      suppressClick=drag.moved;
+      if(drag.moved&&root.hasPointerCapture(event.pointerId))root.releasePointerCapture(event.pointerId);
+      drag=null;root.style.cursor="grab";
+    };
+    root.addEventListener("pointerup",finish);root.addEventListener("pointercancel",finish);
+    root.addEventListener("lostpointercapture",()=>{drag=null;root.style.cursor="grab";});
+    root.addEventListener("click",event=>{
+      if(!suppressClick)return;
+      suppressClick=false;event.preventDefault();event.stopImmediatePropagation();
+    },true);
+    window.addEventListener("message",event=>{
+      if(event.source!==window.parent||event.data?.type!=="centurion-svg-viewport-command")return;
+      if(event.data.action==="fit"){box=[...base];zoom=1;apply();publish();}
+      else if(event.data.action==="in")zoomAt(1.25);
+      else if(event.data.action==="out")zoomAt(1/1.25);
+    });
+  }
+
   function levelY(node,value){
     const top=Number(node.getAttribute("data-level-top"));
     const bottom=Number(node.getAttribute("data-level-bottom"));
@@ -228,6 +293,7 @@
     if(semantic)updateSemantic(data);
     else if(kind==="rods")updateRods(data);
   });
+  bindViewport();
   if(semantic)bindNavigation();else bindArrows();
   if(window.parent&&window.parent!==window)
     window.parent.postMessage({type:"centurion-svg-ready",kind},"*");

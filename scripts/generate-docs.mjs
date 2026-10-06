@@ -36,6 +36,8 @@ const notes={
   rraConditions:'Retourne {allowed, reasons} à partir de P, T, puissance et couverture ; sans AAR ni seuil de réactivité requis.',
   connectRra:'Connecte seulement si admissible, journalise et termine la partie dans l’état safe ; renvoie un booléen.',
   setRisOperation:'Sélectionne auto/on/off et journalise. on mémorise une demande IS ; ne ferme pas les accumulateurs.',
+  rcvInjectionMode:'Renvoie le mode effectif off/dilution/borication, en donnant priorité aux sorties CC raccordées.',
+  setRcvGraphInjection:'Applique les deux ordres TOR du CC au mode RCV ; deux demandes simultanées sont rejetées. Des entrées absentes rendent la commande manuelle.',
   commandAllRods:'Demande une manœuvre normale de tous les groupes vers 0 ou 260 pas ; null rend la conduite. N’est pas un AAR.',
   evolveAxialPoisons:'Évolution locale I/Xe dans state sur dt (s), avec facteur d’échelle séparé ; pas de résolution de forme.',
   g3Target:'Interpolation de la cible G3 (pas de chevauchement) à partir de la puissance (%) et campagne debut/milieu/fin.',

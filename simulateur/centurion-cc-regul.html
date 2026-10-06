@@ -600,12 +600,12 @@
     .program-chart { height: 360px; }
     .program-note { margin: 10px 0 0; color: #64717a; font-size: 12px; line-height: 1.45; }
 
-    .reg-layout { display: grid; grid-template-columns: clamp(210px, 16vw, 250px) minmax(0, 1fr); gap: 12px; }
+    .reg-layout { display: grid; grid-template-columns: clamp(330px, 27vw, 400px) minmax(0, 1fr); gap: 12px; }
     .reg-palette { max-height: 820px; padding: 13px; overflow: auto; }
     .reg-palette h2 { margin: 0 0 11px; font-size: 16px; }
     .palette-group { margin-top: 13px; }
     .palette-group h3 { margin: 0 0 6px; color: #69757e; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
-    .palette-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .palette-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
     .palette-item {
       min-height: 42px;
       padding: 6px;
@@ -615,6 +615,7 @@
       background: #f8fafb;
       font-size: 11px;
       font-weight: 750;
+      overflow-wrap: anywhere;
     }
     .palette-item:hover { border-color: #9ba8b0; background: #eef3f5; }
     .reg-main { min-width: 0; }
@@ -702,9 +703,11 @@
       user-select: none;
       touch-action: none;
     }
-    .logic-node.sensor { border-color: #3d7ebc; background: #eef6fd; }
-    .logic-node.operator { border-color: #ad6d24; background: #fff7e9; }
-    .logic-node.actuator { border-color: #80528e; background: #f7eef9; }
+    .logic-node.sensor, .palette-item[data-role="sensor"] { border-color: #3d7ebc; background: #eef6fd; }
+    .logic-node.operator, .palette-item[data-role="operator"] { border-color: #ad6d24; background: #fff7e9; }
+    .logic-node.actuator, .palette-item[data-role="actuator"] { border-color: #80528e; background: #f7eef9; }
+    .palette-item[data-role]:hover { filter: brightness(.96); }
+    .output-palette h3 { color: #80528e; }
     .logic-node.selected { box-shadow: 0 0 0 3px rgba(200,79,46,.28); border-color: #c84f2e; }
     .logic-node .node-title { display: block; overflow: hidden; margin-bottom: 2px; color: #66747d; font-size: 11px; font-weight: 750; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
     .logic-node .node-symbol { display: block; overflow: hidden; color: #17242c; font-size: 20px; font-weight: 850; line-height: 1.05; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
@@ -967,7 +970,7 @@
       .model-grid { grid-template-columns: 1fr; }
       .model-card.wide { grid-column: auto; }
       .load-layout { grid-template-columns: 360px minmax(580px, 1fr); }
-      .reg-layout { grid-template-columns: 210px minmax(0, 1fr); }
+      .reg-layout { grid-template-columns: 330px minmax(0, 1fr); }
       .reg-footer { grid-template-columns: 1fr; }
     }
     @media (max-width: 700px) {
@@ -985,7 +988,7 @@
     .reg-layout{margin:0}
     body.regul-mode .protect-only{display:none!important}
     body.protect-mode .regul-only{display:none!important}
-    body.protect-mode .reg-palette .palette-group:not(.protect-only):not(.operator-palette){display:none!important}
+    body.protect-mode .reg-palette .palette-group:not(.protect-only):not(.operator-palette):not(.shared-signals):not(.output-palette){display:none!important}
     body.protect-mode .reg-live{display:none}
     @media(max-width:900px){.reg-layout{grid-template-columns:1fr}}
   </style>
@@ -1502,19 +1505,17 @@
                 <button class="palette-item" type="button" data-block-type="curve" data-special-curve="g2">G2<br>Gain de charge</button>
               </div>
             </div>
-            <div class="palette-group">
-              <h3>Signaux de sortie <small>— double-clic</small></h3>
+            <div class="palette-group shared-signals">
+              <h3>Positions des grappes</h3>
               <div class="palette-grid">
-                <button class="palette-item" type="button" data-block-type="posg">RGL001MM<br>Commande grappes</button>
-                <button class="palette-item" type="button" data-block-type="qchargeOut">QCHARGE<br>Charge RCV</button>
-                <button class="palette-item" type="button" data-block-type="pchauffOut">PCHF<br>Chaufferettes</button>
-                <button class="palette-item" type="button" data-block-type="qaspOut">QASP<br>Ouverture aspersion</button>
+                <button class="palette-item" type="button" data-block-type="posgSignal">Position R<br>Pas extraits</button>
+                <button class="palette-item" type="button" data-block-type="g3CountSignal">Position GCP<br>Pas de chevauchement</button>
+                <button class="palette-item" type="button" data-block-type="gcpCalibrationSignal">Décalibrage GCP<br>% PN</button>
               </div>
             </div>
             <div class="palette-group regul-only">
               <h3>RGL et niveaux GV</h3>
               <div class="palette-grid">
-                <button class="palette-item" type="button" data-block-type="g3CountSignal">G3<br>Compteur actuel</button>
                 <button class="palette-item" type="button" data-block-type="gcpPowerSignal">P GCP<br>Puissance recalée</button>
                 <button class="palette-item" type="button" data-block-type="gvSetpointSignal">NREF GV<br>Consigne niveaux</button>
                 <button class="palette-item" type="button" data-block-type="gv1LevelSignal">105MN<br>Niveau GV1</button>
@@ -1527,16 +1528,6 @@
                 <button class="palette-item" type="button" data-block-type="gv4SteamSignal">VAP4<br>Vapeur GV4</button>
               </div>
             </div>
-            <div class="palette-group regul-only">
-              <h3>Sorties supplémentaires</h3>
-              <div class="palette-grid">
-                <button class="palette-item" type="button" data-block-type="g3Out">G3<br>Consigne GCP</button>
-                <button class="palette-item" type="button" data-block-type="gv1Out">ARE1<br>Vanne GV1</button>
-                <button class="palette-item" type="button" data-block-type="gv2Out">ARE2<br>Vanne GV2</button>
-                <button class="palette-item" type="button" data-block-type="gv3Out">ARE3<br>Vanne GV3</button>
-                <button class="palette-item" type="button" data-block-type="gv4Out">ARE4<br>Vanne GV4</button>
-              </div>
-            </div>
             <div class="palette-group protect-only">
               <h3>Information de protection</h3>
               <div class="palette-grid">
@@ -1547,12 +1538,23 @@
                 <button class="palette-item" type="button" data-block-type="pow1">POW1<br>Puissance nucléaire</button>
               </div>
             </div>
-            <div class="palette-group protect-only">
-              <h3>Ordres prioritaires</h3>
+            <div class="palette-group output-palette">
+              <h3>Signaux de sortie <small>— double-clic</small></h3>
               <div class="palette-grid">
-                <button class="palette-item" type="button" data-block-type="aarOut">AAR<br>Arrêt automatique</button>
-                <button class="palette-item" type="button" data-block-type="risOut">IS<br>Injection sécurité</button>
-                <button class="palette-item" type="button" data-block-type="asgOut">ASG<br>Démarrage secours GV</button>
+                <button class="palette-item regul-only" type="button" data-block-type="posg">RGL001MM<br>Commande R</button>
+                <button class="palette-item regul-only" type="button" data-block-type="g3Out">G3<br>Consigne GCP</button>
+                <button class="palette-item regul-only" type="button" data-block-type="qchargeOut">QCHARGE<br>Charge RCV</button>
+                <button class="palette-item regul-only" type="button" data-block-type="pchauffOut">PCHF<br>Chaufferettes</button>
+                <button class="palette-item regul-only" type="button" data-block-type="qaspOut">QASP<br>Ouverture aspersion</button>
+                <button class="palette-item regul-only" type="button" data-block-type="gv1Out">ARE1<br>Vanne GV1</button>
+                <button class="palette-item regul-only" type="button" data-block-type="gv2Out">ARE2<br>Vanne GV2</button>
+                <button class="palette-item regul-only" type="button" data-block-type="gv3Out">ARE3<br>Vanne GV3</button>
+                <button class="palette-item regul-only" type="button" data-block-type="gv4Out">ARE4<br>Vanne GV4</button>
+                <button class="palette-item regul-only" type="button" data-block-type="boricationOut">Borication directe<br>Marche / arrêt</button>
+                <button class="palette-item regul-only" type="button" data-block-type="dilutionOut">Dilution directe<br>Marche / arrêt</button>
+                <button class="palette-item protect-only" type="button" data-block-type="aarOut">AAR<br>Arrêt automatique</button>
+                <button class="palette-item protect-only" type="button" data-block-type="risOut">IS<br>Injection sécurité</button>
+                <button class="palette-item protect-only" type="button" data-block-type="asgOut">ASG<br>Démarrage secours GV</button>
               </div>
             </div>
           </aside>
@@ -3298,8 +3300,9 @@
       nrefOut: { label: "NREF", meaning: "Signal interne de consigne niveau pressuriseur", role: "actuator" },
       posg: { label: "RGL001MM", meaning: "Consigne du groupe R (pas extraits)", role: "actuator" },
       gcpPowerSignal: { label: "P GCP", meaning: "Puissance vue par le module GCP, décalibrage inclus (% PN)", role: "sensor" },
+      gcpCalibrationSignal: { label: "Décalibrage GCP", meaning: "Décalibrage manuel de la puissance vue par les GCP (% PN)", role: "sensor" },
       gvSetpointSignal: { label: "NREF GV", meaning: "Consigne commune de niveau des GV (%)", role: "sensor" },
-      g3CountSignal: { label: "G3", meaning: "Compteur de chevauchement actuel (pas)", role: "sensor" },
+      g3CountSignal: { label: "Position GCP", meaning: "Position réelle des GCP (pas de chevauchement)", role: "sensor" },
       gv1LevelSignal: { label: "105MN", meaning: "Niveau GV1 (%)", role: "sensor" },
       gv2LevelSignal: { label: "205MN", meaning: "Niveau GV2 (%)", role: "sensor" },
       gv3LevelSignal: { label: "305MN", meaning: "Niveau GV3 (%)", role: "sensor" },
@@ -3319,6 +3322,8 @@
       aarOut: { label: "AAR", meaning: "Ordre d'arrêt automatique (TOR)", role: "actuator" },
       risOut: { label: "IS", meaning: "Ordre d'injection de sécurité (TOR)", role: "actuator" },
       asgOut: { label: "ASG", meaning: "Ordre de démarrage de l’alimentation de secours des GV (TOR)", role: "actuator" },
+      boricationOut: { label: "Borication directe", meaning: "Ordre TOR : charge RCV à 7 000 ppm. 1 = marche, 0 = arrêt ; aucun débit supplémentaire.", role: "actuator" },
+      dilutionOut: { label: "Dilution directe", meaning: "Ordre TOR : charge RCV à 0 ppm. 1 = marche, 0 = arrêt ; aucun débit supplémentaire.", role: "actuator" },
       qdecOut: { label: "QDEC", meaning: "Ancienne sortie de décharge RCV (m³/h)", role: "actuator" },
       qchargeOut: { label: "QCHARGE", meaning: "Signal de commande de la charge RCV (m³/h)", role: "actuator" },
       pchauffOut: { label: "PCHF", meaning: "Signal de commande des chaufferettes (kW)", role: "actuator" },
@@ -3402,13 +3407,13 @@
       "pow2Signal", "mt3Signal", "mt4Signal", "md1Signal", "mp2Signal", "pthcSignal",
       "pgvSignal", "tmoy", "tpzrSignal", "reacSignal", "tfuelSignal", "plinSignal",
       "dnbrSignal", "tsubSignal", "qpriSignal", "qchaSignal", "imchSignal", "qsvpSignal",
-      "posgSignal", "qdecSignal", "nrefSignal", "gcpPowerSignal", "gvSetpointSignal", "constant",
+      "posgSignal", "qdecSignal", "nrefSignal", "gcpPowerSignal", "gcpCalibrationSignal", "gvSetpointSignal", "constant",
       "g3CountSignal", "gv1LevelSignal", "gv2LevelSignal", "gv3LevelSignal", "gv4LevelSignal",
       "gv1SteamSignal", "gv2SteamSignal", "gv3SteamSignal", "gv4SteamSignal",
       "voltageSignal", "fluxRateSignal", "aarSignal"
     ]);
     const REG_MANUAL_OUTPUT_TYPES = new Set(["posg", "qdecOut", "qchargeOut", "pchauffOut", "qaspOut",
-      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut", "asgOut"]);
+      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut", "asgOut", "boricationOut", "dilutionOut"]);
     const REG_MULTI_INPUT_TYPES = new Set(["sum", "maximum", "minimum", "and", "or", "voter"]);
     const REG_FIXED_INPUT_COUNTS = { product: 2, extractInhibit: 2 };
     const REG_LABELED_INPUT_TYPES = new Set([...REG_MULTI_INPUT_TYPES, ...Object.keys(REG_FIXED_INPUT_COUNTS)]);
@@ -4769,7 +4774,8 @@
         plinSignal: [maximumLinearPower(s.pthCore), "W/cm"], dnbrSignal: [s.dnbr, ""], tsubSignal: [s.subcoolingMargin, "°C"],
         qpriSignal: [C.FLOW_PRIMARY, "kg/s"], qchaSignal: [C.CHARGE_FLOW_M3H, "m³/h"], qdecSignal: [s.letdown, "m³/h"],
         nrefSignal: [s.nref, "%"], imchSignal: [100 * s.heaterImmersion, "%"], qsvpSignal: [s.reliefFlow, "kg/s"],
-        posgSignal: [s.rods, "%"], gcpPowerSignal: [s.turbinePct, "% PN"], gvSetpointSignal: [55, "%"]
+        posgSignal: [(100-s.rods)*2.6, "pas extraits"], gcpPowerSignal: [s.turbinePct, "% PN"],
+        gcpCalibrationSignal: [0, "% PN"], gvSetpointSignal: [55, "%"]
       };
       const entry = values[type];
       return entry ? { value: entry[0], unit: entry[1] } : null;
@@ -4981,7 +4987,7 @@
         } else if (REG_MANUAL_OUTPUT_TYPES.has(node.type)) {
           const outputUnits = { posg: "pas extraits", qdecOut: "m³/h", qchargeOut: "m³/h", pchauffOut: "kW", qaspOut: "%",
             g3Out: "pas", gv1Out: "%", gv2Out: "%", gv3Out: "%", gv4Out: "%",
-            aarOut: "TOR", risOut: "TOR", asgOut: "TOR" };
+            aarOut: "TOR", risOut: "TOR", asgOut: "TOR", boricationOut: "TOR", dilutionOut: "TOR" };
           result = links.length ? { value: firstValue, unit: outputUnits[node.type] } : null;
         }
 
@@ -6082,6 +6088,8 @@
       updateUI();
     });
     document.querySelectorAll("[data-block-type]").forEach(button => {
+      button.dataset.role=BLOCK_TYPES[button.dataset.blockType]?.role||"operator";
+      button.title=BLOCK_TYPES[button.dataset.blockType]?.meaning||"";
       const addPaletteBlock = () => {
         const index = regNodes.length;
         const canvas = $("logicCanvas");

@@ -117,8 +117,10 @@
     $("diagramObject").hidden=name==="core";
     $("coreDiagram").hidden=name!=="core";
     $("diagramFrame").classList.toggle("core-active",name==="core");
+    $("diagramZoom").hidden=name==="core";
     if(changed&&name!=="core") {
       svgDoc=null;
+      $("diagramZoomValue").textContent="100 %";
       $("diagramObject").data=svgFiles[name];
     } else if(name!=="core") {
       decorateSvg();
@@ -888,7 +890,7 @@
     },"input[data-axial-rod]");
   }
   function renderManualExtras() {
-    const s=model.state,u=model.controls,injecting=u.rcvInjectionMode!=="off";
+    const s=model.state,u=model.controls,mode=E.rcvInjectionMode(model),injecting=mode!=="off";
     $("rManualOverride").checked=u.rManualOverride;
     $("rManualInput").disabled=u.allRodsTargetPas!==null||regulationActive&&!u.rManualOverride;
     $("manualRodPanel").classList.toggle("manual-override-active",u.rManualOverride);
@@ -901,7 +903,9 @@
     if(injecting||document.activeElement!==boron)boron.value=E.rcvChargeBoronPpm(model);
     for(const [mode,button,counter] of [["dilution","rcvDilution","rcvDilutionLitres"],
       ["borication","rcvBorication","rcvBoricationLitres"]]){
-      $(button).setAttribute("aria-pressed",String(u.rcvInjectionMode===mode));
+      $(button).setAttribute("aria-pressed",String(E.rcvInjectionMode(model)===mode));
+      $(button).disabled=u.rcvInjectionGraphMode!==null;
+      $(button).title=u.rcvInjectionGraphMode!==null?"Commandé par CC-RÉGUL":"";
       $(counter).textContent=`${fmt(s.rcvInjectionLitres[mode],1)} L injectés`;
     }
   }
@@ -1032,6 +1036,7 @@
       u.pressureGraphHeaterKW=null;u.pressureGraphSprayPct=null;
       u.nrefGraphPct=null;
       u.rcvChargeGraphM3h=null;
+      E.setRcvGraphInjection(model,null,null);
       $("rManualInput").value=u.rManualPas;
     }
     if(notifyEditor&&editorReady.regul)
@@ -1069,6 +1074,7 @@
       u.nrefGraphPct=Number.isFinite(out.nrefOut)?out.nrefOut:null;
       u.rcvChargeGraphM3h=Number.isFinite(out.qchargeOut)
         ? Math.max(E.C.rcvSealM3h,Math.min(E.C.rcvNominalM3h,out.qchargeOut)) : null;
+      E.setRcvGraphInjection(model,out.boricationOut,out.dilutionOut);
     }
     if(message.mode==="protect"&&protectionActive&&message.enabled){
       u.protectionGraphFluxRatePctS=Number.isFinite(message.fluxRatePctS)?message.fluxRatePctS:null;
@@ -1163,9 +1169,14 @@
       try {svgDoc=$("diagramObject").contentDocument;} catch(_){svgDoc=null;}
       decorateSvg();updateSvg();
     });
+    for(const [id,action] of [["diagramZoomOut","out"],["diagramZoomIn","in"],["diagramZoomFit","fit"]])
+      $(id).addEventListener("click",()=>$("diagramObject").contentWindow?.postMessage({
+        type:"centurion-svg-viewport-command",action},"*"));
     for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
       $(id).addEventListener("load",()=>connectEditor(mode,id));
     window.addEventListener("message",e=>{
+      if(e.source===$("diagramObject").contentWindow&&e.data?.type==="centurion-svg-viewport"
+        &&Number.isFinite(e.data.zoom))$("diagramZoomValue").textContent=`${fmt(100*e.data.zoom)} %`;
       if(e.data?.type==="centurion-svg-navigate") setDiagram(e.data.diagram,e.data.gv||selectedGv);
       if(e.data?.type==="centurion-svg-ready") updateSvg();
       handleEditorMessage(e.data);

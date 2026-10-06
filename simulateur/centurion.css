@@ -49,6 +49,10 @@ main{width:100%;margin:auto;padding:10px 22px 16px}
 .diagram-tab:hover{background:#e7f5fb}
 .diagram-tab.active{background:#21a0c7;border-color:#21a0c7;color:#fff}
 .toolbar-spacer{flex:1}
+.diagram-zoom{display:flex;align-items:center;gap:4px}
+.diagram-zoom[hidden]{display:none}
+.diagram-zoom button{padding:6px 10px;border:1px solid #b8d4e2;border-radius:7px;background:#fff;color:#315a72;font-weight:800}
+.diagram-zoom output{min-width:48px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;color:#315a72}
 .gv-picker{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#426277}
 .gv-picker select{border:1px solid #b8d4e2;background:#fff;border-radius:8px;padding:8px 10px;font-weight:700;color:#17324d}
 .diagram-frame{position:relative;background:#fff;border:1px solid #bfd9e8;border-radius:13px;box-shadow:0 5px 20px #17415c12;overflow:hidden;min-height:420px}

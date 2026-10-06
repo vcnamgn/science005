@@ -105,7 +105,7 @@ Les variables publiques du moteur ne sont pas toutes reprises dans ce tableau. L
 | Grappes | `rMode`, `rManualPas`, `rGraphPas`, `rManualOverride`, `allRodsTargetPas`, `g3GraphTarget`, `gcpCalibrationPct` |
 | GV | `gvManualFeedPct[4]`, `gvGraphFeedPct[4]`, `gvSteamValvePct[4]`, `gvLevelSetpointPct`, `gctAOpeningPressureBar` |
 | PZR | `manualHeaterKW`, `manualSprayPct`, `pressureGraphHeaterKW`, `pressureGraphSprayPct`, `manualReliefStages[3]`, `manualAuxiliarySprayM3h` |
-| RCV | `rcvChargeM3h`, `rcvChargeGraphM3h`, `rcvTankBoronPpm`, `rcvLetdownOrifices[3]`, `rcvInjectionMode` |
+| RCV | `rcvChargeM3h`, `rcvChargeGraphM3h`, `rcvTankBoronPpm`, `rcvLetdownOrifices[3]`, `rcvInjectionMode`, `rcvInjectionGraphMode` |
 | Sauvegarde | `asgManual`, `asgTrainEnabled[4]`, `risPumpMode`, `risSourceMode`, disponibilités MP/BP |
 | Physique | `rodWorthPcm`, `axialRodAbsorption`, `coolantWorthPcmC`, `dopplerWorthPcmC`, `xenonEquilibriumWorthPcm`, `fxYUngraped`, `fxYGraped` |
 
@@ -251,7 +251,9 @@ La pression primaire évolue avec les changements de masse, de température moye
 
 Les deux lignes réglantes d'aspersion prennent leur eau en BF1/BF2. À ouverture 100 %, chacune débite 125 m³/h aux conditions nominales ; chacune possède aussi 0,230 m³/h continus. L'ouverture est linéaire en débit à pression motrice nominale, puis multipliée par `sqrt(deltaP / 3,5 bar)`. La pression motrice suit le carré du débit forcé GMPP. L'ouverture évolue à 50 %/s. L'aspersion auxiliaire manuelle détourne jusqu'à 8 m³/h de charge RCV vers le PZR, sans ajouter une nouvelle masse injectée.
 
-La charge RCV totale vaut jusqu'à 36 m³/h, dont 6 vers les joints et 30 sur la charge directe équivalente. Les orifices de décharge donnent chacun 18 m³/h ; deux sont ouverts au départ. QCHARGE peut être commandée par le CC de niveau. La CB reste manuelle. Les boutons dilution/borication imposent temporairement 0/7 000 ppm à la charge existante, restaurent ensuite la CB réglée et comptent les litres **arrivés** après 8 s de transit.
+La charge RCV totale vaut jusqu'à 36 m³/h, dont 6 vers les joints et 30 sur la charge directe équivalente. Les orifices de décharge donnent chacun 18 m³/h ; deux sont ouverts au départ. QCHARGE peut être commandée par le CC de niveau. La CB réglée reste manuelle. Les boutons dilution/borication imposent temporairement 0/7 000 ppm à la charge existante, restaurent ensuite la CB réglée et comptent les litres **arrivés** après 8 s de transit.
+
+Une chaîne facultative construite dans CC-RÉGUL peut utiliser les sorties `boricationOut` et `dilutionOut` : valeurs TOR, 1 = marche, 0 = arrêt (seuil 0,5). Elles reprennent la charge existante, sans débit supplémentaire, avec le même transit et les mêmes compteurs. Deux demandes simultanées suspendent l'apport direct et donnent une alarme. Une sortie raccordée remplace les boutons manuels ; désactiver les régulations ou enlever les sorties rend la commande manuelle et la CB réglée. Aucune chaîne de régulation du bore n'est préchargée. Les entrées `posgSignal`, `g3CountSignal` et `gcpCalibrationSignal` donnent respectivement les pas extraits de R, les pas de chevauchement des GCP et le décalibrage manuel en % PN.
 
 Les conversions RCV utilisent la densité primaire équivalente de 720 kg/m³. Le RIS froid et l'ASG utilisent 1 000 kg/m³. Un débit en kg/s ne se convertit donc pas toujours avec la même densité.
 
