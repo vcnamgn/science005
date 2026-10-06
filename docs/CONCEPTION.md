@@ -241,6 +241,8 @@ L'échange primaire–GV dépend de l'écart TMOY–température secondaire, du 
 
 Le débit vapeur total d'un GV est la somme VPU + GCT-A. Le limiteur turbine plafonne le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.
 
+La sortie facultative **LIM. TURB.** (`turbineLimitOut`) reçoit un plafond en %, borné à 0–100. Quand le CC-RÉGUL est actif, la consigne turbine admise vaut `min(demande PTUR, plafond)`, pour la conduite manuelle comme pour les programmes de charge. La demande d'origine est conservée ; une remontée du plafond autorise donc la reprise de charge jusqu'à cette demande. Le mouvement turbine garde sa limite de 4 %/s et l'arrêt turbine prioritaire impose toujours zéro. Le programme thermique et la puissance vue par les GCP suivent la consigne admise ; PTUR reste la mesure de puissance turbine réalisée. Déconnecter la sortie ou désactiver CC-RÉGUL rétablit le plafond de 100 %.
+
 Les GCT-A modulent autour de leur pression d'ouverture manuelle, 88,6 bar au départ. Leur capacité maximale et leur bande sont des lois d'étude. ARE s'arrête après AAR ou perte de tension. ASG démarre sur ordre CC-PROTECT ou manuel ; l'AAR n'ajoute pas un second démarrage caché dans le moteur.
 
 Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40, 30 bar ; hors plage, les extrêmes sont maintenus. Deux trains sont de type TPS et deux MPS. Les MPS attendent le secours diesel en perte de tension ; les TPS restent disponibles. Le haut niveau GE >90 % coupe aussi le manuel ; en automatique, la reprise sous 10 % suppose un ordre ASG préalablement réalisé.
@@ -317,6 +319,7 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 | `qaspOut` | `pressureGraphSprayPct` | Ouverture aspersion, % |
 | `nrefOut` | `nrefGraphPct` | Référence niveau PZR, % |
 | `qchargeOut` | `rcvChargeGraphM3h` | Débit total de charge, borné à 6–36 m³/h |
+| `turbineLimitOut` | `turbineLimitGraphPct` | Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée |
 | `aarOut` | demande AAR mémorisée | CC-PROTECT actif ; signal ≥0,5 |
 | `risOut` | demande IS mémorisée | CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR et arrêt GMPP |
 | `asgOut` | demande ASG mémorisée | CC-PROTECT actif ; signal ≥0,5 |

@@ -38,6 +38,7 @@ const notes={
   setRisOperation:'Sélectionne auto/on/off et journalise. on mémorise une demande IS ; ne ferme pas les accumulateurs.',
   rcvInjectionMode:'Renvoie le mode effectif off/dilution/borication, en donnant priorité aux sorties CC raccordées.',
   setRcvGraphInjection:'Applique les deux ordres TOR du CC au mode RCV ; deux demandes simultanées sont rejetées. Des entrées absentes rendent la commande manuelle.',
+  turbineLoadTargetPct:'Renvoie la consigne turbine admise (%) : minimum de la demande et du plafond CC LIM. TURB., borné à 0–100. Lecture seule ; l’arrêt turbine est arbitré séparément.',
   commandAllRods:'Demande une manœuvre normale de tous les groupes vers 0 ou 260 pas ; null rend la conduite. N’est pas un AAR.',
   evolveAxialPoisons:'Évolution locale I/Xe dans state sur dt (s), avec facteur d’échelle séparé ; pas de résolution de forme.',
   g3Target:'Interpolation de la cible G3 (pas de chevauchement) à partir de la puissance (%) et campagne debut/milieu/fin.',

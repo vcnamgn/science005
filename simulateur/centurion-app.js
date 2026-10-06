@@ -121,7 +121,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261006-ergonomie";
+      $("diagramObject").data=svgFiles[name]+"?v=20261006-limturb";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -694,7 +694,10 @@
     const command=active?s.demandPct:u.demandPct;
     $("demandInput").value=command;
     $("demandInput").disabled=active;
-    $("demandValue").textContent=`${fmt(command,1)} %`;
+    const limit=Number.isFinite(u.turbineLimitGraphPct)?u.turbineLimitGraphPct:null;
+    $("demandValue").textContent=`${fmt(command,1)} %${limit===null?"":` · LIM. TURB. ${fmt(limit,1)} %`}`;
+    $("demandInput").title=limit===null?"Demande de puissance turbine"
+      :`Demande PTUR · plafond CC ${fmt(limit,1)} % · consigne admise ${fmt(E.turbineLoadTargetPct(model),1)} %`;
     $("startTransient").disabled=active;
     $("pauseTransient").disabled=!active||u.transientPaused;
     $("resumeTransient").disabled=!active||!u.transientPaused;
@@ -1034,7 +1037,7 @@
       u.rcvChargeM3h=model.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3;
       u.g3GraphTarget=null;u.gvGraphFeedPct=[null,null,null,null];
       u.pressureGraphHeaterKW=null;u.pressureGraphSprayPct=null;
-      u.nrefGraphPct=null;
+      u.nrefGraphPct=null;u.turbineLimitGraphPct=null;
       u.rcvChargeGraphM3h=null;
       E.setRcvGraphInjection(model,null,null);
       $("rManualInput").value=u.rManualPas;
@@ -1063,7 +1066,9 @@
       else if(Number.isFinite(out.posg)){
         u.rMode="graph";u.rGraphPas=Math.max(0,Math.min(260,out.posg));
       }
-      const actualDemand=Math.max(0,Math.min(100,model.state.demandPct));
+      u.turbineLimitGraphPct=Number.isFinite(out.turbineLimitOut)
+        ? Math.max(0,Math.min(100,out.turbineLimitOut)) : null;
+      const actualDemand=E.turbineLoadTargetPct(model);
       const seenDemand=Math.max(0,Math.min(100,actualDemand+u.gcpCalibrationPct));
       u.g3GraphTarget=Number.isFinite(out.g3Out)
         ? out.g3Out+E.g3Target(seenDemand,u.campaign)

@@ -1555,6 +1555,7 @@
                 <button class="palette-item regul-only" type="button" data-block-type="gv4Out">ARE4<br>Vanne GV4</button>
                 <button class="palette-item regul-only" type="button" data-block-type="boricationOut">Borication directe<br>Marche / arrêt</button>
                 <button class="palette-item regul-only" type="button" data-block-type="dilutionOut">Dilution directe<br>Marche / arrêt</button>
+                <button class="palette-item regul-only" type="button" data-block-type="turbineLimitOut">LIM. TURB.<br>Plafond PTUR · %</button>
                 <button class="palette-item protect-only" type="button" data-block-type="aarOut">AAR<br>Arrêt automatique</button>
                 <button class="palette-item protect-only" type="button" data-block-type="risOut">IS<br>Injection sécurité</button>
                 <button class="palette-item protect-only" type="button" data-block-type="asgOut">ASG<br>Démarrage secours GV</button>
@@ -3330,7 +3331,8 @@
       qdecOut: { label: "QDEC", meaning: "Ancienne sortie de décharge RCV (m³/h)", role: "actuator" },
       qchargeOut: { label: "QCHARGE", meaning: "Signal de commande de la charge RCV (m³/h)", role: "actuator" },
       pchauffOut: { label: "PCHF", meaning: "Signal de commande des chaufferettes (kW)", role: "actuator" },
-      qaspOut: { label: "QASP", meaning: "Ouverture des vannes d’aspersion (%)", role: "actuator" }
+      qaspOut: { label: "QASP", meaning: "Ouverture des vannes d’aspersion (%)", role: "actuator" },
+      turbineLimitOut: { label: "LIM. TURB.", meaning: "Plafond de prise de charge turbine (%), borné à 0–100. Consigne admise = minimum de la demande PTUR et de ce signal.", role: "actuator" }
     };
     const SPECIAL_CURVE_PRESETS = {
       tref: {
@@ -3416,7 +3418,7 @@
       "voltageSignal", "fluxRateSignal", "aarSignal"
     ]);
     const REG_MANUAL_OUTPUT_TYPES = new Set(["posg", "qdecOut", "qchargeOut", "pchauffOut", "qaspOut",
-      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut", "asgOut", "boricationOut", "dilutionOut"]);
+      "g3Out", "gv1Out", "gv2Out", "gv3Out", "gv4Out", "aarOut", "risOut", "asgOut", "boricationOut", "dilutionOut", "turbineLimitOut"]);
     const REG_MULTI_INPUT_TYPES = new Set(["sum", "maximum", "minimum", "and", "or", "voter"]);
     const REG_FIXED_INPUT_COUNTS = { product: 2, extractInhibit: 2 };
     const REG_LABELED_INPUT_TYPES = new Set([...REG_MULTI_INPUT_TYPES, ...Object.keys(REG_FIXED_INPUT_COUNTS)]);
@@ -4756,6 +4758,7 @@
         qchargeOut: () => centurionInput?.signals?.qchaSignal
           ? `${fmt(centurionInput.signals.qchaSignal[0], 1)} m³/h` : `${fmt(C.CHARGE_FLOW_M3H, 1)} m³/h`,
         pchauffOut: () => `${fmt(centurionInput?.signals?.pchauffSignal?.[0] ?? s.heater, 1)} kW`,
+        turbineLimitOut: () => `${fmt(centurionInput?.signals?.turbineLimitSignal?.[0] ?? 100, 1)} %`,
         qaspOut: () => centurionInput?.signals?.qaspSignal
           ? `${fmt(centurionInput.signals.qaspSignal[0], 1)} %` : (s.spray ? "100 %" : "0 %")
       };
@@ -4989,7 +4992,7 @@
           result = links.length ? { ...first } : null;
         } else if (REG_MANUAL_OUTPUT_TYPES.has(node.type)) {
           const outputUnits = { posg: "pas extraits", qdecOut: "m³/h", qchargeOut: "m³/h", pchauffOut: "kW", qaspOut: "%",
-            g3Out: "pas", gv1Out: "%", gv2Out: "%", gv3Out: "%", gv4Out: "%",
+            g3Out: "pas", gv1Out: "%", gv2Out: "%", gv3Out: "%", gv4Out: "%", turbineLimitOut: "%",
             aarOut: "TOR", risOut: "TOR", asgOut: "TOR", boricationOut: "TOR", dilutionOut: "TOR" };
           result = links.length ? { value: firstValue, unit: outputUnits[node.type] } : null;
         }
@@ -5848,6 +5851,7 @@
         ,regOutputConnected("aarOut") ? "AAR" : null
         ,regOutputConnected("risOut") ? "IS" : null
         ,regOutputConnected("asgOut") ? "ASG" : null
+        ,regOutputConnected("turbineLimitOut") ? "LIM. TURB." : null
       ].filter(Boolean);
       $("regModeState").textContent = CENTURION_EDITOR_MODE === "protect"
         ? (regulationEnabled ? `PROTECTION ACTIVE · ${activeOutputs.join(" + ") || "aucune sortie reliée"}` : "PROTECTION INACTIVE")

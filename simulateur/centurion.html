@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261006-ergonomie">
+  <link rel="stylesheet" href="centurion.css?v=20261006-limturb">
 </head>
 <body>
   <header class="topbar">
@@ -50,7 +50,7 @@
       <div class="process-layout">
         <div class="diagram-frame" id="diagramFrame">
           <label class="pt-trail-controls" id="ptTrailPicker" hidden>Historique P–T <select id="ptTrailWindow" aria-label="Durée de la trace du diagramme P–T"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option></select></label>
-          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261006-ergonomie" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
+          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261006-limturb" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
           <div class="core-diagram" id="coreDiagram" hidden>
             <section class="core-chart-card"><div class="core-chart-head"><h2>Distribution axiale</h2><output id="coreLinearReadout">—</output></div>
               <canvas id="coreProfileChart" aria-label="P(z) en premier plan, 32 barres PLIN sur un second axe fixe de 0 à 435 W/cm à droite ; xénon et iode à gauche, du bas vers le haut du cœur"></canvas>
@@ -220,12 +220,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261006-ergonomie" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261006-limturb" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261006-ergonomie" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261006-limturb" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -405,6 +405,7 @@ FQ = max[Q(z)]</code></pre>
 <p>Chaque GV possède sa masse et son bilan d&#39;énergie : capacité d&#39;eau variable plus 100 MJ/°C de métal équivalent. La masse secondaire nominale est d&#39;environ 63,8 t par GV. L&#39;inventaire primaire est compté dans le bilan primaire, pas ajouté une seconde fois à cette capacité.</p>
 <p>L&#39;échange primaire–GV dépend de l&#39;écart TMOY–température secondaire, du débit de la boucle et de l&#39;inventaire secondaire. ARE apporte de l&#39;eau à 245 °C ; ASG à 20 °C. La vapeur évacuée emporte l&#39;enthalpie sensible et une chaleur latente effective dépendant de la pression. La pression secondaire est déduite de la température par la saturation.</p>
 <p>Le débit vapeur total d&#39;un GV est la somme VPU + GCT-A. Le limiteur turbine plafonne le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.</p>
+<p>La sortie facultative <strong>LIM. TURB.</strong> (<code>turbineLimitOut</code>) reçoit un plafond en %, borné à 0–100. Quand le CC-RÉGUL est actif, la consigne turbine admise vaut <code>min(demande PTUR, plafond)</code>, pour la conduite manuelle comme pour les programmes de charge. La demande d&#39;origine est conservée ; une remontée du plafond autorise donc la reprise de charge jusqu&#39;à cette demande. Le mouvement turbine garde sa limite de 4 %/s et l&#39;arrêt turbine prioritaire impose toujours zéro. Le programme thermique et la puissance vue par les GCP suivent la consigne admise ; PTUR reste la mesure de puissance turbine réalisée. Déconnecter la sortie ou désactiver CC-RÉGUL rétablit le plafond de 100 %.</p>
 <p>Les GCT-A modulent autour de leur pression d&#39;ouverture manuelle, 88,6 bar au départ. Leur capacité maximale et leur bande sont des lois d&#39;étude. ARE s&#39;arrête après AAR ou perte de tension. ASG démarre sur ordre CC-PROTECT ou manuel ; l&#39;AAR n&#39;ajoute pas un second démarrage caché dans le moteur.</p>
 <p>Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40, 30 bar ; hors plage, les extrêmes sont maintenus. Deux trains sont de type TPS et deux MPS. Les MPS attendent le secours diesel en perte de tension ; les TPS restent disponibles. Le haut niveau GE &gt;90 % coupe aussi le manuel ; en automatique, la reprise sous 10 % suppose un ordre ASG préalablement réalisé.</p>
 <h3 id="detail-5-8-pzr-et-rcv">5.8 PZR et RCV</h3>
@@ -434,7 +435,7 @@ FQ = max[Q(z)]</code></pre>
 <div class="table-scroll"><table><thead><tr><th>Branche</th><th>Traitement de la correction complète</th></tr></thead><tbody><tr><td>Consigne</td><td>PTUR → programme TREF (297,2 à 306,5 °C) → filtre de 60 s</td></tr><tr><td>Température</td><td>TMOY − TREF filtrée → avance–retard (1 + 50s)/(1 + 6,7s) → filtre de 1 s</td></tr><tr><td>Puissance</td><td>POW1 et PTUR filtrés séparément à 2 s → différence → passe-haut de 50 s → G1 × G2</td></tr><tr><td>G1, fonction du correcteur</td><td>0,4 °C par % PN près de zéro, puis pente accrue, plateau ±6 °C</td></tr><tr><td>G2, gain programmé</td><td>4 sous 25 % ; 2 à 50 % ; 4/3 à 75 % ; 1 à 100 %</td></tr><tr><td>Mouvement R</td><td>Somme des deux branches → hystérésis : démarrage à 0,83 °C, arrêt à 0,55 °C</td></tr><tr><td>Vitesse et position</td><td>8 à 72 pas/min suivant l&#39;écart → inhibition d&#39;extraction à haute puissance → intégration de 0 à 260 pas extraits</td></tr></tbody></table></div>
 <p>Un écart positif insère R, un écart négatif l&#39;extrait. L&#39;inhibition vise l&#39;extraction ; une insertion commandée reste possible. Le tableau de bord affiche le programme TREF instantané, tandis que l&#39;atelier affiche la TREF filtrée utilisée par la boucle. Avec xénon actif après baisse de puissance, la dilution reste une action manuelle.</p>
 <h3 id="detail-correspondance-sorties-commandes">Correspondance sorties → commandes</h3>
-<div class="table-scroll"><table><thead><tr><th>Sortie CC</th><th>Cible</th><th>Conditions / unité</th></tr></thead><tbody><tr><td><code>posg</code></td><td><code>rGraphPas</code></td><td>CC-RÉGUL actif, pas extraits 0–260, hors surcharge R manuelle</td></tr><tr><td><code>g3Out</code></td><td><code>g3GraphTarget</code></td><td>Compteur de chevauchement ; correction de campagne appliquée par le parent</td></tr><tr><td><code>gv1Out</code> … <code>gv4Out</code></td><td><code>gvGraphFeedPct</code></td><td>Ouverture demandée ARE, %</td></tr><tr><td><code>pchauffOut</code></td><td><code>pressureGraphHeaterKW</code></td><td>Puissance chauffe, kW</td></tr><tr><td><code>qaspOut</code></td><td><code>pressureGraphSprayPct</code></td><td>Ouverture aspersion, %</td></tr><tr><td><code>nrefOut</code></td><td><code>nrefGraphPct</code></td><td>Référence niveau PZR, %</td></tr><tr><td><code>qchargeOut</code></td><td><code>rcvChargeGraphM3h</code></td><td>Débit total de charge, borné à 6–36 m³/h</td></tr><tr><td><code>aarOut</code></td><td>demande AAR mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr><tr><td><code>risOut</code></td><td>demande IS mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR et arrêt GMPP</td></tr><tr><td><code>asgOut</code></td><td>demande ASG mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr></tbody></table></div>
+<div class="table-scroll"><table><thead><tr><th>Sortie CC</th><th>Cible</th><th>Conditions / unité</th></tr></thead><tbody><tr><td><code>posg</code></td><td><code>rGraphPas</code></td><td>CC-RÉGUL actif, pas extraits 0–260, hors surcharge R manuelle</td></tr><tr><td><code>g3Out</code></td><td><code>g3GraphTarget</code></td><td>Compteur de chevauchement ; correction de campagne appliquée par le parent</td></tr><tr><td><code>gv1Out</code> … <code>gv4Out</code></td><td><code>gvGraphFeedPct</code></td><td>Ouverture demandée ARE, %</td></tr><tr><td><code>pchauffOut</code></td><td><code>pressureGraphHeaterKW</code></td><td>Puissance chauffe, kW</td></tr><tr><td><code>qaspOut</code></td><td><code>pressureGraphSprayPct</code></td><td>Ouverture aspersion, %</td></tr><tr><td><code>nrefOut</code></td><td><code>nrefGraphPct</code></td><td>Référence niveau PZR, %</td></tr><tr><td><code>qchargeOut</code></td><td><code>rcvChargeGraphM3h</code></td><td>Débit total de charge, borné à 6–36 m³/h</td></tr><tr><td><code>turbineLimitOut</code></td><td><code>turbineLimitGraphPct</code></td><td>Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée</td></tr><tr><td><code>aarOut</code></td><td>demande AAR mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr><tr><td><code>risOut</code></td><td>demande IS mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR et arrêt GMPP</td></tr><tr><td><code>asgOut</code></td><td>demande ASG mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr></tbody></table></div>
 <p>Au retour manuel, le pupitre reprend les positions et débits réalisés. Les glissières désactivées continuent à suivre les valeurs appliquées. PTUR, le décalibrage GCP et la CB restent manuels. La case R en manuel neutralise seulement la sortie R ; son intégrateur est suivi sur la position réelle pour limiter le saut à la reprise.</p>
 <h3 id="detail-arbitrage">Arbitrage</h3>
 <ol><li>AAR réalisé : chute de tous les groupes et arrêt turbine ; aucune régulation ni commande de levée normale ne peut relever les grappes.</li><li>IS et perte de tension : effets mémorisés, disponibilités et arrêt GMPP ; les manœuvres RIS/ASG prévues restent accessibles.</li><li>Commande manuelle de tous les groupes : priorité de manœuvre sur les sorties de position, sans créer d&#39;AAR ni de CIA par elle-même.</li><li>Surcharge R manuelle : priorité sur R uniquement.</li><li>Sorties CC actives et finies ; puis commandes manuelles de repli.</li></ol>
@@ -519,7 +520,7 @@ node scripts/check-docs.mjs</code></pre>
   </main>
   <div id="coreDamageCountdown" class="core-damage-countdown" role="status" aria-live="polite" hidden><strong>Risque de cœur fondu</strong><b id="coreDamageSeconds">5</b><span id="coreDamageReason"></span><small>Temps réel ×1 · corriger la situation avant la fin du décompte</small></div>
   <div id="scenarioEnd" class="scenario-end" role="status" hidden><strong id="scenarioEndTitle"></strong><span id="scenarioEndReason"></span><small>Fin de scénario · Réinitialiser pour recommencer</small></div>
-  <script src="centurion-engine.js?v=20261006-ergonomie"></script>
-  <script src="centurion-app.js?v=20261006-ergonomie"></script>
+  <script src="centurion-engine.js?v=20261006-limturb"></script>
+  <script src="centurion-app.js?v=20261006-limturb"></script>
 </body>
 </html>

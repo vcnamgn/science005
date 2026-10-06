@@ -587,7 +587,7 @@
     const model={
       state: initialState(),
       controls: {
-        demandPct: 100, campaign: "debut", halfCycle: "premiere",
+        demandPct: 100, turbineLimitGraphPct: null, campaign: "debut", halfCycle: "premiere",
         rMode: "manual", rManualPas: 233, rGraphPas: 233, rManualOverride: false,
         g3GraphTarget: null, gcpCalibrationPct: 0, gvGraphFeedPct: [null,null,null,null],
         gvManualFeedPct: Array(4).fill(100*C.nominalSteamKgSPerGV/950), gvLevelSetpointPct: 55,
@@ -658,6 +658,11 @@
         [570,35],[720,80],[810,80],[960,100],[1200,100]], t);
     }
     return null;
+  }
+  function turbineLoadTargetPct(model) {
+    const limit=Number.isFinite(model.controls.turbineLimitGraphPct)
+      ? clamp(model.controls.turbineLimitGraphPct,0,100) : 100;
+    return clamp(model.state.demandPct,0,limit);
   }
   function startTransient(model, name) {
     if (!TRANSIENTS[name]) return;
@@ -1058,7 +1063,7 @@
       s.gv.forEach(g=>{g.asgRunning=true;});
       addEvent(s,"system","ASG démarrée sur ordre · arrêt au-dessus de 90 % GE, reprise sous 10 % GE en automatique");
     }
-    const totalTarget = s.turbineTrip ? 0 : Math.min(s.demandPct,100);
+    const totalTarget = s.turbineTrip ? 0 : turbineLoadTargetPct({state:s,controls:u});
     s.turbinePct += clamp(totalTarget-s.turbinePct,-4*dt,4*dt);
     // Le limiteur turbine répartit le débit demandé entre les quatre GV.
     // Une pression GV élevée augmente le débit disponible, pas la consigne réseau.
@@ -1201,7 +1206,7 @@
     dt=clamp(Number(dt)||0,0,0.1);
     if (!dt||s.endState) return s;
     updateTurbineDemand(model,dt);
-    s.trefC=297.2+9.3*clamp(s.demandPct,0,100)/100;
+    s.trefC=297.2+9.3*turbineLoadTargetPct(model)/100;
     s.rLimitPas=rInsertionLimit(s.powerPct,u.halfCycle);
     s.rcvTankBoronPpm=rcvChargeBoronPpm(model);
     s.breakAreaCm2=clamp(Number(u.breakAreaCm2)||0,0,2000);
@@ -1565,7 +1570,8 @@
       nrefSignal:[s.nrefPct,"%"],imchSignal:[v.heaterImmersionPct,"%"],
       qsvpSignal:[s.reliefKgS,"kg/s"],posgSignal:[s.rods.R,"pas extraits"],
       posgInternalPct:[100*(260-s.rods.R)/260,"% insertion"],
-      gcpPowerSignal:[Math.min(100,s.demandPct+u.gcpCalibrationPct),"% PN"],
+      gcpPowerSignal:[Math.min(100,turbineLoadTargetPct(model)+u.gcpCalibrationPct),"% PN"],
+      turbineLimitSignal:[Number.isFinite(u.turbineLimitGraphPct)?clamp(u.turbineLimitGraphPct,0,100):100,"%"],
       gcpCalibrationSignal:[u.gcpCalibrationPct,"% PN"],
       gvSetpointSignal:[u.gvLevelSetpointPct,"%"],g3CountSignal:[s.g3Count,"pas"],
       voltageSignal:[s.lossOfVoltage?1:0,"TOR"],fluxRateSignal:[s.fluxRatePctS,"% PN/s"],
@@ -1589,6 +1595,6 @@
     SPIN_FXY32,spinFxy32,coreProtectionProfile,
     dpaxRightLimit,isDpaxRightExceeded,rcvLetdownM3h,rcvChargeBoronPpm,
     setRManualOverride,setRcvInjection,rcvInjectionMode,setRcvGraphInjection,
-    startTransient,transientDemand,isTransientActive,pauseTransient,resumeTransient,
+    turbineLoadTargetPct,startTransient,transientDemand,isTransientActive,pauseTransient,resumeTransient,
     interruptTransient,initiate,prepareRcvTank,refreshAxial,refreshReactivity };
 });
