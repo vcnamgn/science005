@@ -267,7 +267,7 @@ La brèche utilise le minimum d'une loi d'orifice et d'un flux critique borné. 
 
 Lors d'une première ouverture, les deux ateliers ont un canevas vide et sont inactifs. L'élève choisit les mesures, assemble les blocs et relie les sorties aux actionneurs. Une sauvegarde existante est restaurée sans être effacée ; sa commande reste inactive au chargement. Le bouton Effacer permet de commencer un nouvel exercice, avec possibilité d'annuler.
 
-Le bouton Solutions ouvre des paliers protégés par un code pédagogique. L'aide-mémoire est rangé dans Modèle → Détails → Compléments, dans un volet fermé. Ces codes organisent le déroulement du TP ; ils ne contrôlent pas l'accès aux fichiers publics.
+Le bouton Solutions ouvre des paliers protégés par un code pédagogique. L'aide-mémoire est rangé dans Modèle → Détails → Compléments, dans un volet fermé. Les codes à quatre chiffres y sont écrits de droite à gauche ; l'étudiant inverse leur ordre avant la saisie. Les solutions sont numérotées de 1 à 6 en régulation et de 1 à 3 en protection. Ces codes organisent le déroulement du TP ; ils ne contrôlent pas l'accès aux fichiers publics.
 
 | Atelier | Paliers |
 | --- | --- |

@@ -2,7 +2,7 @@
   "format": "Centurion-Documentation",
   "version": 1,
   "date": "2026-10-06",
-  "noteHash": "70a4bbd4b4982d2c026846cc950a3b345d47efe043c69297e3cccda8d84c8fdb",
+  "noteHash": "8662b867d199f55be6735e77fb98b506c4ef3b056845ddb58eefd728644702a7",
   "modules": [
     {
       "file": "simulateur/centurion-engine.js",
@@ -928,7 +928,7 @@
       "file": "simulateur/centurion-cc-regul.html",
       "title": "Ateliers CC",
       "description": "Édition, évaluation, stockage et code hérité inactif.",
-      "sha256": "6e7edda09a87f7a7678a235086cf54cb47f2667908d51da06904ba028f3d0e0f",
+      "sha256": "9ff536b0bb0372ef89e1cfc01be33812193bdac22fea11e990b7eae75ef68900",
       "functions": [
         {
           "name": "saturationPressureMPa",
