@@ -121,7 +121,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name];
+      $("diagramObject").data=svgFiles[name]+"?v=20261006-ergonomie";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();

@@ -4,7 +4,7 @@ const vm = require('node:vm');
 
 // Exercer le bridge réel sur les vrais dessins, sans navigateur ni dépendance DOM.
 function svgSurface(filename) {
-  const file=path.resolve(__dirname,'../../synoptiques',filename);
+  const file=path.resolve(__dirname,'../../synoptiques',filename.split('?')[0]);
   const source=fs.readFileSync(file,'utf8');
   const ids=new Map(),messages=[];
   const decode=value=>value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi,(_,code)=>

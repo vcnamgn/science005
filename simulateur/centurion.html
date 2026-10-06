@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css">
+  <link rel="stylesheet" href="centurion.css?v=20261006-ergonomie">
 </head>
 <body>
   <header class="topbar">
@@ -50,7 +50,7 @@
       <div class="process-layout">
         <div class="diagram-frame" id="diagramFrame">
           <label class="pt-trail-controls" id="ptTrailPicker" hidden>Historique P–T <select id="ptTrailWindow" aria-label="Durée de la trace du diagramme P–T"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option></select></label>
-          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
+          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261006-ergonomie" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
           <div class="core-diagram" id="coreDiagram" hidden>
             <section class="core-chart-card"><div class="core-chart-head"><h2>Distribution axiale</h2><output id="coreLinearReadout">—</output></div>
               <canvas id="coreProfileChart" aria-label="P(z) en premier plan, 32 barres PLIN sur un second axe fixe de 0 à 435 W/cm à droite ; xénon et iode à gauche, du bas vers le haut du cœur"></canvas>
@@ -220,12 +220,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261006-ergonomie" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261006-ergonomie" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -519,7 +519,7 @@ node scripts/check-docs.mjs</code></pre>
   </main>
   <div id="coreDamageCountdown" class="core-damage-countdown" role="status" aria-live="polite" hidden><strong>Risque de cœur fondu</strong><b id="coreDamageSeconds">5</b><span id="coreDamageReason"></span><small>Temps réel ×1 · corriger la situation avant la fin du décompte</small></div>
   <div id="scenarioEnd" class="scenario-end" role="status" hidden><strong id="scenarioEndTitle"></strong><span id="scenarioEndReason"></span><small>Fin de scénario · Réinitialiser pour recommencer</small></div>
-  <script src="centurion-engine.js"></script>
-  <script src="centurion-app.js"></script>
+  <script src="centurion-engine.js?v=20261006-ergonomie"></script>
+  <script src="centurion-app.js?v=20261006-ergonomie"></script>
 </body>
 </html>

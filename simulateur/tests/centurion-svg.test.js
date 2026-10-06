@@ -32,7 +32,7 @@ test('les 68 mesures ont une liaison explicite ; les sources locales disponibles
     const surface=svgSurface(entry.target);
     assert.equal(surface.root.getAttribute('data-centurion-diagram'),entry.diagram);
     assert.equal(surface.root.querySelectorAll('[data-value]').length,entry.bindings.length);
-    assert.equal(surface.root.querySelectorAll('script')[0].getAttribute('href'),'../centurion-svg-bridge.js');
+    assert.equal(surface.root.querySelectorAll('script')[0].getAttribute('href').split('?')[0],'../centurion-svg-bridge.js');
     assert.equal(surface.messages[0].type,'centurion-svg-ready');
   }
 });
