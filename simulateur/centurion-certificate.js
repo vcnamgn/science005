@@ -5,7 +5,7 @@
   else root.CenturionCertificate=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
-  const VERSION="20261007-certificat";
+  const VERSION="20261007-certificat-compact";
   const clone=value=>JSON.parse(JSON.stringify(value));
   const fmt=(value,d=0)=>Number(value).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
   function duration(seconds){
@@ -140,41 +140,52 @@
     }
     if(line)ctx.fillText(line,x,y);return y;
   }
-  function compose(summary,screen,thumbnails,created){
-    const canvas=document.createElement("canvas"),w=1800,pad=48,cols=3,gap=22;
-    const shotHeight=Math.round(screen.height*(w-2*pad)/screen.width);
-    const thumbW=(w-2*pad-gap*(cols-1))/cols,thumbH=345,rows=Math.ceil(thumbnails.length/cols);
-    const footerY=325+shotHeight+rows*(thumbH+gap)+35;
-    canvas.width=w;canvas.height=footerY+135;
+  function compose(summary,screen,thumbnails,created,layout){
+    const canvas=document.createElement("canvas"),w=1800,pad=48,cols=2,gap=22;
+    const scale=(w-2*pad)/screen.width,shotHeight=Math.round(screen.height*scale);
+    // Les miniatures restent exactement dans la colonne du diagramme P–T.
+    const left=pad+layout.diagramLeft*scale,leftWidth=layout.diagramWidth*scale;
+    const verdictX=pad+layout.boardLeft*scale,verdictW=layout.boardWidth*scale;
+    const thumbW=(leftWidth-gap)/cols,thumbH=330,rows=Math.ceil(thumbnails.length/cols);
+    const startY=325+layout.diagramBottom*scale+22;
+    const contentBottom=Math.max(325+shotHeight,startY+rows*thumbH+Math.max(0,rows-1)*gap);
+    const footerY=contentBottom+44;
+    canvas.width=w;canvas.height=footerY+70;
     const ctx=canvas.getContext("2d");ctx.fillStyle="#eef5f8";ctx.fillRect(0,0,w,canvas.height);
     ctx.fillStyle="#142e43";ctx.fillRect(0,0,w,260);
     ctx.fillStyle="#62d5e5";ctx.font="bold 27px Arial";ctx.fillText("CENTURION · CERTIFICAT DE SIMULATION",pad,55);
     ctx.fillStyle="#fff";ctx.font="bold 66px Arial";
-    while(ctx.measureText(summary.artist).width>w-550){const size=Number(/(\d+)px/.exec(ctx.font)[1]);ctx.font=`bold ${size-1}px Arial`;}
+    while(ctx.measureText(summary.artist).width>w-2*pad){const size=Number(/(\d+)px/.exec(ctx.font)[1]);ctx.font=`bold ${size-1}px Arial`;}
     ctx.fillText(summary.artist,pad,145);
     ctx.font="bold 34px Arial";ctx.fillText("DURÉE SIMULÉE  "+summary.duration,pad,212);
-    ctx.save();ctx.translate(w-255,133);ctx.rotate(-.1);ctx.strokeStyle=summary.safe?"#6aeeae":"#ffaaa4";
-    ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=6;ctx.strokeRect(-170,-65,340,130);
-    ctx.font="bold 41px Arial";ctx.textAlign="center";ctx.fillText(summary.stamp,0,14);ctx.restore();
     ctx.fillStyle="#244459";ctx.font="bold 23px Arial";
     ctx.fillText("État final · Diagramme P–T · trace des 4 dernières heures",pad,300);
     ctx.fillStyle="white";ctx.fillRect(pad-1,324,w-2*pad+2,shotHeight+2);
     ctx.drawImage(screen,pad,325,w-2*pad,shotHeight);
-    const startY=350+shotHeight;
     thumbnails.forEach((thumb,i)=>{
-      const x=pad+(i%cols)*(thumbW+gap),y=startY+Math.floor(i/cols)*(thumbH+gap);
+      const x=left+(i%cols)*(thumbW+gap),y=startY+Math.floor(i/cols)*(thumbH+gap);
       ctx.fillStyle="white";ctx.fillRect(x,y,thumbW,thumbH);
-      fit(ctx,thumb.image,x+10,y+10,thumbW-20,245);
-      ctx.fillStyle="#244459";ctx.font="bold 22px Arial";ctx.fillText(thumb.record.label,x+16,y+282);
+      fit(ctx,thumb.image,x+10,y+10,thumbW-20,225);
+      ctx.fillStyle="#244459";ctx.font="bold 21px Arial";
+      wrap(ctx,thumb.record.label,x+16,y+260,thumbW-32,24);
       ctx.font="19px Arial";const v=thumb.record.snapshot;
-      ctx.fillText(`${duration(thumb.record.time)} · ${fmt(v.pressure,1)} bar · ${fmt(v.tavgC,1)} °C`,x+16,y+312);
+      ctx.fillText(`${duration(thumb.record.time)} · ${fmt(v.pressure,1)} bar · ${fmt(v.tavgC,1)} °C`,x+16,y+300);
       ctx.fillStyle="#567182";ctx.font="17px Arial";
-      ctx.fillText(`Eau CPP : ${fmt(v.primaryMassKg/1000,1)} t`,x+16,y+335);
+      ctx.fillText(`Eau CPP : ${fmt(v.primaryMassKg/1000,1)} t`,x+16,y+322);
     });
-    ctx.fillStyle="#244459";ctx.font="bold 25px Arial";
-    const reasonEnd=wrap(ctx,summary.reason,pad,footerY,w-2*pad,31);
+    const verdictH=thumbH,verdictY=contentBottom-verdictH;
+    ctx.fillStyle=summary.safe?"#197349":"#a9182b";
+    ctx.fillRect(verdictX,verdictY,verdictW,verdictH);
+    ctx.fillStyle="white";ctx.font="bold 46px Arial";
+    ctx.fillText(summary.stamp,verdictX+30,verdictY+67);
+    ctx.font="bold 26px Arial";
+    ctx.fillText(summary.safe?"CŒUR SAIN ET SAUF":"CŒUR FONDU",verdictX+30,verdictY+111);
+    ctx.font="22px Arial";
+    wrap(ctx,summary.reason,verdictX+30,verdictY+159,verdictW-60,29);
+    ctx.font="bold 24px Arial";
+    ctx.fillText("DURÉE SIMULÉE  "+summary.duration,verdictX+30,verdictY+verdictH-29);
     ctx.fillStyle="#59717f";ctx.font="19px Arial";
-    ctx.fillText(`Généré le ${created.toLocaleString("fr-FR")} · Simulateur pédagogique CENTURION`,pad,reasonEnd+43);
+    ctx.fillText(`Généré le ${created.toLocaleString("fr-FR")} · Simulateur pédagogique CENTURION`,pad,footerY+26);
     return canvas;
   }
   function create({E,getModel,svgFiles,ptCurves,prepare}){
@@ -209,36 +220,53 @@
           }
           ensureCurrent();
           if(typeof window.html2canvas!=="function")throw new Error("Le module de copie d’écran n’a pas été chargé. Rechargez la page.");
-          status("Copie de l’interface complète…");
-          const screen=await window.html2canvas(document.body,{backgroundColor:"#f2f7fa",scale:1.5,logging:false,
-            scrollX:0,scrollY:0,
+          status("Copie du diagramme P–T et du tableau de bord…");
+          let layout;
+          const fullScreen=await window.html2canvas(document.body,{backgroundColor:"#f2f7fa",scale:1.5,logging:false,
+            scrollX:0,scrollY:0,windowWidth:1800,windowHeight:1100,width:1800,height:1100,
             ignoreElements:el=>["certificateDialog","scenarioEnd","coreDamageCountdown"].includes(el.id)
               ||el.classList?.contains("certificate-offscreen"),
             onclone:doc=>{
+              // Mise en page d’export constante, même depuis un laptop. Le DOM
+              // vivant conserve ses commandes et sa disposition responsive.
+              doc.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+              doc.getElementById("view-synoptiques").classList.add("active");
+              doc.querySelectorAll(".tab[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view==="synoptiques"));
+              doc.querySelector(".manual-card").remove();
+              const style=doc.createElement("style");
+              style.textContent=`
+                *{animation:none!important;transition:none!important}
+                body{width:1800px!important;min-height:0!important}
+                main{padding:10px 22px 16px!important}
+                .process-layout{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)!important;gap:14px!important}
+                .instrument-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+                .instrument-board h2{font-size:20px;padding:12px 14px}
+                .instrument-section{padding:8px 10px}
+                .instrument-section h3{font-size:13px;margin-bottom:7px}
+                .instrument{padding:6px 8px;min-height:48px}
+                .instrument span{font-size:11px}.instrument strong{font-size:12px}
+                .instrument output{font-size:16px;margin-top:4px}
+              `;doc.head.append(style);
               const object=doc.getElementById("diagramObject"),image=doc.createElement("img");
               image.id=object.id;image.className="certificate-diagram-image";image.src=pt.toDataURL("image/png");
-              image.style.cssText="width:100%;height:"+object.getBoundingClientRect().height+"px;object-fit:contain;display:block";
+              const frame=doc.getElementById("diagramFrame");
+              image.style.cssText="width:100%;height:"+((frame.clientWidth-2)*pt.height/pt.width)+"px;object-fit:contain;display:block";
               object.replaceWith(image);
-              // html2canvas ne respecte pas toujours les <details> fermés ni
-              // le dessin natif des glissières : figer leur apparence visible.
-              doc.querySelectorAll("details:not([open]) > :not(summary)").forEach(el=>el.remove());
-              doc.querySelectorAll("summary").forEach(el=>{el.style.listStyle="none";el.style.display="block";});
-              doc.querySelectorAll('input[type="range"]').forEach(input=>{
-                const min=Number(input.min)||0,max=Number(input.max)||100;
-                const pct=Math.max(0,Math.min(100,100*(Number(input.value)-min)/(max-min)));
-                const bar=doc.createElement("div"),track=doc.createElement("div"),fill=doc.createElement("div"),knob=doc.createElement("div");
-                bar.style.cssText="position:relative;width:100%;height:16px;margin:3px 0";
-                track.style.cssText="position:absolute;top:5px;left:0;width:100%;height:6px;background:#d3e0e6;border-radius:3px";
-                fill.style.cssText=`width:${pct}%;height:100%;background:${input.disabled?"#9aadb7":"#16a2bc"};border-radius:3px`;
-                knob.style.cssText=`position:absolute;left:${pct}%;top:0;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:${input.disabled?"#9aadb7":"#16a2bc"}`;
-                track.append(fill);bar.append(track,knob);input.replaceWith(bar);
-              });
-              // Les animations d'alarme restent visibles, sans dépendre de leur phase.
-              const style=doc.createElement("style");style.textContent="*{animation:none!important;transition:none!important}";doc.head.append(style);
+              const diagram=frame.getBoundingClientRect(),board=doc.querySelector(".instrument-board").getBoundingClientRect();
+              layout={diagramLeft:diagram.left,diagramWidth:diagram.width,diagramBottom:diagram.bottom,
+                boardLeft:board.left,boardWidth:board.width,
+                bottom:Math.ceil(Math.max(diagram.bottom,board.bottom)+16)};
             }});
-          ensureCurrent();capture={screen,thumbnails,created:new Date()};capturedModel=model;
+          // Retirer aussi la marge vide du viewport sous les deux panneaux.
+          const screen=document.createElement("canvas");screen.width=fullScreen.width;
+          screen.height=Math.min(fullScreen.height,Math.ceil(layout.bottom*fullScreen.width/1800));
+          screen.getContext("2d").drawImage(fullScreen,0,0);
+          layout.diagramLeft*=screen.width/1800;layout.diagramWidth*=screen.width/1800;
+          layout.diagramBottom*=screen.width/1800;
+          layout.boardLeft*=screen.width/1800;layout.boardWidth*=screen.width/1800;
+          ensureCurrent();capture={screen,thumbnails,layout,created:new Date()};capturedModel=model;
         }
-        result=compose(summary,capture.screen,capture.thumbnails,capture.created);
+        result=compose(summary,capture.screen,capture.thumbnails,capture.created,capture.layout);
         $("certificatePreview").src=result.toDataURL("image/png");$("certificatePreview").hidden=false;
         outputs(true);status("Certificat prêt · téléchargement PNG ou PDF.");
       }catch(error){status("Création impossible : "+error.message);}
