@@ -289,7 +289,19 @@
   window.addEventListener("message",event=>{
     if(event.source!==window.parent)return;
     const data=event.data;
-    if(!data||data.type!=="centurion-state")return;
+    if(!data)return;
+    if(data.type==="centurion-svg-capture-request"){
+      // Le même rendu sert à l'écran et au certificat, même en fichier local.
+      if(semantic)updateSemantic(data.snapshot);
+      else if(kind==="rods")updateRods(data.snapshot);
+      const copy=root.cloneNode(true);
+      copy.querySelectorAll("script").forEach(node=>node.remove());
+      copy.querySelectorAll("*").forEach(node=>{node.style.animation="none";node.style.transition="none";});
+      window.parent.postMessage({type:"centurion-svg-capture-result",requestId:data.requestId,
+        kind,svg:new XMLSerializer().serializeToString(copy)},"*");
+      return;
+    }
+    if(data.type!=="centurion-state")return;
     if(semantic)updateSemantic(data);
     else if(kind==="rods")updateRods(data);
   });

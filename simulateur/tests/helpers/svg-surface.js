@@ -35,8 +35,15 @@ function svgSurface(filename) {
     addEventListener(name,fn,options){((options===true?this.captureListeners:this.listeners)[name]??=[]).push(fn);},
     setPointerCapture(id){this.captured.add(id);},hasPointerCapture(id){return this.captured.has(id);},
     releasePointerCapture(id){this.captured.delete(id);},
+    cloneNode(){return copyNode(this);},
+    remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(n=>n!==this);},
     getBoundingClientRect(){return {left:0,right:800,top:0,bottom:600,width:800,height:600};}
   });
+  function copyNode(node){
+    if(!node.localName)return textLeaf(node.nodeValue);
+    const copy=element(node.qualifiedName,{...node.attributes});copy.style={...node.style};
+    copy.children=node.children.map(child=>{const n=copyNode(child);n.parentElement=copy;return n;});return copy;
+  }
   const stack=[];let root;
   for(const match of source.replace(/<!--[\s\S]*?-->/g,'').matchAll(/<\/?([\w:-]+)\b([^>]*?)>|([^<]+)/g)) {
     if(match[3]!==undefined){
@@ -55,7 +62,7 @@ function svgSurface(filename) {
   const context=vm.createContext({
     document:{documentElement:root,getElementById:id=>ids.get(id)||null,
       createTreeWalker:()=>{const all=leaves(root);let i=0;return {currentNode:null,nextNode(){this.currentNode=all[i++];return Boolean(this.currentNode);}};}},
-    location:{pathname:file},NodeFilter:{SHOW_TEXT:4},
+    location:{pathname:file},NodeFilter:{SHOW_TEXT:4},XMLSerializer:class {serializeToString(node){return serialize(node);}},
     window:{parent,addEventListener(name,fn){if(name==='message')onMessage.push(fn);}}
   });
   vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../centurion-svg-bridge.js'),'utf8'),context);
@@ -69,7 +76,7 @@ function svgSurface(filename) {
   }
   return {get:id=>ids.get(id),root,messages,
     update:data=>onMessage.forEach(fn=>fn({source:parent,data:{type:'centurion-state',...data}})),
-    receive:data=>onMessage.forEach(fn=>fn({source:parent,data})),
+    receive:(data,trusted=true)=>onMessage.forEach(fn=>fn({source:trusted?parent:{},data})),
     fire(name,details={}){
       const event={target:root,preventDefault(){this.prevented=true;},stopImmediatePropagation(){this.stopped=true;},...details};
       for(const fn of [...(root.captureListeners[name]||[]),...(root.listeners[name]||[])]){

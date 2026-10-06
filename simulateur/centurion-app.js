@@ -39,6 +39,8 @@
     ["gctaOpeningPressure","gctAOpeningPressureBar"]
   ];
   let model=E.make(),running=false,speed=20,last=performance.now(),carry=0;
+  const certificate=window.CenturionCertificate?.create({E,getModel:()=>model,svgFiles,ptCurves,
+    prepare:()=>{$("ptTrailWindow").value="14400";setDiagram("pt");render();}});
   let diagram="rcp",selectedGv=1,activeView="synoptiques",svgDoc=null;
   let historyFollowing=true,historyEndS=null;
   let pendingInitiator=null,initiatorTimer=null;
@@ -121,7 +123,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261006-limturb";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-certificat";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -713,6 +715,7 @@
   }
   function render() {
     const s=model.state,u=model.controls;
+    certificate?.observe(model);
     const v=E.instrumentSnapshot(model,selectedGv);
     if(s.endState){running=false;if(pendingInitiator)cancelInitiator();}
     renderInitiatorCountdown();
@@ -979,7 +982,7 @@
     if(pendingCcStep)return false;
     const modes=[...(regulationActive?["regul"]:[]),...(protectionActive?["protect"]:[])]
       .filter(mode=>editorReady[mode]);
-    E.step(model,0.1);carry-=0.1;
+    E.step(model,0.1);certificate?.observe(model);carry-=0.1;
     if(!modes.length||model.state.endState)return true;
     const tick={id:++ccTickId,modes,responses:{}};
     pendingCcStep=tick;
@@ -996,6 +999,7 @@
   function finishCcStep(tick) {
     // Ordre déterministe : commandes de régulation, puis protections prioritaires.
     for(const mode of tick.modes)applyEditorOutputs(tick.responses[mode]);
+    certificate?.observe(model);
     pendingCcStep=null;
   }
   function receiveCcStepOutput(message) {

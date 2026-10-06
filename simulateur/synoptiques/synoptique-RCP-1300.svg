@@ -490,4 +490,4 @@
     <text id="valeur-puissance-reseau" x="649" y="271" fill="#17324d" font-family="Consolas, monospace" font-size="13px" style="font-size:18.6667px" data-value="electricMW" data-decimals="0" data-template="{value}" data-unit="">0000</text>
     <text x="710" y="271" fill="#17324d" font-family="Arial, sans-serif" font-size="12px" id="text45261">MWe</text>
   </g>
-<script type="application/ecmascript" href="../centurion-svg-bridge.js?v=20261006-ergonomie" /></svg>
+<script type="application/ecmascript" href="../centurion-svg-bridge.js?v=20261007-certificat" /></svg>

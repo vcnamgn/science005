@@ -66,6 +66,8 @@ Ces essais couvrent le point nominal, le comptage G3, l'IL de R, la dilution RCV
 
 ## Commandes de conduite et temporisation du cœur
 
+À la fin d’un scénario, **Créer un certificat** permet d’ajouter le nom de l’artiste et de télécharger une image PNG ou de l’imprimer en PDF. Le certificat rassemble l’interface finale avec le diagramme P–T sur quatre heures, des miniatures horodatées de l’inventaire et des événements marquants, le tampon **Validé / Échec fatal**, la durée simulée et le motif de fin. Les instantanés sont conservés pendant la partie et effacés à la réinitialisation.
+
 - **Tous les groupes à 0/260 pas** : manœuvre normale de R, GCP et SA–SD, sans ordre AAR ni entrée CIA par cette commande. Retour à la conduite libère la commande ; les protections restent prioritaires.
 - **Aspersion auxiliaire RCV** : 0–8 m³/h, toujours manuelle, prélevée sur la charge directe, indépendante de la HMT GMPP.
 - **GMPP** : arrêt mémorisé sur perte de tension ou demande IS ; l’AAR seul ne les arrête pas. Cause et instant visibles dans Pressuriseur, et au survol QPRI. Le graphe livré demande IS sous 120 bar : ce seuil peut donc arrêter les pompes pendant un refroidissement volontaire.

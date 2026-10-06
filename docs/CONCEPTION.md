@@ -426,7 +426,19 @@ Créer le bloc de sortie, l'exposer dans l'évaluateur, l'appliquer dans `applyE
 
 Le générateur de documentation extrait les fonctions nommées et les exports réellement présents. L'index inclut des fonctions internes et des fonctions héritées du fichier d'atelier ; leur présence dans l'index ne signifie pas qu'elles sont exécutées par le simulateur actuel.
 
-## 11. Références et documents associés
+## 11. Certificats de fin de scénario
+
+Le bouton **Créer un certificat** apparaît après **Cœur fondu** ou **Cœur sain et sauf**. Le nom de l’artiste est saisi dans une fenêtre dédiée. Le résultat est une image PNG autonome, imprimable en PDF, avec le verdict **Validé** ou **Échec fatal**, la durée simulée et le motif de fin. La saisie du nom et les images restent dans le navigateur.
+
+`centurion-certificate.js` conserve au plus sept instantanés : inventaire initial, première demande AAR, première demande IS, première ouverture des soupapes, première alerte cœur, baisse d’inventaire et état final. Les valeurs sont copiées au sous-pas physique de 0,1 s, indépendamment du rafraîchissement de l’écran et de l’accélération. Une nouvelle partie remplace l’archive. Il s’agit d’une mémoire de présentation, sans modification du moteur et sans capacité de reprise d’une partie.
+
+Le certificat présente la copie de l’interface finale sur **Diagramme P–T**, avec la trace des **quatre dernières heures** (ou toute la durée disponible si elle est plus courte). La projection utilise `instrumentSnapshot` et les mêmes courbes P–T que l’écran. Les objets SVG temporaires reçoivent les instantanés par le pont SVG ; seul leur parent peut demander une capture. Leur copie est sérialisée sans script, convertie en image puis retirée. Le mécanisme évite de lire directement un fichier SVG depuis JavaScript et fonctionne avec le protocole de messages déjà utilisé en fichier local.
+
+Les miniatures montrent les inventaires initial/final et jusqu’à quatre événements de protection. L’AAR prend la vue Cœur si le signal PLIN élevée est présent à cet instant ; sinon, le pressuriseur. Les profils Cœur sont copiés avec leurs 32 valeurs P(z)/PLIN, affichés sur des axes fixes. Les miniatures sont horodatées et indiquent la pression, la température et la masse d’eau CPP.
+
+La copie de l’interface utilise **html2canvas 1.4.1**, distribué localement sous licence MIT dans `simulateur/vendor/`. Les SVG sont remplacés par leurs images pendant la copie ; les menus fermés et les glissières sont figés visuellement pour éviter les limites du rendu HTML de cette bibliothèque. Le bouton PDF produit directement une page A4 contenant l’image JPEG du certificat, sans fenêtre supplémentaire ni service externe. Le certificat est un souvenir pédagogique ; son verdict est celui du modèle exploratoire.
+
+## 12. Références et documents associés
 
 - [Mode d'emploi](../simulateur/README.md).
 - [Équations, chronologie des choix et hypothèses](../simulateur/METHODE-CENTURION.md).
