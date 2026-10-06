@@ -986,11 +986,13 @@
     #view-regulation{display:block!important}
     #view-regulation .feature-title{display:none}
     .reg-layout{margin:0}
+    .reg-palette{max-height:calc(100vh - 2px);align-self:start}
+    .reg-main{max-height:calc(100vh - 2px);overflow:auto}
     body.regul-mode .protect-only{display:none!important}
     body.protect-mode .regul-only{display:none!important}
     body.protect-mode .reg-palette .palette-group:not(.protect-only):not(.operator-palette):not(.shared-signals):not(.output-palette){display:none!important}
     body.protect-mode .reg-live{display:none}
-    @media(max-width:900px){.reg-layout{grid-template-columns:1fr}}
+    @media(max-width:900px){.reg-layout{grid-template-columns:1fr}.reg-palette{max-height:42vh}.reg-main{max-height:none}}
   </style>
 </head>
 <body>
