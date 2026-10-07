@@ -56,6 +56,11 @@ test('certificat : capture des SVG par le bridge réel, valeurs synchronisées e
   const model=E.make();model.state.pressureBar=29;model.state.tavgC=168;
   for(const file of ['Diagramme-PT.svg','CPP-inventaire.svg','synoptique-RCPPZR-1300.svg']){
     const surface=svgSurface(file),initial=surface.messages.length;
+    if(file.includes('RCPPZR')){
+      const metadata=surface.root.querySelectorAll('*').find(n=>n.qualifiedName==='cc:Work');
+      assert.ok(metadata,'le vrai SVG contient une métadonnée étrangère');
+      assert.equal(metadata.style,undefined,'les métadonnées étrangères au SVG ne possèdent pas de style');
+    }
     const request={type:'centurion-svg-capture-request',requestId:'essai',snapshot:{...E.instrumentSnapshot(model),ptHistory:Cert.ptTrail(model)}};
     surface.receive(request,false);assert.equal(surface.messages.length,initial,'seul le parent peut demander une capture');
     surface.receive(request);const result=surface.messages.at(-1);
@@ -119,7 +124,7 @@ test('certificat : délai dépassé nettoyé, nouvelle tentative possible',async
 
 test('certificat : ancienne génération annulée ne déverrouille pas les commandes de la suivante',async()=>{
   const surface=certificateCaptureSurface();let model=E.make();model.state.endState='safe';
-  const certificate=surface.api.create({E,getModel:()=>model,svgFiles:{pt:'synoptiques/Diagramme-PT.svg'},ptCurves:{},prepare(){}});
+  const certificate=surface.api.create({E,getModel:()=>model,svgFiles:{pt:'synoptiques/Diagramme-PT.svg',inventory:'synoptiques/CPP-inventaire.svg'},ptCurves:{lower:[],upper:[],saturation:[]},prepare(){}});
   certificate.observe(model);
   const first=surface.get('certificateGenerate').fire('click');
   assert.equal(surface.get('certificateGenerate').disabled,true);

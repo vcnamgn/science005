@@ -20,6 +20,7 @@ function certificateCaptureSurface(){
       return ui.get(id);
     },
     createElement(tag){
+      if(tag==='canvas')return {width:0,height:0,getContext:()=>({fillRect(){},drawImage(){}})};
       const events=new Map();
       const frame={tag,src:'',removed:false,ready:false,contentWindow:null,requests:[],
         setAttribute(){},addEventListener(name,fn){events.set(name,fn);},
@@ -41,7 +42,10 @@ function certificateCaptureSurface(){
   };
   const window={addEventListener(name,fn){if(name==='message')listeners.add(fn);},
     removeEventListener(name,fn){if(name==='message')listeners.delete(fn);}};
-  const context=vm.createContext({window,document,AbortController,
+  const context=vm.createContext({window,document,AbortController,Image:class{
+    constructor(){this.naturalWidth=1280;this.naturalHeight=850;}
+    set src(value){Promise.resolve().then(()=>this.onload());}
+  },
     setTimeout(fn){const id=++timerId;timeouts.set(id,fn);return id;},clearTimeout:id=>timeouts.delete(id),
     setInterval(fn){const id=++timerId;intervals.set(id,fn);return id;},clearInterval:id=>intervals.delete(id)});
   vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../centurion-certificate.js'),'utf8'),context);

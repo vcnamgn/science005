@@ -1,0 +1,142 @@
+/* Sauvegarde locale d'une partie complète. Aucune exécution de code importé. */
+(function(root,factory){
+  const api=factory();
+  if(typeof module==="object"&&module.exports)module.exports=api;
+  else root.CenturionState=api;
+})(typeof window!=="undefined"?window:globalThis,function(){
+  "use strict";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261007-state-v1";
+  const clone=value=>JSON.parse(JSON.stringify(value));
+  function checkJson(value,path="fichier",depth=0){
+    if(depth>30)throw new Error(`${path} : imbrication excessive.`);
+    if(typeof value==="number"&&!Number.isFinite(value))throw new Error(`${path} : nombre non fini.`);
+    if(value===null||["string","number","boolean"].includes(typeof value))return;
+    if(!value||typeof value!=="object")throw new Error(`${path} : valeur invalide.`);
+    for(const [key,item] of Object.entries(value)){
+      if(["__proto__","prototype","constructor"].includes(key))throw new Error(`${path} : clé interdite.`);
+      checkJson(item,`${path}.${key}`,depth+1);
+    }
+  }
+  function sameShape(value,example,path){
+    if(example===null){if(value===undefined)throw new Error(`${path} : valeur absente.`);return;}
+    if(Array.isArray(example)){
+      if(!Array.isArray(value)||example.length&&value.length!==example.length)
+        throw new Error(`${path} : taille de tableau incompatible.`);
+      example.forEach((item,i)=>sameShape(value[i],item,`${path}[${i}]`));return;
+    }
+    if(typeof example==="object"){
+      if(!value||typeof value!=="object"||Array.isArray(value))throw new Error(`${path} : objet attendu.`);
+      for(const [key,item] of Object.entries(example))sameShape(value[key],item,`${path}.${key}`);
+      return;
+    }
+    if(typeof value!==typeof example)throw new Error(`${path} : type incompatible.`);
+  }
+  function validateModel(E,model){
+    checkJson(model);const template=E.make();
+    // Les tuyaux, événements et historiques ont une longueur variable.
+    template.state.rcvPipe=[];template.state.risPipe=[];
+    sameShape(model,template,"modèle");
+    const s=model.state,u=model.controls;
+    const range=(value,min,max,label)=>{
+      if(typeof value!=="number"||!Number.isFinite(value)||value<min||value>max)
+        throw new Error(`${label} : valeur hors domaine.`);
+    };
+    range(s.time,0,1e9,"Horloge");range(s.primaryMassKg,1,1e8,"Masse primaire");
+    range(s.pressureBar,1,180,"Pression primaire");
+    range(u.breakAreaCm2,0,2000,"Section de brèche");
+    if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
+      throw new Error("La brèche physique et sa commande sont incohérentes.");
+    for(const name of E.ROD_NAMES)range(s.rods[name],0,260,`Position ${name}`);
+    for(const [key,values] of Object.entries({risPumpMode:["auto","on","off"],risSourceMode:["direct","recirculation"],
+      breakBranch:["froide","chaude"],campaign:["debut","milieu","fin"],halfCycle:["premiere","seconde"],
+      rMode:["manual","graph"],rcvInjectionMode:["off","dilution","borication"]}))
+      if(!values.includes(u[key]))throw new Error(`Commande ${key} invalide.`);
+    if(![null,"safe","melted"].includes(s.endState))throw new Error("Verdict invalide.");
+    for(const key of ["rcvPipe","risPipe"]){
+      if(s[key].length>10000)throw new Error("Tuyauterie trop volumineuse.");
+      for(const p of s[key]){
+        for(const k of ["at","massKg","boronPpm"])range(p[k],0,1e12,`${key}.${k}`);
+        range(p.tempC,0,3000,`${key}.tempC`);
+      }
+    }
+    if(s.history.length>28801||s.events.length>100000)throw new Error("Historique trop volumineux.");
+    let previous=-1;
+    for(const p of s.history){
+      range(p.t,previous,s.time+1e-6,"Date de mesure");previous=p.t;
+      for(const key of ["tavg","pressure","power","dpax"])
+        if(typeof p[key]!=="number")throw new Error(`Historique : ${key} absent.`);
+    }
+    // Vérifier les valeurs nullables avant qu'elles n'entrent dans une équation.
+    for(const [key,value] of Object.entries(u))if(template.controls[key]===null){
+      if(key==="rcvInjectionGraphMode"){
+        if(![null,"off","dilution","borication"].includes(value))throw new Error(`Commande ${key} invalide.`);
+      }else if(value!==null&&typeof value!=="number")throw new Error(`Commande ${key} invalide.`);
+    }
+    for(const key of ["tripAt","tripDemandAt","risAt","risDemandAt","asgAt","asgDemandAt","voltageLostAt",
+      "primaryPumpStopAt","normalShutdownAt"])
+      if(s[key]!==null)range(s[key],0,s.time,`Date ${key}`);
+    return model;
+  }
+  function validateEditor(saved,mode){
+    if(!saved||saved.mode!==mode||typeof saved.enabled!=="boolean"||!saved.graph
+      ||saved.graph.format!=="SimuREP-Regulation"||saved.graph.version!==1)
+      throw new Error(`Sauvegarde CC-${mode} incompatible.`);
+    const {nodes,links}=saved.graph;
+    if(!Array.isArray(nodes)||nodes.length>1000||!Array.isArray(links)||links.length>5000
+      ||!Array.isArray(saved.runtime))throw new Error(`Graphe CC-${mode} invalide.`);
+    const ids=new Set(nodes.map(n=>n.id));
+    if(ids.size!==nodes.length||saved.runtime.some(([id,state])=>!ids.has(id)||!state||typeof state!=="object"))
+      throw new Error(`Mémoires CC-${mode} invalides.`);
+  }
+  function read(E,raw){
+    if(typeof raw==="string"){
+      if(raw.length>80*1024*1024)throw new Error("Fichier trop volumineux (80 Mo maximum).");
+      raw=JSON.parse(raw);
+    }
+    checkJson(raw);
+    if(raw.format!==FORMAT||raw.version!==VERSION||raw.engineRevision!==REVISION)
+      throw new Error("Ce fichier n'est pas une sauvegarde d'état Centurion compatible.");
+    validateModel(E,raw.model);
+    for(const mode of ["regul","protect"])validateEditor(raw.editors?.[mode],mode);
+    if(!raw.ui||![1,5,20,50,200].includes(raw.ui.speed)
+      ||!Number.isInteger(raw.ui.selectedGv)||raw.ui.selectedGv<1||raw.ui.selectedGv>4)
+      throw new Error("Réglages d'affichage invalides.");
+    if(!["rcp","core","pt","inventory","pzr","rods","gv"].includes(raw.ui.diagram))
+      throw new Error("Synoptique invalide.");
+    if(!["synoptiques","graphiques","regulation","protection","initiateurs","transitoires","modele"].includes(raw.ui.activeView)
+      ||typeof raw.ui.historyFollowing!=="boolean"
+      ||raw.ui.historyEndS!==null&&typeof raw.ui.historyEndS!=="number"
+      ||!raw.ui.alarmLimits||typeof raw.ui.alarmLimits!=="object")throw new Error("Vue ou alarmes invalides.");
+    for(const id of ["historyWindow","coreTrailWindow","ptTrailWindow"])
+      if(!["300","1800","3600","14400"].includes(raw.ui[id]))throw new Error("Fenêtre d'historique invalide.");
+    if(!["powers","temperatures","secondaryTemperatures","pressures","levels","rods","flows","steam"].includes(raw.ui.traceSet))
+      throw new Error("Traces invalides.");
+    for(const values of Object.values(raw.ui.alarmLimits))
+      if(!Array.isArray(values)||values.length!==4||values.some(v=>v!==null&&typeof v!=="number"))
+        throw new Error("Seuils d'alarme invalides.");
+    if(raw.certificateArchive){
+      const a=raw.certificateArchive;
+      if(!Array.isArray(a.records)||a.records.length>7||!a.seen||typeof a.minimum!=="number")
+        throw new Error("Archive de certificat invalide.");
+      const keys=new Set();
+      for(const r of a.records){
+        if(!["initial","aar","is","relief","warning","minimum","final"].includes(r.key)||keys.has(r.key)
+          ||!["inventory","pzr","core"].includes(r.diagram)||typeof r.label!=="string"
+          ||typeof r.time!=="number"||!r.snapshot||!r.core||r.core.shape?.length!==32||r.core.linear?.length!==32)
+          throw new Error("Instantané de certificat invalide.");
+        const snapshotTemplate=E.instrumentSnapshot(E.make());snapshotTemplate.g3Display=null;
+        sameShape(r.snapshot,snapshotTemplate,"instantané de certificat");
+        if(r.time<0||r.time>raw.model.state.time||r.core.shape.some(v=>typeof v!=="number")
+          ||r.core.linear.some(v=>typeof v!=="number"))throw new Error("Données du certificat invalides.");
+        keys.add(r.key);
+      }
+    }
+    return clone(raw);
+  }
+  function write(E,model,editors,ui,certificateArchive){
+    const save={format:FORMAT,version:VERSION,engineRevision:REVISION,savedAt:new Date().toISOString(),
+      model,editors,ui,certificateArchive};
+    return read(E,clone(save));
+  }
+  return {FORMAT,VERSION,REVISION,checkJson,validateModel,validateEditor,read,write};
+});

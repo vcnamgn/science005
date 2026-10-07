@@ -5,7 +5,7 @@
   else root.CenturionCertificate=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
-  const VERSION="20261007-certificat-reinitialisation";
+  const VERSION="20261007-sauvegarde-capture-3";
   const clone=value=>JSON.parse(JSON.stringify(value));
   const fmt=(value,d=0)=>Number(value).toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
   function duration(seconds){
@@ -77,7 +77,43 @@
       if(s.endState&&!seen.end){seen.end=true;record(model,"final","Inventaire final","inventory");}
     }
     function getRecords(){return clone([...records.values()]);}
-    return {observe,getRecords};
+    function save(){return clone({records:[...records.values()],seen,minimum});}
+    function restore(model,saved){
+      current=model;records=new Map(saved.records.map(r=>[r.key,clone(r)]));
+      seen=clone(saved.seen);minimum=saved.minimum;
+    }
+    return {observe,getRecords,save,restore};
+  }
+  function ptSvg(model,E,curves){
+    // Le diagramme du certificat dépend des données, jamais d'un SVG déjà
+    // chargé ni du zoom de la vue. Les mêmes courbes alimentent les deux vues.
+    const s=model.state,x=t=>105+t/370*1060,y=p=>710-p/180*610;
+    const path=points=>points.map((p,i)=>`${i?"L":"M"}${x(p[0]).toFixed(2)} ${y(p[1]).toFixed(2)}`).join(" ");
+    const gridX=[0,50,100,150,180,200,250,300,350,370].map(t=>
+      `<path d="M${x(t)} 100V710" stroke="#e4edf3"/><text x="${x(t)}" y="736" text-anchor="middle">${t}</text>`).join("");
+    const gridY=[0,25,70,100,140,155,180].map(p=>
+      `<path d="M105 ${y(p)}H1165" stroke="#e4edf3"/><text x="87" y="${y(p)+5}" text-anchor="end">${p}</text>`).join("");
+    const operating=E.reactorOperatingState(s),polygon=[...curves.lower,...[...curves.upper].reverse()];
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="850" viewBox="0 0 1280 850">
+      <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#24465c;font-size:15px}.title{font-size:27px;font-weight:700}.small{fill:#587489}</style>
+      <rect width="1280" height="850" fill="white"/>
+      <text x="38" y="45" class="title">Diagramme P–T</text><text x="38" y="74" class="small">Pression primaire absolue · température moyenne · trace historique rouge</text>
+      <rect x="1050" y="23" width="178" height="36" rx="8" fill="#eef7fb"/><text x="1066" y="47">État</text><text x="1121" y="48" font-size="21" font-weight="700">${operating.code}</text>
+      ${gridX}${gridY}<path d="M105 100V710H1165" fill="none" stroke="#24465c" stroke-width="2.5"/>
+      <text x="40" y="94" font-size="18">bar abs.</text><text x="1108" y="773" font-size="18">TMOY · °C</text>
+      <defs><clipPath id="clip"><rect x="105" y="100" width="1060" height="610"/></clipPath></defs><g clip-path="url(#clip)">
+      <path d="${path(polygon)} Z" fill="#e4f4ee"/>
+      <path d="${path(curves.upper)}" fill="none" stroke="#2a7e5c" stroke-width="3"/><path d="${path(curves.lower)}" fill="none" stroke="#2a7e5c" stroke-width="3"/>
+      <path d="${path(curves.saturation)}" fill="none" stroke="#8e9eb0" stroke-width="2" stroke-dasharray="8 5"/>
+      <rect x="${x(90)}" y="${y(31)}" width="${x(180)-x(90)}" height="${y(25)-y(31)}" fill="#45ac79" fill-opacity=".55" stroke="#147345" stroke-width="2"/>
+      <rect x="${x(297.2)}" y="${y(160)}" width="${x(307.5)-x(297.2)}" height="${y(150)-y(160)}" fill="#74c5e5" fill-opacity=".2" stroke="#50abc9" stroke-dasharray="3 3"/>
+      <path id="pt-trace" d="${path(ptTrail(model).map(p=>[p.tavg,p.pressure]))}" fill="none" stroke="#e7414d" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle id="pt-point" cx="${x(s.tavgC)}" cy="${y(s.pressureBar)}" r="7" fill="#e7414d" stroke="white" stroke-width="2"/></g>
+      <text x="425" y="448" font-size="18">AN/GV · Arrêt normal sur GV</text><text x="966" y="145" font-size="18">RP · Production</text>
+      <text x="290" y="663" class="small">Connexion RRA : 90–180 °C · 25–31 bar</text>
+      <rect x="38" y="778" width="1190" height="56" rx="8" fill="#eef7fb"/>
+      <text x="56" y="800" class="small">TMOY ${fmt(s.tavgC,1)} °C</text><text x="268" y="800" class="small">P ${fmt(s.pressureBar,1)} bar abs.</text>
+      <text x="482" y="800" class="small">${operating.ptRule}</text><text x="56" y="823" class="small">Vert : domaines standards · pointillés : saturation</text></svg>`;
   }
   function coreSvg(record,E){
     const c=record.core,w=780,h=570,left=94,right=712,top=66,bottom=490;
@@ -240,8 +276,7 @@
         const ensureCurrent=()=>{if(attempt.signal.aborted||getModel()!==model)throw new Error("La partie a été réinitialisée pendant la création du certificat.");};
         if(!capture||capturedModel!==model){
           status("Préparation du diagramme P–T et des événements…");prepare();
-          const snapshot={...E.instrumentSnapshot(model),ptHistory:ptTrail(model),ptCurves};
-          const pt=await rasterize(await captureSvg(svgFiles.pt,snapshot,attempt.signal),1800);
+          const pt=await rasterize(ptSvg(model,E,ptCurves),1800);
           ensureCurrent();
           const records=archive.getRecords();
           const selected=[records.find(r=>r.key==="initial"),records.find(r=>r.key==="final"),
@@ -267,6 +302,7 @@
               doc.getElementById("view-synoptiques").classList.add("active");
               doc.querySelectorAll(".tab[data-view]").forEach(el=>el.classList.toggle("active",el.dataset.view==="synoptiques"));
               doc.querySelector(".manual-card").remove();
+              doc.querySelector(".state-menu")?.remove();
               const style=doc.createElement("style");
               style.textContent=`
                 *{animation:none!important;transition:none!important}
@@ -281,20 +317,25 @@
                 .instrument span{font-size:11px}.instrument strong{font-size:12px}
                 .instrument output{font-size:16px;margin-top:4px}
               `;doc.head.append(style);
-              const object=doc.getElementById("diagramObject"),image=doc.createElement("img");
-              image.id=object.id;image.className="certificate-diagram-image";image.src=pt.toDataURL("image/png");
+              const object=doc.getElementById("diagramObject"),image=doc.createElement("div");
+              image.id=object.id;image.className="certificate-diagram-image";
               const frame=doc.getElementById("diagramFrame");
               image.style.cssText="width:100%;height:"+((frame.clientWidth-2)*pt.height/pt.width)+"px;object-fit:contain;display:block";
               object.replaceWith(image);
               const diagram=frame.getBoundingClientRect(),board=doc.querySelector(".instrument-board").getBoundingClientRect();
-              layout={diagramLeft:diagram.left,diagramWidth:diagram.width,diagramBottom:diagram.bottom,
+              layout={diagramLeft:diagram.left,diagramTop:diagram.top,diagramWidth:diagram.width,diagramHeight:diagram.height,diagramBottom:diagram.bottom,
                 boardLeft:board.left,boardWidth:board.width,
                 bottom:Math.ceil(Math.max(diagram.bottom,board.bottom)+16)};
             }});
           // Retirer aussi la marge vide du viewport sous les deux panneaux.
           const screen=document.createElement("canvas");screen.width=fullScreen.width;
           screen.height=Math.min(fullScreen.height,Math.ceil(layout.bottom*fullScreen.width/1800));
-          screen.getContext("2d").drawImage(fullScreen,0,0);
+          const ctx=screen.getContext("2d"),scale=fullScreen.width/1800;
+          ctx.drawImage(fullScreen,0,0);
+          // html2canvas ne doit pas décoder une image SVG/DataURL dans son DOM
+          // cloné. Superposition Canvas explicite, après le rendu de l'interface.
+          ctx.drawImage(pt,(layout.diagramLeft+1)*scale,(layout.diagramTop+1)*scale,
+            (layout.diagramWidth-2)*scale,(layout.diagramWidth-2)*scale*pt.height/pt.width);
           layout.diagramLeft*=screen.width/1800;layout.diagramWidth*=screen.width/1800;
           layout.diagramBottom*=screen.width/1800;
           layout.boardLeft*=screen.width/1800;layout.boardWidth*=screen.width/1800;
@@ -323,7 +364,7 @@
       link.download=certificateSummary(getModel(),$("certificateArtist").value).filename.replace(/\.png$/,".pdf");
       link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
     });
-    return {observe};
+    return {observe,save:()=>archive.save(),restore:(model,saved)=>{observe(model);archive.restore(model,saved);}};
   }
-  return {duration,certificateSummary,pdfBytes,ptTrail,createArchive,coreSvg,captureSvg,create};
+  return {duration,certificateSummary,pdfBytes,ptTrail,ptSvg,createArchive,coreSvg,captureSvg,create};
 });

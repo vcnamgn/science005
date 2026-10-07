@@ -3859,7 +3859,7 @@
       renderRegEditor();
       updateRegulationLive();
       regHistorySuspended = false;
-      if (wasEnabled && window.parent !== window)
+      if (wasEnabled && options.notifyParent !== false && window.parent !== window)
         window.parent.postMessage({type:"centurion-editor-enabled",mode:CENTURION_EDITOR_MODE,enabled:false},"*");
       if (options.autosave !== false) scheduleRegAutosave();
     }
@@ -6259,6 +6259,38 @@
     // (nécessaire aux fichiers locaux dont les iframes ont une origine opaque).
     function receiveCenturionCommand(data) {
       if(!data)return;
+      if(["centurion-editor-save","centurion-editor-validate","centurion-editor-restore"].includes(data.type)){
+        try{
+          let saved;
+          if(data.type==="centurion-editor-save"){
+            saved={mode:CENTURION_EDITOR_MODE,enabled:regulationEnabled,graph:currentRegModel(),
+              runtime:[...regRuntimeStates],lastSignals:[...regLastSignals],diagnostics:regLastDiagnostics,
+              input:centurionInput,local:{rods:s.rods,letdown:s.letdown,heater:s.heater,spray:s.spray}};
+          }else{
+            saved=data.saved;
+            if(!saved||saved.mode!==CENTURION_EDITOR_MODE||typeof saved.enabled!=="boolean"
+              ||!Array.isArray(saved.runtime)||!Array.isArray(saved.lastSignals)||!Array.isArray(saved.diagnostics))
+              throw new Error("État de l'atelier incompatible.");
+            const normalized=normalizeRegModel(saved.graph),ids=new Set(normalized.nodes.map(n=>n.id));
+            if(saved.runtime.length>1000||saved.runtime.some(entry=>!Array.isArray(entry)||entry.length!==2
+              ||!ids.has(entry[0])||!entry[1]||typeof entry[1]!=="object"||Array.isArray(entry[1])))
+              throw new Error("Mémoires des blocs invalides.");
+            if(data.type==="centurion-editor-restore"){
+              applyRegState(normalized,{name:normalized.name,migrate:false,autosave:false,notifyParent:false});
+              centurionInput=saved.input;Object.assign(s,saved.local);
+              setRegulationEnabled(saved.enabled,false);
+              regRuntimeStates=new Map(cloneRegParams(saved.runtime));
+              regLastSignals=new Map(cloneRegParams(saved.lastSignals));
+              regLastDiagnostics=[...saved.diagnostics];
+              regUndoStack=[];regRedoStack=[];updateRegHistoryButtons();
+              updateRegulationModeUI();updateRegulationLive();writeRegAutosave();
+            }
+          }
+          return {type:"centurion-editor-state-result",mode:CENTURION_EDITOR_MODE,requestId:data.requestId,
+            saved:data.type==="centurion-editor-save"?cloneRegParams(saved):undefined};
+        }catch(error){return {type:"centurion-editor-state-result",mode:CENTURION_EDITOR_MODE,
+          requestId:data.requestId,error:error.message};}
+      }
       if(data.type==="centurion-editor-connect"){
         return {type:"centurion-editor-ready",mode:CENTURION_EDITOR_MODE};
       }

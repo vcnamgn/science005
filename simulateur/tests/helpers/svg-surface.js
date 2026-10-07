@@ -21,7 +21,7 @@ function svgSurface(filename) {
   }
   const element=(name,attributes)=>({
     qualifiedName:name,localName:name.split(':').pop(),attributes,children:[],parentElement:null,
-    style:Object.fromEntries((attributes.style||'').split(';').filter(s=>s.includes(':')).map(s=>{
+    style:name.includes(':')?undefined:Object.fromEntries((attributes.style||'').split(';').filter(s=>s.includes(':')).map(s=>{
       const colon=s.indexOf(':');return [s.slice(0,colon).trim(),s.slice(colon+1).trim()];})),
     listeners:{},captureListeners:{},captured:new Set(),
     get id(){return this.attributes.id||'';},
@@ -41,7 +41,7 @@ function svgSurface(filename) {
   });
   function copyNode(node){
     if(!node.localName)return textLeaf(node.nodeValue);
-    const copy=element(node.qualifiedName,{...node.attributes});copy.style={...node.style};
+    const copy=element(node.qualifiedName,{...node.attributes});copy.style=node.style?{...node.style}:undefined;
     copy.children=node.children.map(child=>{const n=copyNode(child);n.parentElement=copy;return n;});return copy;
   }
   const stack=[];let root;
@@ -70,7 +70,7 @@ function svgSurface(filename) {
   function serialize(node){
     if(!node.localName)return escape(node.nodeValue);
     const attributes={...node.attributes};
-    const styles=Object.entries(node.style).filter(([,v])=>v!=='').map(([k,v])=>`${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}:${v}`).join(';');
+    const styles=Object.entries(node.style||{}).filter(([,v])=>v!=='').map(([k,v])=>`${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}:${v}`).join(';');
     if(styles)attributes.style=styles;
     return `<${node.qualifiedName}${Object.entries(attributes).map(([k,v])=>` ${k}="${escape(v)}"`).join('')}>${node.children.map(serialize).join('')}</${node.qualifiedName}>`;
   }

@@ -342,6 +342,11 @@ input[type=number],select{background:#fff;border:1px solid #b8d1df;border-radius
 .certificate-preview{display:block;width:100%;height:auto;border:1px solid #d1e2eb;border-radius:8px}
 .certificate-preview[hidden]{display:none}
 .certificate-offscreen{position:fixed;left:-12000px;top:0;width:1800px;height:1000px;pointer-events:none}
+.state-menu{position:relative}.state-menu>summary{list-style:none;cursor:pointer;white-space:nowrap}
+.state-menu>summary::-webkit-details-marker{display:none}
+.state-menu>div{position:absolute;right:0;top:calc(100% + 9px);z-index:65;width:270px;padding:12px;border:1px solid #c8dfea;border-radius:9px;background:#fff;box-shadow:0 8px 25px #17324d33;display:grid;gap:8px}
+.state-menu small{font-size:12px;line-height:1.45;color:#355c72}
+.state-menu small[data-error=true]{color:#b22d35}
 @media(max-width:550px){.certificate-name{flex-direction:column;align-items:stretch}}
 #inventoryBalance[hidden],#instrumentBoard[hidden]{display:none!important}
 .inventory-balance{background:#fff;border:1px solid #c8e0ec;border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums;font-size:12px}

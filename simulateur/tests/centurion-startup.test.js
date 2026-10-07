@@ -1,6 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const E=require('../centurion-engine');
+const State=require('../centurion-state');
 const {svgSurface}=require('./helpers/svg-surface');
 const html=fs.readFileSync(path.join(__dirname,'../centurion.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
@@ -8,7 +9,7 @@ const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
 // Exécution de l'application entière : vrais événements et vrais pas physiques.
 // Seule la surface DOM/Canvas est remplacée ; aucune fonction applicative n'est extraite.
 function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {svgUpdates=true}={}){
-  const ids=new Map(),nodes=[],frames=[],windowEvents={},messages=[];
+  const ids=new Map(),nodes=[],frames=[],windowEvents={},messages=[],downloads=[];
   let now=0,currentSvg=svgSurface('synoptique-RCP-1300.svg');
   const attributes=tag=>Object.fromEntries([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(([,k,v])=>[k,v]));
   function matches(node,selector){
@@ -33,7 +34,8 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
           toggle:(name,on)=>on===undefined?(classes.has(name)?classes.delete(name):classes.add(name))
             :on?classes.add(name):classes.delete(name)},
         addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn),
-        fire(name){for(const fn of listeners[name]||[])fn({target:node,preventDefault(){}});},
+        fire(name){return Promise.all((listeners[name]||[]).map(fn=>fn({target:node,preventDefault(){}})));},
+        click(){return node.fire('click');},
         setAttribute:(key,value)=>{attrs[key]=String(value);},getAttribute:key=>attrs[key],
         matches:selector=>matches(node,selector),
         querySelector:selector=>selector==='strong'?node.tagLabel:null,
@@ -54,15 +56,16 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
   }
   Object.defineProperty(ids.get('diagramObject'),'data',{set(value){
     currentSvg=svgSurface(value.split('/').at(-1));ids.get('diagramObject').fire('load');}});
-  const document={getElementById:id=>ids.get(id)||null,activeElement:null,
+  const document={getElementById:id=>ids.get(id)||null,activeElement:null,createElement:()=>({click(){}}),
     querySelectorAll:selector=>nodes.filter(n=>matches(n,selector)),
     querySelector(selector){return this.querySelectorAll(selector)[0]||null;}};
-  const context=vm.createContext({window:{CenturionEngine:engine,devicePixelRatio:1,
+  const context=vm.createContext({window:{CenturionEngine:engine,CenturionState:State,devicePixelRatio:1,
     addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn)},document,
     performance:{now:()=>now},requestAnimationFrame:fn=>frames.push(fn),
-    setInterval:()=>1,clearInterval(){},console});
+    setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},Blob,
+    URL:{createObjectURL(blob){downloads.push(blob);return 'blob:test';},revokeObjectURL(){}},console});
   vm.runInContext(source,context,{filename:'centurion-app.js'});
-  return {get:id=>ids.get(id),query:selector=>document.querySelector(selector),messages,get pendingFrames(){return frames.length;},
+  return {get:id=>ids.get(id),query:selector=>document.querySelector(selector),messages,downloads,get pendingFrames(){return frames.length;},
     receive(data){for(const fn of windowEvents.message||[])fn({data});},
     click:id=>ids.get(id).fire('click'),
     frame(milliseconds=100){now+=milliseconds;const callback=frames.shift();
@@ -88,6 +91,27 @@ test('démarrage complet : initialisation, Démarrer, horloge et publication des
   assert.ok(page.snapshot.time>7,'le moteur physique avance après le clic');
   assert.notEqual(page.get('simClock').textContent,'00:00:00');
   assert.equal(page.pendingFrames,1,'la boucle poursuit ses trames après l’affichage');
+});
+
+test('application : arrêt RIS indépendant de la brèche et reprise JSON en pause',async()=>{
+  const m=E.make();E.initiate(m,'break',{areaCm2:300,loop:2});E.initiate(m,'ris');
+  E.advance(m,20);
+  const {page,flush}=connectedApplication({synchronous:true,engine:{...E,make:()=>m}});
+  await page.click('risPumpStop');flush();
+  assert.equal(m.controls.breakAreaCm2,300);assert.equal(m.state.breakAreaCm2,300);
+  assert.match(page.get('risManualStatus').textContent,/brèche toujours ouverte : 300/);
+  await page.click('saveState');
+  assert.match(page.get('stateStatus').textContent,/sauvegardé/);
+  const text=await page.downloads.at(-1).text(),saved=JSON.parse(text);
+  assert.equal(saved.model.controls.risPumpMode,'off');assert.equal(saved.model.controls.breakAreaCm2,300);
+  const file=page.get('stateFile');file.files=[{size:text.length,text:async()=>text}];
+  await file.fire('change');flush();
+  assert.match(page.get('stateStatus').textContent,/chargé.*en pause/);
+  assert.equal(page.get('runIndicator').textContent,'EN PAUSE');
+  assert.equal(page.snapshot.time,saved.model.state.time);
+  await page.click('runButton');page.frame(150);flush();page.frame(150);flush();
+  assert.ok(page.snapshot.time>saved.model.state.time);
+  assert.ok(page.snapshot.massBalance.breakKgS>0);
 });
 
 test('application : bilan CPP lisible, débits réalisés et soupapes toujours commandables',()=>{

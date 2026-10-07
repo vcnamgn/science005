@@ -298,7 +298,11 @@
       else if(kind==="rods")updateRods(data.snapshot);
       const copy=root.cloneNode(true);
       copy.querySelectorAll("script").forEach(node=>node.remove());
-      copy.querySelectorAll("*").forEach(node=>{node.style.animation="none";node.style.transition="none";});
+      copy.querySelectorAll("*").forEach(node=>{
+        // Les métadonnées RDF/Inkscape ne sont pas des SVGElement et ne
+        // possèdent pas de style dans un vrai navigateur.
+        if(node.style){node.style.animation="none";node.style.transition="none";}
+      });
       window.parent.postMessage({type:"centurion-svg-capture-result",requestId:data.requestId,
         kind,svg:new XMLSerializer().serializeToString(copy)},"*");
       return;

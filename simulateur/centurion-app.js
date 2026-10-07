@@ -46,6 +46,8 @@
   let pendingInitiator=null,initiatorTimer=null;
   let regulationActive=false,protectionActive=false;
   let pendingCcStep=null,ccTickId=0;
+  let stateBusy=false,stateRequestId=0;
+  const stateRequests=new Map(),ccIdleWaiters=new Set();
   const alarmDefaults=[
     {id:"boardPower",tag:"POW1",unit:"% PN",limits:[null,null,102,109],value:s=>s.powerPct},
     {id:"boardPressure",tag:"002MP",unit:"bar",limits:[130,150,160,165],value:s=>s.pressureBar},
@@ -123,7 +125,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-chaleur-gmpp";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-sauvegarde-capture-2";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -205,6 +207,10 @@
     const balance=E.primaryMassBalance(model.state);
     $("inventoryPlantState").textContent=E.reactorOperatingState(model.state).code;
     $("inventoryBalanceConditions").textContent=`P ${fmt(model.state.pressureBar,1)} bar · TMOY ${fmt(model.state.tavgC,1)} °C`;
+    const breach=$("inventoryBreakStatus"),s=model.state;
+    breach.hidden=s.breakAreaCm2<=0;
+    breach.textContent=`Brèche ouverte : ${fmt(s.breakAreaCm2)} cm² · boucle ${s.breakLoop}, branche ${s.breakBranch} · ΔP ${fmt(Math.max(0,s.pressureBar-1),1)} bar`
+      +(s.pressureBar<=1.1?" · fuite faible ou nulle par dépressurisation ; la section reste ouverte.":" · indépendante de l'arrêt des pompes RIS.");
     document.querySelectorAll("[data-mass-balance]").forEach(output=>{
       output.textContent=fmt(balance[output.dataset.massBalance],Number(output.dataset.decimals??1));
     });
@@ -212,7 +218,7 @@
       const value=balance[output.dataset.flowCondition],q=balance[output.dataset.flowRate];
       output.textContent=q>1e-9&&Number.isFinite(value)?fmt(value,Number(output.dataset.decimals??1)):"—";
     });
-    const s=model.state,u=model.controls,flow=E.primaryFlowDiagnostics(model);
+    const u=model.controls,flow=E.primaryFlowDiagnostics(model);
     $("inventoryRisSource").textContent=`PTR : ${fmt(s.risTankRemainingKg/E.C.risWaterDensityKgM3,1)} / ${fmt(E.C.risTankVolumeM3,0)} m³ · ${fmt(E.C.risInjectionTempC,0)} °C · CB ${fmt(u.risBoronPpm,0)} ppm`;
     $("inventorySump").textContent=`Puisards : ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C · CB ${fmt(s.sumpBoronPpm,0)} ppm · EAS ${fmt(s.easCoolingMW,1)} MW (maintien < 90 °C)`;
     $("inventoryCoreFlow").textContent=`Cœur : ${fmt(flow.coreKgS,1)} kg/s (${fmt(flow.corePct,1)} %) = boucles ${fmt(flow.loopKgS,1)} + RIS traversant le cœur ${fmt(flow.risCoreKgS,1)} kg/s`;
@@ -751,7 +757,8 @@
     $("scenarioEnd").classList.toggle("safe",s.endState==="safe");
     $("scenarioEndTitle").textContent=s.endState==="safe"?"Cœur sain et sauf":"Cœur fondu";
     $("scenarioEndReason").textContent=s.endReason;
-    $("runButton").disabled=Boolean(s.endState);
+    $("runButton").disabled=Boolean(s.endState||stateBusy);
+    $("saveState").disabled=stateBusy;$("loadState").disabled=stateBusy;$("resetButton").disabled=stateBusy;
     const danger=s.endState?null:s.coreDamageWarning;
     $("coreDamageCountdown").hidden=!danger;
     $("coreDamageSeconds").textContent=danger?String(Math.max(1,Math.ceil(danger.remainingS))):"5";
@@ -788,7 +795,8 @@
       $(`asgTrainStatus${i}`).textContent=high?"HS · niveau haut":enabled?"ES":"HS";
     }
     $("risSource").value=u.risSourceMode;
-    $("risManualStatus").textContent=`Pompes : ${u.risPumpMode==="off"?"arrêt manuel":u.risPumpMode==="on"?"marche manuelle":"sur demande IS"} · livré ${fmt(s.risDeliveredKgS,1)} kg/s`;
+    $("risManualStatus").textContent=`Pompes : ${u.risPumpMode==="off"?"arrêt manuel":u.risPumpMode==="on"?"marche manuelle":"sur demande IS"} · livré ${fmt(s.risDeliveredKgS,1)} kg/s`
+      +(s.breakAreaCm2>0?` · brèche toujours ouverte : ${fmt(s.breakAreaCm2)} cm², ${fmt(s.breakKgS,1)} kg/s`:"");
     $("risManualReserve").textContent=`PTR ${fmt(s.risTankRemainingKg/E.C.risWaterDensityKgM3,1)} m³ · ${fmt(E.C.risInjectionTempC,0)} °C · CB ${fmt(u.risBoronPpm,0)} ppm · puisard ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C · CB ${fmt(s.sumpBoronPpm,0)} ppm · refroidissement EAS`;
     $("connectRra").disabled=!v.rra.allowed||Boolean(s.endState);
     $("rraConditions").textContent=s.rraConnected?"RRA connecté":v.rra.allowed?"Connexion autorisée":v.rra.reasons.join(" · ");
@@ -1030,6 +1038,7 @@
     for(const mode of tick.modes)applyEditorOutputs(tick.responses[mode]);
     certificate?.observe(model);
     pendingCcStep=null;
+    for(const done of ccIdleWaiters)done();ccIdleWaiters.clear();
   }
   function receiveCcStepOutput(message) {
     const tick=pendingCcStep;
@@ -1143,7 +1152,104 @@
       else if(!running&&!pendingCcStep)applyEditorOutputs(data);
     }
   }
+  function stateStatus(text,error=false){
+    $("stateStatus").textContent=text;$("stateStatus").dataset.error=String(error);
+  }
+  function editorStateCommand(mode,type,saved){
+    if(!editorReady[mode])return Promise.reject(new Error(`L'atelier CC-${mode} n'est pas encore chargé.`));
+    const requestId=`state-${++stateRequestId}`;
+    return new Promise((resolve,reject)=>{
+      const finish=response=>{
+        clearTimeout(timer);stateRequests.delete(requestId);
+        if(response.error)reject(new Error(response.error));else resolve(response.saved);
+      };
+      const timer=setTimeout(()=>finish({error:`L'atelier CC-${mode} n'a pas répondu.`}),10000);
+      stateRequests.set(requestId,{mode,finish});
+      try{const response=dispatchEditor(mode,{type,requestId,saved});if(response)finish(response);}
+      catch(error){finish({error:error.message});}
+    });
+  }
+  function waitForCcIdle(){
+    if(!pendingCcStep)return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      const done=()=>{clearTimeout(timer);resolve();};
+      const timer=setTimeout(()=>{ccIdleWaiters.delete(done);reject(new Error("Un pas CC reste en attente. Réessayez après le chargement des ateliers."));},10000);
+      ccIdleWaiters.add(done);
+    });
+  }
+  async function saveEditors(){
+    const [regul,protect]=await Promise.all(["regul","protect"].map(mode=>editorStateCommand(mode,"centurion-editor-save")));
+    return {regul,protect};
+  }
+  function stateUi(){
+    return {speed,diagram,selectedGv,activeView,historyFollowing,historyEndS,
+      historyWindow:$("historyWindow").value,traceSet:$("traceSet").value,
+      coreTrailWindow:$("coreTrailWindow").value,ptTrailWindow:$("ptTrailWindow").value,
+      alarmLimits};
+  }
+  async function saveSimulationState(){
+    if(stateBusy)return;
+    if(pendingInitiator){stateStatus("Terminez ou annulez le décompte de l'initiateur avant de sauvegarder.",true);return;}
+    const resume=running;stateBusy=true;running=false;render();
+    stateStatus("Sauvegarde de l'état et des mémoires CC…");
+    try{
+      await waitForCcIdle();const editors=await saveEditors();
+      const save=window.CenturionState.write(E,model,editors,stateUi(),certificate?.save()||null);
+      const url=URL.createObjectURL(new Blob([JSON.stringify(save)],{type:"application/json"}));
+      const link=document.createElement("a");link.href=url;
+      link.download=`Centurion-etat-${tLabel(model.state.time).replaceAll(":","-")}.json`;link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+      stateStatus(`État sauvegardé à ${tLabel(model.state.time)} · historique et mémoires CC inclus.`);
+    }catch(error){stateStatus("Sauvegarde impossible : "+error.message,true);}
+    finally{stateBusy=false;running=resume&&!model.state.endState;last=performance.now();render();}
+  }
+  async function loadSimulationState(file){
+    if(stateBusy||!file)return;
+    stateBusy=true;const resume=running;running=false;render();
+    let previous=null;
+    try{
+      if(file.size>80*1024*1024)throw new Error("Fichier trop volumineux (80 Mo maximum).");
+      const save=window.CenturionState.read(E,await file.text());
+      for(const mode of ["regul","protect"])
+        await editorStateCommand(mode,"centurion-editor-validate",save.editors[mode]);
+      await waitForCcIdle();
+      previous={model,editors:await saveEditors(),ui:stateUi(),archive:certificate?.save()};
+      // Aucun remplacement avant validation de la physique et des deux graphes.
+      for(const mode of ["regul","protect"])
+        await editorStateCommand(mode,"centurion-editor-restore",save.editors[mode]);
+      cancelInitiator();pendingCcStep=null;ccTickId++;carry=0;
+      model=save.model;regulationActive=save.editors.regul.enabled;protectionActive=save.editors.protect.enabled;
+      model.controls.protectionsEnabled=protectionActive;
+      restoreStateUi(save.ui);syncInputs();setDiagram(save.ui.diagram,save.ui.selectedGv);
+      if(save.ui.activeView)activateView(save.ui.activeView);
+      if(save.certificateArchive)certificate?.restore(model,save.certificateArchive);
+      else certificate?.observe(model);
+      stateStatus(`État chargé à ${tLabel(model.state.time)} · en pause. Cliquez sur Démarrer pour poursuivre.`);
+      previous=null;
+    }catch(error){
+      if(previous){
+        model=previous.model;restoreStateUi(previous.ui);
+        regulationActive=previous.editors.regul.enabled;protectionActive=previous.editors.protect.enabled;
+        for(const mode of ["regul","protect"])
+          await editorStateCommand(mode,"centurion-editor-restore",previous.editors[mode]).catch(()=>{});
+        syncInputs();setDiagram(previous.ui.diagram,previous.ui.selectedGv);
+        if(previous.archive)certificate?.restore(model,previous.archive);
+      }
+      running=resume;stateStatus("Chargement impossible : "+error.message+" La partie courante est conservée.",true);
+    }finally{stateBusy=false;last=performance.now();render();$("stateFile").value="";}
+  }
+  function restoreStateUi(ui){
+    speed=ui.speed;$("simSpeed").value=String(speed);
+    historyFollowing=ui.historyFollowing;historyEndS=ui.historyEndS;
+    for(const id of ["historyWindow","traceSet","coreTrailWindow","ptTrailWindow"])
+      $(id).value=ui[id];
+    for(const key of Object.keys(alarmLimits))if(ui.alarmLimits[key])alarmLimits[key]=[...ui.alarmLimits[key]];
+    renderAlarmTable();
+  }
   function bindControls() {
+    $("saveState").addEventListener("click",saveSimulationState);
+    $("loadState").addEventListener("click",()=>{$("stateFile").value="";$("stateFile").click();});
+    $("stateFile").addEventListener("change",e=>loadSimulationState(e.target.files?.[0]));
     document.querySelectorAll(".model-tab").forEach(b=>b.addEventListener("click",()=>setModelPage(b.dataset.modelPage)));
     document.querySelectorAll(".model-detail-tab").forEach(b=>b.addEventListener("click",()=>setModelDetailPage(b.dataset.detailPage)));
     $("alarmRows").addEventListener("change",e=>{
@@ -1213,6 +1319,11 @@
     for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
       $(id).addEventListener("load",()=>connectEditor(mode,id));
     window.addEventListener("message",e=>{
+      if(e.data?.type==="centurion-editor-state-result"){
+        const request=stateRequests.get(e.data.requestId);
+        if(request&&e.source===$(editorFrames[request.mode]).contentWindow)request.finish(e.data);
+        return;
+      }
       if(e.source===$("diagramObject").contentWindow&&e.data?.type==="centurion-svg-viewport"
         &&Number.isFinite(e.data.zoom))$("diagramZoomValue").textContent=`${fmt(100*e.data.zoom)} %`;
       if(e.data?.type==="centurion-svg-navigate") setDiagram(e.data.diagram,e.data.gv||selectedGv);

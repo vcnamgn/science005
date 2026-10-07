@@ -14,6 +14,7 @@ const modules=[
   {file:'simulateur/centurion-app.js',title:'Application',description:'Horloge, commandes, arbitrage CC et présentation.'},
   {file:'simulateur/centurion-svg-bridge.js',title:'Pont SVG',description:'Mesures, animations et navigation dans les SVG.'},
   {file:'simulateur/centurion-certificate.js',title:'Certificats',description:'Archives des événements, captures SVG et export PNG/PDF local.'},
+  {file:'simulateur/centurion-state.js',title:'États JSON',description:'Sauvegarde complète, validation et reprise locale pour le débogage.'},
   {file:'simulateur/centurion-cc-regul.html',title:'Ateliers CC',description:'Édition, évaluation, stockage et code hérité inactif.'}
 ];
 const notes={

@@ -164,6 +164,11 @@ dM_liquide/dt = dM_CPP/dt − dM_vapeur/dt</code></pre>
 <h2 id="9-parametres-sauvegardes-et-publication">9. Paramètres, sauvegardes et publication</h2>
 <p>Les paramètres physiques sont portés par <code>controls</code>, initialisés à partir des constantes <code>C</code> et des tables. Les saisies et la molette doivent appliquer les valeurs immédiatement, même en pause. Les poids intégraux et les paramètres de forme sont distincts. Réinitialiser rétablit les paramètres physiques par défaut ; les graphes des ateliers ont leur propre persistance.</p>
 <p>Le navigateur conserve les modèles CC dans <code>localStorage</code>, sous <code>centurion-regul-autosave-v1</code> et la clé équivalente de protection. Les modèles JSON exportés utilisent le format <code>SimuREP-Regulation</code>, version 1. La sauvegarde porte le graphe et la vue de l&#39;atelier ; elle ne sérialise pas tout l&#39;état physique ni l&#39;historique d&#39;une partie.</p>
+<h3 id="etat-complet-au-format-json">État complet au format JSON</h3>
+<p>Le menu <strong>État JSON</strong> de la barre supérieure permet de <strong>Sauvegarder l’état</strong> ou <strong>Charger un état</strong>. Ce fichier est distinct de l&#39;export d&#39;un graphe CC : son format est <code>Centurion-State</code>, version 1, avec une révision du moteur. <code>centurion-state.js</code> vérifie format, révision, types, tailles des tableaux, nombres finis, chronologie et cohérence de la brèche avant tout remplacement.</p>
+<p>La sauvegarde conserve <code>state</code> et <code>controls</code> intégralement : précurseurs, iode/xénon sur 32 mailles, inventaires liquide/vapeur, énergie, paquets en transit, réserves RIS/puisard, groupes, vannes, brèche, demandes et délais de protection, programme de charge, événements et historique. Elle contient aussi les deux graphes CC, leurs mémoires de filtres, dérivés et intégrateurs, leur activation, les fenêtres des graphiques, les seuils d&#39;alarme et les instantanés du certificat. Les fichiers SVG et JavaScript restent dans l&#39;application ; ils ne sont pas embarqués dans le JSON.</p>
+<p>L&#39;application fige le temps et attend la fin du pas CC en cours pour obtenir un état cohérent. Le dialogue <code>centurion-editor-save</code> / <code>validate</code> / <code>restore</code> utilise le même raccordement direct ou par messages que les pas physiques. Les deux graphes sont validés avant restauration ; une ancienne réponse de calcul ne peut pas commander la partie rechargée. Un fichier incompatible conserve la partie courante. Un fichier valide est <strong>toujours chargé en pause</strong>, même si les régulations et protections enregistrées étaient actives ; Démarrer poursuit la simulation. Les graphes restaurés remplacent les graphes des ateliers et leur autosauvegarde. Un initiateur dont le compte à rebours réel est en cours doit être lancé ou annulé avant l&#39;enregistrement.</p>
+<p>Le fichier reste local et peut être joint pour déboguer une situation. Il n&#39;est pas un certificat infalsifiable : les données JSON sont modifiables. Une évolution incompatible du moteur doit changer la révision et être accompagnée d&#39;une migration explicite.</p>
 <p>Les documents sources et les archives de propositions ne sont pas publiés. Le catalogue public emploie des identifiants REF ; leur correspondance avec les fichiers locaux reste privée. Les exclusions d&#39;anciens prototypes figurent dans <code>scripts/publication-exclusions.json</code>. Les ressources actives, les tests actuels et cette documentation restent dans le dépôt public.</p>
 <p>Les fichiers d&#39;une application statique publique sont téléchargeables. Il n&#39;y a pas d&#39;authentification dans ce code. Un contrôle d&#39;accès réel requiert une couche d&#39;hébergement appropriée ; voir <a href="../simulateur/ACCES-WEB.md">l&#39;étude d&#39;accès web</a>. Les secrets de publication ne doivent figurer ni dans le JavaScript, ni dans la documentation, ni dans les URL Git enregistrées.</p>
 <h2 id="10-verification-et-maintenance">10. Vérification et maintenance</h2>
@@ -184,13 +189,13 @@ node scripts/check-docs.mjs</code></pre>
 <p><code>centurion-certificate.js</code> conserve au plus sept instantanés : inventaire initial, première demande AAR, première demande IS, première ouverture des soupapes, première alerte cœur, baisse d’inventaire et état final. Les valeurs sont copiées au sous-pas physique de 0,1 s, indépendamment du rafraîchissement de l’écran et de l’accélération. Une nouvelle partie remplace l’archive. Il s’agit d’une mémoire de présentation, sans modification du moteur et sans capacité de reprise d’une partie.</p>
 <p>Le certificat présente la copie de l’interface finale sur <strong>Diagramme P–T</strong>, avec la trace des <strong>quatre dernières heures</strong> (ou toute la durée disponible si elle est plus courte). La projection utilise <code>instrumentSnapshot</code> et les mêmes courbes P–T que l’écran. Des iframes temporaires chargent les SVG et reçoivent les instantanés par le pont SVG ; seul leur parent peut demander une capture. La demande est relancée toutes les 250 ms jusqu’à la réponse, avec un délai maximal de 12 s. La fenêtre émettrice et l’identifiant de demande sont vérifiés pour écarter les réponses anciennes. La copie est sérialisée sans script, convertie en image puis retirée. Les écouteurs et minuteries sont retirés après chaque capture. Une réinitialisation annule les captures en cours, vide l’aperçu et les téléchargements de l’ancienne partie ; une tâche annulée ne peut pas modifier l’état de la suivante. Le mécanisme évite de lire directement un fichier SVG depuis JavaScript et fonctionne avec le protocole de messages déjà utilisé en fichier local.</p>
 <p>Les miniatures montrent les inventaires initial/final et jusqu’à quatre événements de protection. Elles sont disposées sur deux colonnes, sous le diagramme P–T et dans sa largeur. L’AAR prend la vue Cœur si le signal PLIN élevée est présent à cet instant ; sinon, le pressuriseur. Les profils Cœur sont copiés avec leurs 32 valeurs P(z)/PLIN, affichés sur des axes fixes. Les miniatures sont horodatées et indiquent la pression, la température et la masse d’eau CPP. Le verdict occupe un rectangle en bas à droite, vert en cas de réussite, rouge en cas d’échec, avec le motif et la durée.</p>
-<p>La copie de l’interface utilise <strong>html2canvas 1.4.1</strong>, distribué localement sous licence MIT dans <code>simulateur/vendor/</code>. Une copie du DOM retire les commandes manuelles et organise le diagramme P–T et le tableau de bord sur deux colonnes, quelle que soit la taille de l’écran. Les SVG sont remplacés par leurs images et les animations sont figées pendant la copie. Les commandes de la page réelle restent disponibles. Le bouton PDF produit directement une page A4 contenant l’image JPEG du certificat, sans fenêtre supplémentaire ni service externe. Le certificat est un souvenir pédagogique ; son verdict est celui du modèle exploratoire.</p>
+<p>La copie de l’interface utilise <strong>html2canvas 1.4.1</strong>, distribué localement sous licence MIT dans <code>simulateur/vendor/</code>. Une copie du DOM retire les commandes manuelles et organise le diagramme P–T et le tableau de bord sur deux colonnes, quelle que soit la taille de l’écran. Le diagramme P–T est produit directement depuis les mêmes courbes physiques et l&#39;historique des quatre dernières heures, sans attendre le chargement du SVG de la vue. Il est rasterisé puis dessiné explicitement sur le Canvas final après la copie de l&#39;interface : html2canvas n&#39;a plus à décoder son image dans le DOM cloné, ce qui évite une zone blanche selon le navigateur. Les miniatures inventaire/PZR gardent le protocole de capture SVG décrit ci-dessus. Les commandes de la page réelle restent disponibles. Le bouton PDF produit directement une page A4 contenant l’image JPEG du certificat, sans fenêtre supplémentaire ni service externe. Le certificat est un souvenir pédagogique ; son verdict est celui du modèle exploratoire.</p>
 <h2 id="12-references-et-documents-associes">12. Références et documents associés</h2>
 <ul><li><a href="../simulateur/README.md">Mode d&#39;emploi</a>.</li><li><a href="../simulateur/METHODE-CENTURION.md">Équations, chronologie des choix et hypothèses</a>.</li><li><a href="../simulateur/references.html">Catalogue de références</a>.</li><li><a href="NETTOYAGE.md">Journal de nettoyage du dépôt</a>.</li><li><a href="index.html#api">Index HTML et API</a>.</li></ul>
 <p>La note et l&#39;index décrivent la version présente du code. Les liens de source en ligne utilisent la branche <code>main</code> du dépôt ; ils doivent être régénérés après une modification pour conserver des numéros de ligne exacts.</p>
-<section id="api"><h2>Référence des fonctions</h2><p>53 fonctions exportées par le moteur et 295 fonctions nommées recensées dans les quatre modules. L’index est extrait des sources ; il ne détermine pas quelles fonctions héritées de l’atelier sont actives.</p>
+<section id="api"><h2>Référence des fonctions</h2><p>53 fonctions exportées par le moteur et 312 fonctions nommées recensées dans les quatre modules. L’index est extrait des sources ; il ne détermine pas quelles fonctions héritées de l’atelier sont actives.</p>
 <div class="metadata">Constantes et tables exportées : C, G3, ROD_NAMES, ROD_WORTH_PCM, AXIAL_ROD_ABSORPTION, TRANSIENTS, CPP_GEOMETRY, CPP_CORE_TOP_M, CPP_CORE_BOTTOM_M, CPP_INITIAL_LEVEL_M, SPIN_FXY32. Les liens de code pointent vers la branche main. Génération sans bibliothèque externe ; il s’agit d’une documentation de style API, pas d’une sortie du logiciel Doxygen.</div>
-<div class="api-toolbar"><input id="api-search" type="search" aria-label="Chercher une fonction" placeholder="Rechercher : xénon, step, sortie…"><select id="api-module" aria-label="Filtrer le module"><option value="">Tous les modules</option><option value="0">Moteur</option><option value="1">Application</option><option value="2">Pont SVG</option><option value="3">Certificats</option><option value="4">Ateliers CC</option></select><label><input id="api-public" type="checkbox" checked> API exportée seulement</label><span class="count" id="api-count" aria-live="polite"></span></div><section class="api-module" id="module-0"><h3>Moteur</h3><p>Physique et API indépendante du navigateur. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js">Fichier source</a></p>
+<div class="api-toolbar"><input id="api-search" type="search" aria-label="Chercher une fonction" placeholder="Rechercher : xénon, step, sortie…"><select id="api-module" aria-label="Filtrer le module"><option value="">Tous les modules</option><option value="0">Moteur</option><option value="1">Application</option><option value="2">Pont SVG</option><option value="3">Certificats</option><option value="4">États JSON</option><option value="5">Ateliers CC</option></select><label><input id="api-public" type="checkbox" checked> API exportée seulement</label><span class="count" id="api-count" aria-live="polite"></span></div><section class="api-module" id="module-0"><h3>Moteur</h3><p>Physique et API indépendante du navigateur. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js">Fichier source</a></p>
 <details class="api-function" data-module="0" data-public="true" data-search="saturationpressurebar moteur pression de saturation en bar absolus à partir de la température en °c ; région 4 if97.">
 <summary><code>saturationPressureBar(tempC)</code><span class="badge public">API exportée</span></summary>
 <p>Pression de saturation en bar absolus à partir de la température en °C ; région 4 IF97.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L14">simulateur/centurion-engine.js:14</a></p></details>
@@ -418,139 +423,163 @@ node scripts/check-docs.mjs</code></pre>
 <p>Renvoie le dictionnaire des sources CC : chaque clé possède [valeur numérique, unité].</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1750">simulateur/centurion-engine.js:1750</a></p></details></section><section class="api-module" id="module-1"><h3>Application</h3><p>Horloge, commandes, arbitrage CC et présentation. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js">Fichier source</a></p>
 <details class="api-function" data-module="1" data-public="false" data-search="activateview application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>activateView(name)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L69">simulateur/centurion-app.js:69</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L71">simulateur/centurion-app.js:71</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderinitiatorcountdown application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderInitiatorCountdown(now=performance.now())</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L76">simulateur/centurion-app.js:76</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L78">simulateur/centurion-app.js:78</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="cancelinitiator application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>cancelInitiator()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L88">simulateur/centurion-app.js:88</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L90">simulateur/centurion-app.js:90</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="scheduleinitiator application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>scheduleInitiator(name,details,label)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L93">simulateur/centurion-app.js:93</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L95">simulateur/centurion-app.js:95</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="setdiagram application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setDiagram(name,gv=selectedGv)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L109">simulateur/centurion-app.js:109</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L111">simulateur/centurion-app.js:111</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="recolorarrow application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>recolorArrow(group,disabled)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L135">simulateur/centurion-app.js:135</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L137">simulateur/centurion-app.js:137</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="arrowancestor application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>arrowAncestor(text)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L145">simulateur/centurion-app.js:145</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L147">simulateur/centurion-app.js:147</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="parselinklabel application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>parseLinkLabel(label)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L153">simulateur/centurion-app.js:153</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L155">simulateur/centurion-app.js:155</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="decoratesvg application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>decorateSvg()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L162">simulateur/centurion-app.js:162</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L164">simulateur/centurion-app.js:164</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="updatesvg application application : publie la projection instrumentale vers la vue svg, avec ses éventuelles traces.">
 <summary><code>updateSvg()</code><span class="badge ">interne</span></summary>
-<p>Application : publie la projection instrumentale vers la vue SVG, avec ses éventuelles traces.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L188">simulateur/centurion-app.js:188</a></p></details>
+<p>Application : publie la projection instrumentale vers la vue SVG, avec ses éventuelles traces.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L190">simulateur/centurion-app.js:190</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderinventorybalance application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderInventoryBalance()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L202">simulateur/centurion-app.js:202</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L204">simulateur/centurion-app.js:204</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderboard application application : affiche mesures réalisées, informations calculées, alarmes et positions.">
 <summary><code>renderBoard()</code><span class="badge ">interne</span></summary>
-<p>Application : affiche mesures réalisées, informations calculées, alarmes et positions.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L229">simulateur/centurion-app.js:229</a></p></details>
+<p>Application : affiche mesures réalisées, informations calculées, alarmes et positions.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L235">simulateur/centurion-app.js:235</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderalarms application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAlarms(s,g,l)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L305">simulateur/centurion-app.js:305</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L311">simulateur/centurion-app.js:311</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderalarmtable application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAlarmTable()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L323">simulateur/centurion-app.js:323</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L329">simulateur/centurion-app.js:329</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="setmodelpage application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setModelPage(page)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L327">simulateur/centurion-app.js:327</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L333">simulateur/centurion-app.js:333</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="setmodeldetailpage application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setModelDetailPage(page)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L332">simulateur/centurion-app.js:332</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L338">simulateur/centurion-app.js:338</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="rendersignals application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderSignals()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L340">simulateur/centurion-app.js:340</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L346">simulateur/centurion-app.js:346</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="renderaxial application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAxial()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L373">simulateur/centurion-app.js:373</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L379">simulateur/centurion-app.js:379</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="drawcorecharts application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawCoreCharts()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L380">simulateur/centurion-app.js:380</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L386">simulateur/centurion-app.js:386</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="drawhistory application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawHistory()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L564">simulateur/centurion-app.js:564</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L570">simulateur/centurion-app.js:570</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="drawloadprogramchart application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawLoadProgramChart()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L697">simulateur/centurion-app.js:697</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L703">simulateur/centurion-app.js:703</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="rendertransientcontrols application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderTransientControls()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L722">simulateur/centurion-app.js:722</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L728">simulateur/centurion-app.js:728</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="render application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>render()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L744">simulateur/centurion-app.js:744</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L750">simulateur/centurion-app.js:750</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="bindnumber application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindNumber(id,callback)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L876">simulateur/centurion-app.js:876</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L884">simulateur/centurion-app.js:884</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="bindnumericinputs application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindNumericInputs(target,callback,selector=null)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L879">simulateur/centurion-app.js:879</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L887">simulateur/centurion-app.js:887</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="bindmodelparameters application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindModelParameters()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L907">simulateur/centurion-app.js:907</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L915">simulateur/centurion-app.js:915</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="rendermanualextras application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderManualExtras()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L927">simulateur/centurion-app.js:927</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L935">simulateur/centurion-app.js:935</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="changemanualroverride application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>changeManualROverride(enabled)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L947">simulateur/centurion-app.js:947</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L955">simulateur/centurion-app.js:955</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="bindmanualextras application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindManualExtras()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L957">simulateur/centurion-app.js:957</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L965">simulateur/centurion-app.js:965</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="editorsignals application application : délègue la projection des sources à controlsignals, sans duplication des mesures.">
 <summary><code>editorSignals()</code><span class="badge ">interne</span></summary>
-<p>Application : délègue la projection des sources à controlSignals, sans duplication des mesures.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L984">simulateur/centurion-app.js:984</a></p></details>
+<p>Application : délègue la projection des sources à controlSignals, sans duplication des mesures.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L992">simulateur/centurion-app.js:992</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="editorbridge application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>editorBridge(mode)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L988">simulateur/centurion-app.js:988</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L996">simulateur/centurion-app.js:996</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="dispatcheditor application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>dispatchEditor(mode,payload)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L992">simulateur/centurion-app.js:992</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1000">simulateur/centurion-app.js:1000</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="sendeditortick application application : envoie dt et les signaux communs aux deux éditeurs prêts.">
 <summary><code>sendEditorTick(dt=0)</code><span class="badge ">interne</span></summary>
-<p>Application : envoie dt et les signaux communs aux deux éditeurs prêts.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L998">simulateur/centurion-app.js:998</a></p></details>
+<p>Application : envoie dt et les signaux communs aux deux éditeurs prêts.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1006">simulateur/centurion-app.js:1006</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="advancecontrolledstep application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>advanceControlledStep()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1010">simulateur/centurion-app.js:1010</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1018">simulateur/centurion-app.js:1018</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="finishccstep application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>finishCcStep(tick)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1028">simulateur/centurion-app.js:1028</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1036">simulateur/centurion-app.js:1036</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="receiveccstepoutput application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>receiveCcStepOutput(message)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1034">simulateur/centurion-app.js:1034</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1043">simulateur/centurion-app.js:1043</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="advancesimulationtime application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>advanceSimulationTime()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1045">simulateur/centurion-app.js:1045</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1054">simulateur/centurion-app.js:1054</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="connecteditor application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>connectEditor(mode,id)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1056">simulateur/centurion-app.js:1056</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1065">simulateur/centurion-app.js:1065</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="setregulationactive application application : active/désactive la commande cc-régul ; synchronise le repli manuel sur les actionneurs réalisés.">
 <summary><code>setRegulationActive(enabled,notifyEditor=true)</code><span class="badge ">interne</span></summary>
-<p>Application : active/désactive la commande CC-RÉGUL ; synchronise le repli manuel sur les actionneurs réalisés.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1062">simulateur/centurion-app.js:1062</a></p></details>
+<p>Application : active/désactive la commande CC-RÉGUL ; synchronise le repli manuel sur les actionneurs réalisés.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1071">simulateur/centurion-app.js:1071</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="setprotectionactive application application : commande cc-protect et fixe le mode de protection par graphe.">
 <summary><code>setProtectionActive(enabled,notifyEditor=true)</code><span class="badge ">interne</span></summary>
-<p>Application : commande CC-PROTECT et fixe le mode de protection par graphe.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1084">simulateur/centurion-app.js:1084</a></p></details>
+<p>Application : commande CC-PROTECT et fixe le mode de protection par graphe.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1093">simulateur/centurion-app.js:1093</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="applyeditoroutputs application application : traduit les sorties finies des ateliers actifs en commandes du moteur ; aar/is/asg sont mémorisés.">
 <summary><code>applyEditorOutputs(message)</code><span class="badge ">interne</span></summary>
-<p>Application : traduit les sorties finies des ateliers actifs en commandes du moteur ; AAR/IS/ASG sont mémorisés.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1095">simulateur/centurion-app.js:1095</a></p></details>
+<p>Application : traduit les sorties finies des ateliers actifs en commandes du moteur ; AAR/IS/ASG sont mémorisés.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1104">simulateur/centurion-app.js:1104</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="handleeditormessage application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>handleEditorMessage(data)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1124">simulateur/centurion-app.js:1124</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1133">simulateur/centurion-app.js:1133</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="statestatus application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>stateStatus(text,error=false)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1155">simulateur/centurion-app.js:1155</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="editorstatecommand application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>editorStateCommand(mode,type,saved)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1158">simulateur/centurion-app.js:1158</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="waitforccidle application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>waitForCcIdle()</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1172">simulateur/centurion-app.js:1172</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="saveeditors application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>saveEditors()</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1180">simulateur/centurion-app.js:1180</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="stateui application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>stateUi()</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1184">simulateur/centurion-app.js:1184</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="savesimulationstate application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>saveSimulationState()</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1190">simulateur/centurion-app.js:1190</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="loadsimulationstate application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>loadSimulationState(file)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1206">simulateur/centurion-app.js:1206</a></p></details>
+<details class="api-function" data-module="1" data-public="false" data-search="restorestateui application fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>restoreStateUi(ui)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1241">simulateur/centurion-app.js:1241</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="bindcontrols application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindControls()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1146">simulateur/centurion-app.js:1146</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1249">simulateur/centurion-app.js:1249</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="syncinputs application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>syncInputs()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1309">simulateur/centurion-app.js:1309</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1420">simulateur/centurion-app.js:1420</a></p></details>
 <details class="api-function" data-module="1" data-public="false" data-search="frame application fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>frame(now)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1347">simulateur/centurion-app.js:1347</a></p></details></section><section class="api-module" id="module-2"><h3>Pont SVG</h3><p>Mesures, animations et navigation dans les SVG. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-svg-bridge.js">Fichier source</a></p>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1458">simulateur/centurion-app.js:1458</a></p></details></section><section class="api-module" id="module-2"><h3>Pont SVG</h3><p>Mesures, animations et navigation dans les SVG. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-svg-bridge.js">Fichier source</a></p>
 <details class="api-function" data-module="2" data-public="false" data-search="bindviewport pont svg fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindViewport()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-svg-bridge.js#L18">simulateur/centurion-svg-bridge.js:18</a></p></details>
@@ -602,478 +631,505 @@ node scripts/check-docs.mjs</code></pre>
 <details class="api-function" data-module="3" data-public="false" data-search="getrecords certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>getRecords()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L79">simulateur/centurion-certificate.js:79</a></p></details>
+<details class="api-function" data-module="3" data-public="false" data-search="save certificats fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>save()</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L80">simulateur/centurion-certificate.js:80</a></p></details>
+<details class="api-function" data-module="3" data-public="false" data-search="restore certificats fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>restore(model,saved)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L81">simulateur/centurion-certificate.js:81</a></p></details>
+<details class="api-function" data-module="3" data-public="false" data-search="ptsvg certificats fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>ptSvg(model,E,curves)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L87">simulateur/centurion-certificate.js:87</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="coresvg certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>coreSvg(record,E)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L82">simulateur/centurion-certificate.js:82</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L118">simulateur/centurion-certificate.js:118</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="loadimage certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>loadImage(url)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L102">simulateur/centurion-certificate.js:102</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L138">simulateur/centurion-certificate.js:138</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="rasterize certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>rasterize(svg,width=1400)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L106">simulateur/centurion-certificate.js:106</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L142">simulateur/centurion-certificate.js:142</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="capturesvg certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>captureSvg(file,snapshot,signal)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L113">simulateur/centurion-certificate.js:113</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L149">simulateur/centurion-certificate.js:149</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="receive certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>receive(event)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L136">simulateur/centurion-certificate.js:136</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L172">simulateur/centurion-certificate.js:172</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="fit certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>fit(ctx,image,x,y,w,h)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L152">simulateur/centurion-certificate.js:152</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L188">simulateur/centurion-certificate.js:188</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="wrap certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>wrap(ctx,text,x,y,width,lineHeight)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L156">simulateur/centurion-certificate.js:156</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L192">simulateur/centurion-certificate.js:192</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="compose certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>compose(summary,screen,thumbnails,created,layout)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L164">simulateur/centurion-certificate.js:164</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L200">simulateur/centurion-certificate.js:200</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="create certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>create({E,getModel,svgFiles,ptCurves,prepare})</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L212">simulateur/centurion-certificate.js:212</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L248">simulateur/centurion-certificate.js:248</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="observe certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>observe(model)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L216">simulateur/centurion-certificate.js:216</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L252">simulateur/centurion-certificate.js:252</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="outputs certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>outputs(enabled)</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L226">simulateur/centurion-certificate.js:226</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L262">simulateur/centurion-certificate.js:262</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="open certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>open()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L227">simulateur/centurion-certificate.js:227</a></p></details>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L263">simulateur/centurion-certificate.js:263</a></p></details>
 <details class="api-function" data-module="3" data-public="false" data-search="generate certificats fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>generate()</code><span class="badge ">interne</span></summary>
-<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L232">simulateur/centurion-certificate.js:232</a></p></details></section><section class="api-module" id="module-4"><h3>Ateliers CC</h3><p>Édition, évaluation, stockage et code hérité inactif. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html">Fichier source</a></p>
-<details class="api-function" data-module="4" data-public="false" data-search="saturationpressurempa ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-certificate.js#L268">simulateur/centurion-certificate.js:268</a></p></details></section><section class="api-module" id="module-4"><h3>États JSON</h3><p>Sauvegarde complète, validation et reprise locale pour le débogage. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js">Fichier source</a></p>
+<details class="api-function" data-module="4" data-public="false" data-search="checkjson états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>checkJson(value,path=&quot;fichier&quot;,depth=0)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L10">simulateur/centurion-state.js:10</a></p></details>
+<details class="api-function" data-module="4" data-public="false" data-search="sameshape états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>sameShape(value,example,path)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L20">simulateur/centurion-state.js:20</a></p></details>
+<details class="api-function" data-module="4" data-public="false" data-search="validatemodel états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>validateModel(E,model)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L34">simulateur/centurion-state.js:34</a></p></details>
+<details class="api-function" data-module="4" data-public="false" data-search="validateeditor états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>validateEditor(saved,mode)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L80">simulateur/centurion-state.js:80</a></p></details>
+<details class="api-function" data-module="4" data-public="false" data-search="read états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>read(E,raw)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L91">simulateur/centurion-state.js:91</a></p></details>
+<details class="api-function" data-module="4" data-public="false" data-search="write états json fonction interne. voir le corps et les appels dans le fichier source.">
+<summary><code>write(E,model,editors,ui,certificateArchive)</code><span class="badge ">interne</span></summary>
+<p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L136">simulateur/centurion-state.js:136</a></p></details></section><section class="api-module" id="module-5"><h3>Ateliers CC</h3><p>Édition, évaluation, stockage et code hérité inactif. <a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html">Fichier source</a></p>
+<details class="api-function" data-module="5" data-public="false" data-search="saturationpressurempa ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>saturationPressureMPa(tempC)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L1907">simulateur/centurion-cc-regul.html:1907</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="meanlinearpower ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="meanlinearpower ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>meanLinearPower(coreThermalPowerMW)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L1921">simulateur/centurion-cc-regul.html:1921</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="maximumlinearpower ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="maximumlinearpower ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>maximumLinearPower(coreThermalPowerMW)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L1925">simulateur/centurion-cc-regul.html:1925</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="calculatednbr ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="calculatednbr ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>calculateDnbr(pressureBar, saturationTemperatureC, hotTemperatureC, coreThermalPowerMW)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L1929">simulateur/centurion-cc-regul.html:1929</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="initialstate ateliers cc construit l’état physique nominal avant le recalcul axial de make.">
+<details class="api-function" data-module="5" data-public="false" data-search="initialstate ateliers cc construit l’état physique nominal avant le recalcul axial de make.">
 <summary><code>initialState()</code><span class="badge ">interne</span></summary>
 <p>Construit l’état physique nominal avant le recalcul axial de make.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L1955">simulateur/centurion-cc-regul.html:1955</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="seededrandom ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="seededrandom ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>seededRandom(seed)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2120">simulateur/centurion-cc-regul.html:2120</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="continuousprofileforcycle ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="continuousprofileforcycle ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>continuousProfileForCycle(cycleIndex)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2130">simulateur/centurion-cc-regul.html:2130</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="continuousloaddemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="continuousloaddemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>continuousLoadDemand(elapsed)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2163">simulateur/centurion-cc-regul.html:2163</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="rampdemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="rampdemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>rampDemand(startDemand, targetDemand, elapsed, rate = 20)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2175">simulateur/centurion-cc-regul.html:2175</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="programdemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="programdemand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>programDemand(type, elapsed)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2181">simulateur/centurion-cc-regul.html:2181</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="turbinetref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="turbinetref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>turbineTref(turbinePct)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2202">simulateur/centurion-cc-regul.html:2202</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="pressurizerlevelreference ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="pressurizerlevelreference ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>pressurizerLevelReference(tavg)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2208">simulateur/centurion-cc-regul.html:2208</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="normalizedcurvepoints ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="normalizedcurvepoints ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>normalizedCurvePoints(params)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2213">simulateur/centurion-cc-regul.html:2213</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyeditablecurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyeditablecurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyEditableCurve(params, value)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2221">simulateur/centurion-cc-regul.html:2221</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="findconnectedcurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="findconnectedcurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>findConnectedCurve(inputType, outputType, curveRole)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2237">simulateur/centurion-cc-regul.html:2237</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="refreshinternalnref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="refreshinternalnref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>refreshInternalNref()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2246">simulateur/centurion-cc-regul.html:2246</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyaffine ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyaffine ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyAffine(params, value)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2252">simulateur/centurion-cc-regul.html:2252</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updatetrefprogramfromeditor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updatetrefprogramfromeditor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateTrefProgramFromEditor()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2257">simulateur/centurion-cc-regul.html:2257</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="refreshinternaltref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="refreshinternaltref ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>refreshInternalTref()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2267">simulateur/centurion-cc-regul.html:2267</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="alarminputcell ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="alarminputcell ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>alarmInputCell(signal, field, config)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2281">simulateur/centurion-cc-regul.html:2281</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderalarmsettingstable ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderalarmsettingstable ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAlarmSettingsTable()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2287">simulateur/centurion-cc-regul.html:2287</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="validatealarmsettings ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="validatealarmsettings ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>validateAlarmSettings(candidate)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2301">simulateur/centurion-cc-regul.html:2301</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyalarmsettings ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyalarmsettings ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyAlarmSettings()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2328">simulateur/centurion-cc-regul.html:2328</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="formatalarmthreshold ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="formatalarmthreshold ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>formatAlarmThreshold(value, config)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2350">simulateur/centurion-cc-regul.html:2350</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderalarmmodeltable ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderalarmmodeltable ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAlarmModelTable()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2356">simulateur/centurion-cc-regul.html:2356</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="readcontrols ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="readcontrols ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>readControls()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2376">simulateur/centurion-cc-regul.html:2376</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="advancepointkinetics ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="advancepointkinetics ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>advancePointKinetics(dt, reactivityPcm)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2387">simulateur/centurion-cc-regul.html:2387</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="evaluatealarms ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="evaluatealarms ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>evaluateAlarms()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2408">simulateur/centurion-cc-regul.html:2408</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updatealarmmemory ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updatealarmmemory ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateAlarmMemory(alarms)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2459">simulateur/centurion-cc-regul.html:2459</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="solvestep ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="solvestep ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>solveStep(dt)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2469">simulateur/centurion-cc-regul.html:2469</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="samplehistory ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="samplehistory ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>sampleHistory(force = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2601">simulateur/centurion-cc-regul.html:2601</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderalarms ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderalarms ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderAlarms()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2632">simulateur/centurion-cc-regul.html:2632</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applysynopticpayload ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applysynopticpayload ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applySynopticPayload(doc, payload)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2695">simulateur/centurion-cc-regul.html:2695</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="syncexternalsynoptic ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="syncexternalsynoptic ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>syncExternalSynoptic()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2728">simulateur/centurion-cc-regul.html:2728</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateUI()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2773">simulateur/centurion-cc-regul.html:2773</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawChart()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2902">simulateur/centurion-cc-regul.html:2902</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="preparecanvas ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="preparecanvas ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>prepareCanvas(id)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2907">simulateur/centurion-cc-regul.html:2907</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="timescale ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="timescale ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>timeScale(w, margin)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2926">simulateur/centurion-cc-regul.html:2926</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="formatsimtime ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="formatsimtime ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>formatSimTime(seconds, compact = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2937">simulateur/centurion-cc-regul.html:2937</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawtimeticks ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawtimeticks ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawTimeTicks(ctx, w, h, margin, scale, count = 5)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2946">simulateur/centurion-cc-regul.html:2946</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawpowerchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawpowerchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawPowerChart()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L2960">simulateur/centurion-cc-regul.html:2960</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawreactivitychart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawreactivitychart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawReactivityChart()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3009">simulateur/centurion-cc-regul.html:3009</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateprogramui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateprogramui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateProgramUI()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3041">simulateur/centurion-cc-regul.html:3041</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawloadprogramchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawloadprogramchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawLoadProgramChart()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3067">simulateur/centurion-cc-regul.html:3067</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="specialcurvenodeoptions ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="specialcurvenodeoptions ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>specialCurveNodeOptions(kind)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3368">simulateur/centurion-cc-regul.html:3368</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regstatesnapshot ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regstatesnapshot ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regStateSnapshot(includeViewport = true)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3441">simulateur/centurion-cc-regul.html:3441</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regstatesignature ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regstatesignature ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regStateSignature(snapshot)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3462">simulateur/centurion-cc-regul.html:3462</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="setregsavestatus ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="setregsavestatus ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setRegSaveStatus(message, error = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3466">simulateur/centurion-cc-regul.html:3466</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updatereghistorybuttons ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updatereghistorybuttons ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegHistoryButtons()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3473">simulateur/centurion-cc-regul.html:3473</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="scheduleregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="scheduleregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>scheduleRegAutosave()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3479">simulateur/centurion-cc-regul.html:3479</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="currentregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="currentregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>currentRegModel()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3486">simulateur/centurion-cc-regul.html:3486</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="writeregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="writeregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>writeRegAutosave()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3496">simulateur/centurion-cc-regul.html:3496</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="normalizeregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="normalizeregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>normalizeRegModel(raw)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3511">simulateur/centurion-cc-regul.html:3511</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="migratecenturionregulation ateliers cc atelier : migration idempotente des anciennes chaînes standard en préservant les paramètres personnalisés.">
+<details class="api-function" data-module="5" data-public="false" data-search="migratecenturionregulation ateliers cc atelier : migration idempotente des anciennes chaînes standard en préservant les paramètres personnalisés.">
 <summary><code>migrateCenturionRegulation(model)</code><span class="badge ">interne</span></summary>
 <p>Atelier : migration idempotente des anciennes chaînes standard en préservant les paramètres personnalisés.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3575">simulateur/centurion-cc-regul.html:3575</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="migratecenturiontemperature ateliers cc atelier : migration de la chaîne de température vers pas/min et compensation/filtrage actuels.">
+<details class="api-function" data-module="5" data-public="false" data-search="migratecenturiontemperature ateliers cc atelier : migration de la chaîne de température vers pas/min et compensation/filtrage actuels.">
 <summary><code>migrateCenturionTemperature(model)</code><span class="badge ">interne</span></summary>
 <p>Atelier : migration de la chaîne de température vers pas/min et compensation/filtrage actuels.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3666">simulateur/centurion-cc-regul.html:3666</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="migratecenturionprotection ateliers cc atelier : migration des logigrammes de protection et ajout des fonctions prévues au graphe standard.">
+<details class="api-function" data-module="5" data-public="false" data-search="migratecenturionprotection ateliers cc atelier : migration des logigrammes de protection et ajout des fonctions prévues au graphe standard.">
 <summary><code>migrateCenturionProtection(model)</code><span class="badge ">interne</span></summary>
 <p>Atelier : migration des logigrammes de protection et ajout des fonctions prévues au graphe standard.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3753">simulateur/centurion-cc-regul.html:3753</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyregstate ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyregstate ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyRegState(snapshot, options = {})</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3824">simulateur/centurion-cc-regul.html:3824</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="opensolutionsdialog ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="opensolutionsdialog ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>openSolutionsDialog()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3869">simulateur/centurion-cc-regul.html:3869</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="loadselectedsolution ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="loadselectedsolution ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>loadSelectedSolution(event)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3883">simulateur/centurion-cc-regul.html:3883</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="recordregmutation ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="recordregmutation ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>recordRegMutation(before, label = &quot;Modification&quot;)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3923">simulateur/centurion-cc-regul.html:3923</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="undoregulationedit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="undoregulationedit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>undoRegulationEdit()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3937">simulateur/centurion-cc-regul.html:3937</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="redoregulationedit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="redoregulationedit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>redoRegulationEdit()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3947">simulateur/centurion-cc-regul.html:3947</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="exportregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="exportregmodel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>exportRegModel()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3957">simulateur/centurion-cc-regul.html:3957</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="importregmodelfile ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="importregmodelfile ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>importRegModelFile(file)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L3999">simulateur/centurion-cc-regul.html:3999</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="restoreregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="restoreregautosave ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>restoreRegAutosave()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4015">simulateur/centurion-cc-regul.html:4015</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="affinecoefficients ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="affinecoefficients ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>affineCoefficients(params)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4034">simulateur/centurion-cc-regul.html:4034</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodesymbol ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodesymbol ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeSymbol(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4040">simulateur/centurion-cc-regul.html:4040</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodehasinput ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodehasinput ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeHasInput(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4045">simulateur/centurion-cc-regul.html:4045</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodehasoutput ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodehasoutput ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeHasOutput(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4049">simulateur/centurion-cc-regul.html:4049</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="reginputlabel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="reginputlabel ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regInputLabel(index)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4053">simulateur/centurion-cc-regul.html:4053</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="reginputkey ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="reginputkey ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regInputKey(index)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4057">simulateur/centurion-cc-regul.html:4057</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regusedinputindices ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regusedinputindices ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regUsedInputIndices(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4061">simulateur/centurion-cc-regul.html:4061</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="reginputportcount ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="reginputportcount ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regInputPortCount(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4068">simulateur/centurion-cc-regul.html:4068</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="ensuresumcoefficients ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="ensuresumcoefficients ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>ensureSumCoefficients(node, count = regInputPortCount(node))</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4077">simulateur/centurion-cc-regul.html:4077</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodeminheight ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodeminheight ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeMinHeight(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4085">simulateur/centurion-cc-regul.html:4085</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodeheight ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodeheight ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeHeight(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4090">simulateur/centurion-cc-regul.html:4090</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="reginputporty ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="reginputporty ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regInputPortY(node, inputIndex)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4094">simulateur/centurion-cc-regul.html:4094</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regfieldsfornode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regfieldsfornode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regFieldsForNode(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4099">simulateur/centurion-cc-regul.html:4099</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodesummary ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodesummary ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeSummary(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4110">simulateur/centurion-cc-regul.html:4110</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="jsnumber ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="jsnumber ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>jsNumber(value, digits = 4)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4153">simulateur/centurion-cc-regul.html:4153</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="normalizedoperatorinputs ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="normalizedoperatorinputs ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>normalizedOperatorInputs(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4163">simulateur/centurion-cc-regul.html:4163</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="operatordocumentation ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="operatordocumentation ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>operatorDocumentation(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4169">simulateur/centurion-cc-regul.html:4169</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="operatorcurvedefinition ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="operatorcurvedefinition ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>operatorCurveDefinition(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4324">simulateur/centurion-cc-regul.html:4324</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawoperatorcurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawoperatorcurve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawOperatorCurve(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4362">simulateur/centurion-cc-regul.html:4362</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateoperatorinfo ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateoperatorinfo ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateOperatorInfo(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4392">simulateur/centurion-cc-regul.html:4392</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="addregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="addregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>addRegNode(type, x, y, options = {})</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4404">simulateur/centurion-cc-regul.html:4404</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateregviewport ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateregviewport ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegViewport()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4428">simulateur/centurion-cc-regul.html:4428</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="screentoregworld ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="screentoregworld ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>screenToRegWorld(clientX, clientY)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4439">simulateur/centurion-cc-regul.html:4439</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="zoomregulationat ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="zoomregulationat ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>zoomRegulationAt(nextZoom, clientX, clientY)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4447">simulateur/centurion-cc-regul.html:4447</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="fitregulationview ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="fitregulationview ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>fitRegulationView()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4459">simulateur/centurion-cc-regul.html:4459</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="bindregcanvasevents ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="bindregcanvasevents ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindRegCanvasEvents()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4485">simulateur/centurion-cc-regul.html:4485</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="measureregnodeheights ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="measureregnodeheights ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>measureRegNodeHeights()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4587">simulateur/centurion-cc-regul.html:4587</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderregeditor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderregeditor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderRegEditor()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4605">simulateur/centurion-cc-regul.html:4605</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderreglinks ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderreglinks ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderRegLinks()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4651">simulateur/centurion-cc-regul.html:4651</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="setregselection ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="setregselection ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setRegSelection(nodeIds, primaryId = null)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4685">simulateur/centurion-cc-regul.html:4685</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="selectregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="selectregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>selectRegNode(nodeId, options = {})</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4698">simulateur/centurion-cc-regul.html:4698</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regsignaldisplay ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regsignaldisplay ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regSignalDisplay(type)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4714">simulateur/centurion-cc-regul.html:4714</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regsourcesignal ateliers cc atelier : lit d’abord les mesures centurion ; repli hérité pour les usages isolés de la page.">
+<details class="api-function" data-module="5" data-public="false" data-search="regsourcesignal ateliers cc atelier : lit d’abord les mesures centurion ; repli hérité pour les usages isolés de la page.">
 <summary><code>regSourceSignal(type)</code><span class="badge ">interne</span></summary>
 <p>Atelier : lit d’abord les mesures Centurion ; repli hérité pour les usages isolés de la page.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4769">simulateur/centurion-cc-regul.html:4769</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="compareoperatorvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="compareoperatorvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>compareOperatorValue(params, value)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4790">simulateur/centurion-cc-regul.html:4790</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="resetregruntime ateliers cc atelier : efface les mémoires dynamiques et dernières valeurs des blocs.">
+<details class="api-function" data-module="5" data-public="false" data-search="resetregruntime ateliers cc atelier : efface les mémoires dynamiques et dernières valeurs des blocs.">
 <summary><code>resetRegRuntime()</code><span class="badge ">interne</span></summary>
 <p>Atelier : efface les mémoires dynamiques et dernières valeurs des blocs.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4801">simulateur/centurion-cc-regul.html:4801</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="initialintegratorvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="initialintegratorvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>initialIntegratorValue(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4807">simulateur/centurion-cc-regul.html:4807</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="runtimestatefor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="runtimestatefor ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>runtimeStateFor(node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4819">simulateur/centurion-cc-regul.html:4819</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="productunit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="productunit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>productUnit(inputs)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4824">simulateur/centurion-cc-regul.html:4824</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="integratedunit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="integratedunit ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>integratedUnit(inputUnit, configuredUnit)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4831">simulateur/centurion-cc-regul.html:4831</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="evaluateregulationgraph ateliers cc atelier : évalue les blocs reliés, mémorise les états dynamiques et détecte les cycles algébriques ; retourne signaux, sorties et diagnostics.">
+<details class="api-function" data-module="5" data-public="false" data-search="evaluateregulationgraph ateliers cc atelier : évalue les blocs reliés, mémorise les états dynamiques et détecte les cycles algébriques ; retourne signaux, sorties et diagnostics.">
 <summary><code>evaluateRegulationGraph(dt = 0, advanceDynamicStates = false)</code><span class="badge ">interne</span></summary>
 <p>Atelier : évalue les blocs reliés, mémorise les états dynamiques et détecte les cycles algébriques ; retourne signaux, sorties et diagnostics.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L4837">simulateur/centurion-cc-regul.html:4837</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regnodesignalvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regnodesignalvalue ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regNodeSignalValue(node, memo = null)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5019">simulateur/centurion-cc-regul.html:5019</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="formatreglinksignal ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="formatreglinksignal ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>formatRegLinkSignal(signal)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5024">simulateur/centurion-cc-regul.html:5024</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updatereglinklabels ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updatereglinklabels ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegLinkLabels()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5036">simulateur/centurion-cc-regul.html:5036</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updatereglinklabelscale ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updatereglinklabelscale ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegLinkLabelScale()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5045">simulateur/centurion-cc-regul.html:5045</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="renderregproperties ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="renderregproperties ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>renderRegProperties()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5057">simulateur/centurion-cc-regul.html:5057</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="copyselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="copyselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>copySelectedRegNode()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5210">simulateur/centurion-cc-regul.html:5210</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="pasteregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="pasteregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>pasteRegNode()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5229">simulateur/centurion-cc-regul.html:5229</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="duplicateselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="duplicateselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>duplicateSelectedRegNode()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5259">simulateur/centurion-cc-regul.html:5259</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="deleteselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="deleteselectedregnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>deleteSelectedRegNode()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5264">simulateur/centurion-cc-regul.html:5264</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="bindregnodeevents ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="bindregnodeevents ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>bindRegNodeEvents()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5280">simulateur/centurion-cc-regul.html:5280</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="hasregpath ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="hasregpath ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>hasRegPath(fromId, toId)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5365">simulateur/centurion-cc-regul.html:5365</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="hasdirectreglink ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="hasdirectreglink ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>hasDirectRegLink(fromId, toId, toPort = null)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5378">simulateur/centurion-cc-regul.html:5378</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="regoutputconnected ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="regoutputconnected ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>regOutputConnected(type)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5383">simulateur/centurion-cc-regul.html:5383</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="temperaturechainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="temperaturechainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>temperatureChainReady()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5387">simulateur/centurion-cc-regul.html:5387</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="levelchainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="levelchainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>levelChainReady()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5449">simulateur/centurion-cc-regul.html:5449</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="pressurechainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="pressurechainready ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>pressureChainReady()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5472">simulateur/centurion-cc-regul.html:5472</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="rodspeedlaw ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="rodspeedlaw ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>rodSpeedLaw(error)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5491">simulateur/centurion-cc-regul.html:5491</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyg1curve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyg1curve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyG1Curve(params, value)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5500">simulateur/centurion-cc-regul.html:5500</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyg2curve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyg2curve ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyG2Curve(params, loadPct)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5516">simulateur/centurion-cc-regul.html:5516</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="calculateregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="calculateregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>calculateRegulationCommand(dt = 0, advanceDynamicStates = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5524">simulateur/centurion-cc-regul.html:5524</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyRegulationCommand(dt)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5622">simulateur/centurion-cc-regul.html:5622</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="suminputcoefficient ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="suminputcoefficient ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>sumInputCoefficient(sumNode, sourceNode, fallback)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5629">simulateur/centurion-cc-regul.html:5629</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="calculatelevelregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="calculatelevelregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>calculateLevelRegulationCommand(dt = 0, integrate = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5637">simulateur/centurion-cc-regul.html:5637</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applylevelregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applylevelregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyLevelRegulationCommand(dt)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5674">simulateur/centurion-cc-regul.html:5674</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="calculatepressureregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="calculatepressureregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>calculatePressureRegulationCommand(dt = 0, integrate = false)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5681">simulateur/centurion-cc-regul.html:5681</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applypressureregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applypressureregulationcommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyPressureRegulationCommand(dt)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5739">simulateur/centurion-cc-regul.html:5739</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="graphsignal ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="graphsignal ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>graphSignal(evaluation, node)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5749">simulateur/centurion-cc-regul.html:5749</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="firstgraphnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="firstgraphnode ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>firstGraphNode(type, predicate = null)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5753">simulateur/centurion-cc-regul.html:5753</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="firstcommondownstream ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="firstcommondownstream ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>firstCommonDownstream(type, sources)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5757">simulateur/centurion-cc-regul.html:5757</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="summarizeregulationgraph ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="summarizeregulationgraph ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>summarizeRegulationGraph(evaluation)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5762">simulateur/centurion-cc-regul.html:5762</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="applyregulationgraph ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="applyregulationgraph ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>applyRegulationGraph(dt)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5816">simulateur/centurion-cc-regul.html:5816</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateregulationmodeui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateregulationmodeui ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegulationModeUI()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5830">simulateur/centurion-cc-regul.html:5830</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="setregulationenabled ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="setregulationenabled ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>setRegulationEnabled(enabled, notifyParent = true)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5864">simulateur/centurion-cc-regul.html:5864</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="formatreglive ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="formatreglive ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>formatRegLive(value, digits, unit = &quot;&quot;)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5891">simulateur/centurion-cc-regul.html:5891</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="updateregulationlive ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="updateregulationlive ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>updateRegulationLive()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5895">simulateur/centurion-cc-regul.html:5895</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="drawrodlawchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="drawrodlawchart ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>drawRodLawChart()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5935">simulateur/centurion-cc-regul.html:5935</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="reset ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="reset ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>reset()</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5968">simulateur/centurion-cc-regul.html:5968</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="frame ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="frame ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>frame(now)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L5999">simulateur/centurion-cc-regul.html:5999</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="centuriondefaultmodel ateliers cc atelier : construit un canevas étudiant vide, propre au mode regul/protect ; aucune correction automatique.">
+<details class="api-function" data-module="5" data-public="false" data-search="centuriondefaultmodel ateliers cc atelier : construit un canevas étudiant vide, propre au mode regul/protect ; aucune correction automatique.">
 <summary><code>centurionDefaultModel()</code><span class="badge ">interne</span></summary>
 <p>Atelier : construit un canevas étudiant vide, propre au mode regul/protect ; aucune correction automatique.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L6244">simulateur/centurion-cc-regul.html:6244</a></p></details>
-<details class="api-function" data-module="4" data-public="false" data-search="receivecenturioncommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
+<details class="api-function" data-module="5" data-public="false" data-search="receivecenturioncommand ateliers cc fonction interne. voir le corps et les appels dans le fichier source.">
 <summary><code>receiveCenturionCommand(data)</code><span class="badge ">interne</span></summary>
 <p>Fonction interne. Voir le corps et les appels dans le fichier source.</p><p><a href="https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-cc-regul.html#L6260">simulateur/centurion-cc-regul.html:6260</a></p></details></section></section>
 <section id="signaux"><h2>Dictionnaire des sources CC</h2><p>Clés et unités extraites de <code>controlSignals(make())</code>. Les valeurs sont celles de l’initialisation du moteur : elles illustrent les unités et ne sont pas des seuils.</p><div class="table-scroll"><table><thead><tr><th>Clé</th><th>Unité</th><th>Valeur initiale</th></tr></thead><tbody><tr><td><code>ptur</code></td><td>%</td><td>100</td></tr><tr><td><code>pdem</code></td><td>%</td><td>100</td></tr><tr><td><code>pow1</code></td><td>% PN</td><td>100</td></tr><tr><td><code>mt1Signal</code></td><td>°C</td><td>324,6</td></tr><tr><td><code>mt2Signal</code></td><td>°C</td><td>288,4</td></tr><tr><td><code>mp1Signal</code></td><td>bar abs.</td><td>155</td></tr><tr><td><code>mn1Signal</code></td><td>%</td><td>42</td></tr><tr><td><code>pow2Signal</code></td><td>MWe</td><td>1 300</td></tr><tr><td><code>mt3Signal</code></td><td>°C</td><td>280,859</td></tr><tr><td><code>mt4Signal</code></td><td>°C</td><td>245</td></tr><tr><td><code>md1Signal</code></td><td>t/s</td><td>2,121</td></tr><tr><td><code>mp2Signal</code></td><td>bar abs.</td><td>65</td></tr><tr><td><code>pthcSignal</code></td><td>% PN</td><td>100</td></tr><tr><td><code>pgvSignal</code></td><td>% PN</td><td>100,629</td></tr><tr><td><code>tmoy</code></td><td>°C</td><td>306,5</td></tr><tr><td><code>tpzrSignal</code></td><td>°C</td><td>344,792</td></tr><tr><td><code>reacSignal</code></td><td>pcm</td><td>0</td></tr><tr><td><code>tfuelSignal</code></td><td>°C</td><td>688,2</td></tr><tr><td><code>plinSignal</code></td><td>W/cm</td><td>367,767</td></tr><tr><td><code>dnbrSignal</code></td><td>sans dimension</td><td>1,65</td></tr><tr><td><code>tsubSignal</code></td><td>°C</td><td>20,192</td></tr><tr><td><code>pchauffSignal</code></td><td>kW</td><td>288</td></tr><tr><td><code>qaspSignal</code></td><td>%</td><td>0</td></tr><tr><td><code>qpriSignal</code></td><td>% nominal</td><td>100</td></tr><tr><td><code>qchaSignal</code></td><td>m³/h</td><td>36</td></tr><tr><td><code>qdecSignal</code></td><td>m³/h</td><td>36</td></tr><tr><td><code>nrefSignal</code></td><td>%</td><td>41,8</td></tr><tr><td><code>imchSignal</code></td><td>%</td><td>100</td></tr><tr><td><code>qsvpSignal</code></td><td>kg/s</td><td>0</td></tr><tr><td><code>posgSignal</code></td><td>pas extraits</td><td>233</td></tr><tr><td><code>posgInternalPct</code></td><td>% insertion</td><td>10,385</td></tr><tr><td><code>gcpPowerSignal</code></td><td>% PN</td><td>100</td></tr><tr><td><code>turbineLimitSignal</code></td><td>%</td><td>100</td></tr><tr><td><code>gcpCalibrationSignal</code></td><td>% PN</td><td>0</td></tr><tr><td><code>gvSetpointSignal</code></td><td>%</td><td>55</td></tr><tr><td><code>g3CountSignal</code></td><td>pas</td><td>780</td></tr><tr><td><code>voltageSignal</code></td><td>TOR</td><td>0</td></tr><tr><td><code>fluxRateSignal</code></td><td>% PN/s</td><td>0</td></tr><tr><td><code>aarSignal</code></td><td>TOR</td><td>0</td></tr><tr><td><code>qaspAuxSignal</code></td><td>m³/h</td><td>0</td></tr><tr><td><code>gv1LevelSignal</code></td><td>%</td><td>55</td></tr><tr><td><code>gv1SteamSignal</code></td><td>kg/s</td><td>530,139</td></tr><tr><td><code>gv2LevelSignal</code></td><td>%</td><td>55</td></tr><tr><td><code>gv2SteamSignal</code></td><td>kg/s</td><td>530,139</td></tr><tr><td><code>gv3LevelSignal</code></td><td>%</td><td>55</td></tr><tr><td><code>gv3SteamSignal</code></td><td>kg/s</td><td>530,139</td></tr><tr><td><code>gv4LevelSignal</code></td><td>%</td><td>55</td></tr><tr><td><code>gv4SteamSignal</code></td><td>kg/s</td><td>530,139</td></tr></tbody></table></div></section>
