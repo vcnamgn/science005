@@ -90,6 +90,35 @@ test('démarrage complet : initialisation, Démarrer, horloge et publication des
   assert.equal(page.pendingFrames,1,'la boucle poursuit ses trames après l’affichage');
 });
 
+test('application : bilan CPP lisible, débits réalisés et soupapes toujours commandables',()=>{
+  const m=E.make();m.controls.protectionGraphMode=true;m.controls.manualReliefStages=[true,false,false];
+  E.step(m,.1);
+  const {page,flush}=connectedApplication({engine:{...E,make:()=>m}});
+  page.query('[data-diagram="inventory"]').fire('click');
+  assert.equal(page.get('inventoryBalance').hidden,false);
+  assert.equal(page.get('instrumentBoard').hidden,true);
+  for(const key of ['chargeKgS','risMpKgS','risBpKgS','accumulatorKgS','risKgS','inputKgS',
+    'letdownKgS','breakKgS','breakLiquidKgS','breakSteamKgS','reliefKgS','outputKgS','netKgS',
+    'totalRateKgS','liquidRateKgS','vaporRateKgS','phaseChangeKgS']){
+    const output=page.query(`[data-mass-balance="${key}"]`);
+    assert.ok(output,`${key} visible`);
+    assert.equal(output.textContent,E.primaryMassBalance(m.state)[key].toLocaleString('fr-FR',
+      {minimumFractionDigits:1,maximumFractionDigits:1}));
+  }
+  assert.equal(page.get('inventoryBalanceTrend').textContent,'Inventaire total en baisse');
+  assert.equal(page.get('inventoryBalanceNet').dataset.sign,'loss');
+  assert.match(page.get('reliefStatus').textContent,/50,0 kg\/s.*1\/3/);
+  page.click('toggleRegulationSynoptic');flush();
+  const relief=page.query('[data-relief-stage="1"]');assert.equal(relief.disabled,false);
+  relief.checked=true;relief.fire('change');page.click('runButton');
+  for(let i=0;i<3;i++){page.frame(100);flush();}
+  assert.equal(page.snapshot.reliefStages[1],true);
+  assert.ok(page.snapshot.reliefKgS>99);
+  page.query('[data-diagram="pzr"]').fire('click');
+  assert.equal(page.get('inventoryBalance').hidden,true);
+  assert.equal(page.get('instrumentBoard').hidden,false);
+});
+
 test('Modèle : Détails par chapitres, paramètres et alarmes conservés, codes discrets',()=>{
   const page=application();
   assert.equal(page.query('[data-model-page="principes"]'),null);

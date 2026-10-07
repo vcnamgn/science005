@@ -123,12 +123,12 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-certificat";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-bilan-masses";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
     }
-    renderBoard();
+    renderBoard();renderInventoryBalance();
     if(activeView!=="synoptiques") activateView("synoptiques");
     if(name==="core")drawCoreCharts();
   }
@@ -198,6 +198,18 @@
     }
     try { $("diagramObject").contentWindow?.postMessage({type:"centurion-state",
       diagram,...E.instrumentSnapshot(model,selectedGv),...extra},"*"); } catch(_) {}
+  }
+  function renderInventoryBalance() {
+    $("inventoryBalance").hidden=diagram!=="inventory";
+    $("instrumentBoard").hidden=diagram==="inventory";
+    const balance=E.primaryMassBalance(model.state);
+    $("inventoryPlantState").textContent=E.reactorOperatingState(model.state).code;
+    $("inventoryBalanceConditions").textContent=`P ${fmt(model.state.pressureBar,1)} bar · TMOY ${fmt(model.state.tavgC,1)} °C`;
+    document.querySelectorAll("[data-mass-balance]").forEach(output=>{
+      output.textContent=fmt(balance[output.dataset.massBalance],Number(output.dataset.decimals??1));
+    });
+    $("inventoryBalanceTrend").textContent=balance.trend;
+    $("inventoryBalanceNet").dataset.sign=balance.netKgS>.05?"gain":balance.netKgS<-.05?"loss":"balanced";
   }
   function renderBoard() {
     const s=model.state,g=s.gv[selectedGv-1],l=s.loops[selectedGv-1];
@@ -596,7 +608,7 @@
         line("Débit VPU · 4 GV","#55a579",p=>p.steamVpu)]},
       flows:{unit:"m³/h",zero:true,fallbackPeak:10,series:[
         line("Injection RIS · eau froide ≈ 1 000 kg/m³","#55a579",p=>p.ris*3600/E.C.risWaterDensityKgM3),
-        line("Brèche primaire","#ec684b",p=>p.break*3600/(p.breakDensity||E.C.primaryDensityKgM3))]}
+        line("Brèche · équivalent liquide chaud","#ec684b",p=>p.break*3600/(p.breakDensity||E.C.primaryDensityKgM3))]}
     };
     const chosen=traces[$("traceSet").value]||traces.powers;
     const visible=points.filter(p=>p.t>=start&&p.t<=end);
@@ -816,6 +828,7 @@
     document.querySelectorAll("[data-relief-stage]").forEach(input=>{
       input.checked=Boolean(u.manualReliefStages[Number(input.dataset.reliefStage)]);
     });
+    $("reliefStatus").textContent=`Débit réalisé : ${fmt(s.reliefKgS,1)} kg/s · ${s.reliefStages.filter(Boolean).length}/3 étages ouverts · commande manuelle disponible avec CC actif`;
     $("manualModeStatus").textContent=`${regulationActive?"CC-RÉGUL actif · décalibrage et CB manuels":"Commandes manuelles"}${u.rManualOverride?" · R en manuel":""} · ${protectionActive?"protection active":"protection inactive"}`;
     $("toggleRegulationSynoptic").textContent=regulationActive?"Désactiver régulations":"Activer régulations";
     $("toggleRegulationSynoptic").setAttribute("aria-pressed",String(regulationActive));
@@ -841,7 +854,7 @@
       `Tension : ${s.lossOfVoltage?"perdue":"présente"}`,
       `Couverture cœur : ${fmt(s.coveragePct,1)} % (indicateur)`
     ].map(x=>`<span>${x}</span>`).join("");
-    renderBoard();renderSignals();renderAxial();updateSvg();drawCoreCharts();drawHistory();drawLoadProgramChart();
+    renderBoard();renderInventoryBalance();renderSignals();renderAxial();updateSvg();drawCoreCharts();drawHistory();drawLoadProgramChart();
   }
 
   function bindNumber(id,callback) {

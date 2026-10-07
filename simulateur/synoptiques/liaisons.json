@@ -490,6 +490,34 @@
         "unit": "%",
         "decimals": 0,
         "template": "Étage 3 · {value} %"
+      },
+      {
+        "id": "soupapes-debit-total",
+        "value": "reliefKgS",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "Débit total : {value} kg/s"
+      },
+      {
+        "id": "soupape-1-debit",
+        "value": "reliefStageKgS.0",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value} kg/s"
+      },
+      {
+        "id": "soupape-2-debit",
+        "value": "reliefStageKgS.1",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value} kg/s"
+      },
+      {
+        "id": "soupape-3-debit",
+        "value": "reliefStageKgS.2",
+        "unit": "kg/s",
+        "decimals": 1,
+        "template": "{value} kg/s"
       }
     ]
   }

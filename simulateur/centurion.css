@@ -343,3 +343,20 @@ input[type=number],select{background:#fff;border:1px solid #b8d1df;border-radius
 .certificate-preview[hidden]{display:none}
 .certificate-offscreen{position:fixed;left:-12000px;top:0;width:1800px;height:1000px;pointer-events:none}
 @media(max-width:550px){.certificate-name{flex-direction:column;align-items:stretch}}
+#inventoryBalance[hidden],#instrumentBoard[hidden]{display:none!important}
+.inventory-balance{background:#fff;border:1px solid #c8e0ec;border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums;font-size:12px}
+.inventory-balance h2{margin:0;padding:9px 12px;background:#eaf5fa;font-size:15px;color:#24465c}
+.balance-intro{margin:8px 12px;color:#56778d;font-size:11px}
+.inventory-balance table{width:calc(100% - 20px);margin:0 10px;border-collapse:collapse;table-layout:fixed}
+.inventory-balance th,.inventory-balance td{padding:4px 5px;border-bottom:1px solid #edf2f5;font-size:12px;vertical-align:middle;background:transparent}
+.inventory-balance th{text-align:left;font-weight:500;width:58%}
+.inventory-balance td,.inventory-balance thead th:not(:first-child){text-align:right;white-space:nowrap;width:21%}
+.inventory-balance thead th{font-size:11px;font-weight:650;color:#658095}
+.inventory-balance .balance-input-head th{color:#207a54;font-weight:700;padding-top:7px}
+.inventory-balance .balance-output-head th{color:#bb6230;font-weight:700;padding-top:9px}
+.inventory-balance .balance-total th,.inventory-balance .balance-total td{font-weight:700;border-top:1px solid #c8dce5}
+.inventory-balance .balance-subtotal th,.inventory-balance .balance-subtotal td{color:#638296;font-size:11px}
+.balance-net{display:flex;justify-content:space-between;flex-wrap:wrap;margin:9px 12px;padding:10px;border-radius:8px;background:#edf3f8;gap:5px;font-size:12px}
+.balance-net[data-sign=gain]{background:#e6f4ec}.balance-net[data-sign=loss]{background:#fff0e8}
+.balance-net p{width:100%;margin:0;font-size:12px}.balance-stocks td{font-weight:650}.balance-stocks td:last-child{display:none}.balance-stocks th{width:75%}
+.balance-foot{margin:8px 12px;color:#637f90;font-size:10px;line-height:1.5}

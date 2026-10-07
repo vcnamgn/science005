@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261007-certificat">
+  <link rel="stylesheet" href="centurion.css?v=20261007-bilan-masses-2">
 </head>
 <body>
   <header class="topbar">
@@ -50,7 +50,7 @@
       <div class="process-layout">
         <div class="diagram-frame" id="diagramFrame">
           <label class="pt-trail-controls" id="ptTrailPicker" hidden>Historique P–T <select id="ptTrailWindow" aria-label="Durée de la trace du diagramme P–T"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option></select></label>
-          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261007-certificat" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
+          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261007-bilan-masses" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
           <div class="core-diagram" id="coreDiagram" hidden>
             <section class="core-chart-card"><div class="core-chart-head"><h2>Distribution axiale</h2><output id="coreLinearReadout">—</output></div>
               <canvas id="coreProfileChart" aria-label="P(z) en premier plan, 32 barres PLIN sur un second axe fixe de 0 à 435 W/cm à droite ; xénon et iode à gauche, du bas vers le haut du cœur"></canvas>
@@ -64,7 +64,27 @@
           </div>
         </div>
         <div class="operations-column">
-        <aside class="instrument-board" aria-label="Tableau de bord" aria-live="polite">
+<aside id="inventoryBalance" class="inventory-balance" aria-label="Bilan des masses CPP" hidden>
+<h2>Bilan des masses CPP <span class="plant-state">État <output id="inventoryPlantState">RP</output></span></h2><p class="balance-intro">Débits arrivés dans le CPP · comparer les <strong>kg/s</strong><br><span id="inventoryBalanceConditions"></span></p>
+<table><thead><tr><th>Entrées / sorties</th><th>kg/s</th><th>m³/h*</th></tr></thead><tbody>
+<tr class="balance-input-head"><th colspan="3">ENTRÉES DANS LE CPP</th></tr>
+<tr ><th scope="row">Charge RCV · joints inclus</th><td><output data-mass-balance="chargeKgS">—</output></td><td><output data-mass-balance="chargeM3h">—</output></td></tr>
+<tr ><th scope="row">RIS MP</th><td><output data-mass-balance="risMpKgS">—</output></td><td><output data-mass-balance="risMpM3h">—</output></td></tr><tr ><th scope="row">RIS BP</th><td><output data-mass-balance="risBpKgS">—</output></td><td><output data-mass-balance="risBpM3h">—</output></td></tr>
+<tr ><th scope="row">Accumulateurs RIS</th><td><output data-mass-balance="accumulatorKgS">—</output></td><td><output data-mass-balance="accumulatorM3h">—</output></td></tr>
+<tr class="balance-subtotal"><th scope="row">Total RIS (MP + BP + acc.)</th><td><output data-mass-balance="risKgS">—</output></td><td><output data-mass-balance="risM3h">—</output></td></tr>
+<tr class="balance-total"><th scope="row">Total des entrées</th><td><output data-mass-balance="inputKgS">—</output></td><td>—</td></tr>
+<tr class="balance-output-head"><th colspan="3">SORTIES DU CPP</th></tr>
+<tr ><th scope="row">Décharge RCV</th><td><output data-mass-balance="letdownKgS">—</output></td><td><output data-mass-balance="letdownM3h">—</output></td></tr><tr ><th scope="row">Brèche · total</th><td><output data-mass-balance="breakKgS">—</output></td><td><output data-mass-balance="breakM3h">—</output></td></tr>
+<tr ><th scope="row">↳ liquide</th><td><output data-mass-balance="breakLiquidKgS">—</output></td><td>—</td></tr><tr ><th scope="row">↳ vapeur</th><td><output data-mass-balance="breakSteamKgS">—</output></td><td>—</td></tr>
+<tr ><th scope="row">Soupapes PZR · 3 étages</th><td><output data-mass-balance="reliefKgS">—</output></td><td><output data-mass-balance="reliefM3h">—</output></td></tr>
+<tr class="balance-total"><th scope="row">Total des sorties</th><td><output data-mass-balance="outputKgS">—</output></td><td>—</td></tr>
+</tbody></table>
+<div id="inventoryBalanceNet" class="balance-net"><span>ENTRÉES − SORTIES</span><strong><output data-mass-balance="netKgS">—</output> kg/s</strong><p id="inventoryBalanceTrend"></p></div>
+<table class="balance-stocks"><tbody><tr ><th scope="row">Variation masse totale</th><td><output data-mass-balance="totalRateKgS">—</output></td><td>—</td></tr><tr ><th scope="row">Variation stock liquide</th><td><output data-mass-balance="liquidRateKgS">—</output></td><td>—</td></tr><tr ><th scope="row">Variation stock vapeur</th><td><output data-mass-balance="vaporRateKgS">—</output></td><td>—</td></tr><tr ><th scope="row">Liquide → vapeur (net)</th><td><output data-mass-balance="phaseChangeKgS">—</output></td><td>—</td></tr></tbody></table>
+<p class="balance-foot">Variations en kg/s. Phase négative : condensation.<br>Aspersion / RRA : transferts internes. Auxiliaire incluse dans la charge RCV. ARE / ASG : côté secondaire.</p>
+<p class="balance-foot">* Équivalents liquides : RIS 1 000 · RCV/PZR 720 kg/m³ · brèche <output data-mass-balance="breakDensityKgM3" data-decimals="0">—</output> kg/m³. Le volume réel de vapeur est différent.</p>
+</aside>
+        <aside id="instrumentBoard" class="instrument-board" aria-label="Tableau de bord" aria-live="polite">
             <h2>Tableau de bord <span class="plant-state">État <output id="plantState" data-state="RP" title="RP · Réacteur en production">RP</output></span></h2>
           <section class="instrument-section"><h3>Capteurs · circuit primaire</h3>
             <div class="instrument-grid">
@@ -151,6 +171,7 @@
                 <small>Débit réalisé <strong id="auxiliarySprayActual">0,0 m³/h</strong> · prélevé sur la charge directe, disponible sans HMT GMPP</small>
                 <small id="primaryPumpStatus">GMPP en marche</small>
                 <div class="relief-controls" role="group" aria-label="Ouverture manuelle des soupapes"><span>Soupapes PZR</span><label class="inline-check"><input type="checkbox" data-relief-stage="0"> Étage 1</label><label class="inline-check"><input type="checkbox" data-relief-stage="1"> Étage 2</label><label class="inline-check"><input type="checkbox" data-relief-stage="2"> Étage 3</label></div>
+                <p id="reliefStatus" class="small-note" aria-live="polite"></p>
               </details>
               <details><summary>RCV</summary>
                 <label>QCHARGE · charge totale <output id="chargeValue">36 m³/h</output><input id="chargeInput" data-regulated-control type="range" min="6" max="36" value="36" step="0.1"></label>
@@ -220,12 +241,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261007-certificat" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261007-bilan-masses" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261007-certificat" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261007-bilan-masses" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -402,6 +423,16 @@ FQ = max[Q(z)]</code></pre>
 <p>En marche, une GMPP vise le débit nominal de sa boucle. Une baisse turbine ne doit pas diminuer ce débit. Un arrêt mémorisé des GMPP résulte d&#39;une perte de tension ou d&#39;une demande IS ; l&#39;AAR seul ne les arrête pas. Le débit forcé décroît avec une constante de 15 s et est mis à zéro sous 2 % du nominal, soit environ une minute de décélération.</p>
 <p>La circulation naturelle dépend de l&#39;écart thermique primaire–GV, du niveau secondaire, de la couverture cœur et de l&#39;amorçage de la boucle. Elle prend progressivement le relais du débit forcé, autour de 250 kg/s par boucle, au maximum 300 kg/s. Le RIS livré participe au débit cœur ; sur une brèche BF, l&#39;exercice suppose un court-circuit de 50 % de l&#39;injection de la boucle rompue, soit 12,5 % du débit total.</p>
 <p><code>cppInventory</code> distribue la masse liquide dans des capacités équivalentes selon leur altitude. Le PZR absorbe d&#39;abord la variation normale, les boucles restant pleines. Une surface libre schématique descend dans les capacités après épuisement de cette réserve. Les quatre faisceaux ont des altitudes légèrement décalées pour représenter un désamorçage progressif. Cette géométrie est un modèle de visualisation et de capacité, pas une description dimensionnelle certifiée.</p>
+<h4 id="detail-bilan-massique-visible">Bilan massique visible</h4>
+<p><code>primaryMassBalance(state)</code> expose les débits <strong>réalisés à la frontière du CPP</strong>, en kg/s. Les apports MP, BP et accumulateurs conservent leur origine pendant leur transit. Le débit pompé peut donc différer temporairement du débit arrivé. La charge RCV comprend les retours des joints regroupés dans l&#39;inventaire équivalent.</p>
+<pre><code>dM_CPP/dt = charge_RCV_arrivée + RIS_MP_arrivée + RIS_BP_arrivée
+         + accumulateurs_arrivés − décharge_RCV − brèche_totale − soupapes_PZR
+M_CPP = M_liquide + M_vapeur
+dM_vapeur/dt = changement_de_phase_net − vapeur_brèche − soupapes_PZR
+dM_liquide/dt = dM_CPP/dt − dM_vapeur/dt</code></pre>
+<p>Le changement de phase net inclut détente et condensation ; il peut être négatif. Il se distingue du débit de vaporisation calculé à partir de la chaleur transférée au cœur. Le débit total de brèche contient déjà ses parts liquide et vapeur : ne pas lui ajouter une seconde fois la vapeur produite. Aspersion normale et RRA sont des circulations internes ; l&#39;aspersion auxiliaire détourne une part de la charge déjà comptée. ARE et ASG alimentent le secondaire et ne constituent pas une entrée d&#39;eau primaire.</p>
+<p>Le panneau du synoptique Inventaire CPP montre entrées, sorties, solde, variations des stocks liquide et vapeur. Les m³/h sont des <strong>équivalents liquides</strong>, convertis à 1 000 kg/m³ pour RIS, 720 kg/m³ pour RCV et soupapes, et avec la densité utilisée dans la loi de brèche pour celle-ci. Un débit diphasique n&#39;est pas un volume réel de vapeur. Comparer les kg/s pour fermer le bilan.</p>
+<p>Une pression stable n&#39;impose pas <code>dM_CPP/dt = 0</code>. La loi simplifiée actuelle est <code>dP/dt = (dM_CPP/dt)/650 + 0,2 × dTMOY/dt + gain_PZR × chaleur_nette_PZR</code>. Le refroidissement peut compenser la remontée de pression due à un gain de masse. Dans le cas d&#39;étude par défaut, brèche 300 cm² après 20 min, environ 344 kg/s arrivent par RIS contre 334 kg/s à la brèche ; le stock gagne encore environ 10 kg/s malgré une pression proche de 31 bar. Ce résultat relève de la loi globale approchée de pression et ne constitue pas un équilibre thermohydraulique qualifié.</p>
 <h3 id="detail-5-7-gv-et-vapeur">5.7 GV et vapeur</h3>
 <p>Chaque GV possède sa masse et son bilan d&#39;énergie : capacité d&#39;eau variable plus 100 MJ/°C de métal équivalent. La masse secondaire nominale est d&#39;environ 63,8 t par GV. L&#39;inventaire primaire est compté dans le bilan primaire, pas ajouté une seconde fois à cette capacité.</p>
 <p>L&#39;échange primaire–GV dépend de l&#39;écart TMOY–température secondaire, du débit de la boucle et de l&#39;inventaire secondaire. ARE apporte de l&#39;eau à 245 °C ; ASG à 20 °C. La vapeur évacuée emporte l&#39;enthalpie sensible et une chaleur latente effective dépendant de la pression. La pression secondaire est déduite de la température par la saturation.</p>
@@ -411,6 +442,7 @@ FQ = max[Q(z)]</code></pre>
 <p>Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40, 30 bar ; hors plage, les extrêmes sont maintenus. Deux trains sont de type TPS et deux MPS. Les MPS attendent le secours diesel en perte de tension ; les TPS restent disponibles. Le haut niveau GE &gt;90 % coupe aussi le manuel ; en automatique, la reprise sous 10 % suppose un ordre ASG préalablement réalisé.</p>
 <h3 id="detail-5-8-pzr-et-rcv">5.8 PZR et RCV</h3>
 <p>La pression primaire évolue avec les changements de masse, de température moyenne et le bilan thermique effectif du PZR. Ce dernier comporte chauffe, aspersion et échange passif calibré au nominal. Il ne s&#39;agit pas d&#39;un modèle séparé vapeur/liquide détaillé du PZR.</p>
+<p>Les trois étages de soupapes restent commandables manuellement avec les ateliers CC actifs. Leur débit d&#39;étude vaut 50 × sqrt(P/155) kg/s par étage ouvert, limité par la masse disponible. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente <code>qsvpSignal</code>, le tableau de bord et la sortie du bilan CPP. L&#39;ouverture manuelle ne crée pas un ordre AAR. Aucun seuil automatique d&#39;ouverture des soupapes n&#39;est ajouté par cette commande.</p>
 <p>Les deux lignes réglantes d&#39;aspersion prennent leur eau en BF1/BF2. À ouverture 100 %, chacune débite 125 m³/h aux conditions nominales ; chacune possède aussi 0,230 m³/h continus. L&#39;ouverture est linéaire en débit à pression motrice nominale, puis multipliée par <code>sqrt(deltaP / 3,5 bar)</code>. La pression motrice suit le carré du débit forcé GMPP. L&#39;ouverture évolue à 50 %/s. L&#39;aspersion auxiliaire manuelle détourne jusqu&#39;à 8 m³/h de charge RCV vers le PZR, sans ajouter une nouvelle masse injectée.</p>
 <p>La charge RCV totale vaut jusqu&#39;à 36 m³/h, dont 6 vers les joints et 30 sur la charge directe équivalente. Les orifices de décharge donnent chacun 18 m³/h ; deux sont ouverts au départ. QCHARGE peut être commandée par le CC de niveau. La CB réglée reste manuelle. Les boutons dilution/borication imposent temporairement 0/7 000 ppm à la charge existante, restaurent ensuite la CB réglée et comptent les litres <strong>arrivés</strong> après 8 s de transit.</p>
 <p>Une chaîne facultative construite dans CC-RÉGUL peut utiliser les sorties <code>boricationOut</code> et <code>dilutionOut</code> : valeurs TOR, 1 = marche, 0 = arrêt (seuil 0,5). Elles reprennent la charge existante, sans débit supplémentaire, avec le même transit et les mêmes compteurs. Deux demandes simultanées suspendent l&#39;apport direct et donnent une alarme. Une sortie raccordée remplace les boutons manuels ; désactiver les régulations ou enlever les sorties rend la commande manuelle et la CB réglée. Aucune chaîne de régulation du bore n&#39;est préchargée. Les entrées <code>posgSignal</code>, <code>g3CountSignal</code> et <code>gcpCalibrationSignal</code> donnent respectivement les pas extraits de R, les pas de chevauchement des GCP et le décalibrage manuel en % PN.</p>
@@ -536,8 +568,8 @@ node scripts/check-docs.mjs</code></pre>
     <img id="certificatePreview" class="certificate-preview" alt="Aperçu du certificat de fin de simulation" hidden>
   </dialog>
   <script src="vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="centurion-engine.js?v=20261007-certificat"></script>
+  <script src="centurion-engine.js?v=20261007-bilan-masses"></script>
   <script src="centurion-certificate.js?v=20261007-certificat-reinitialisation"></script>
-  <script src="centurion-app.js?v=20261007-certificat"></script>
+  <script src="centurion-app.js?v=20261007-bilan-masses"></script>
 </body>
 </html>

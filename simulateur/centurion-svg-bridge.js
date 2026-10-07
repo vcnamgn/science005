@@ -157,6 +157,8 @@
     for(const node of nodes("[data-visible-positive]"))
       node.style.display=read(data,node.getAttribute("data-visible-positive"))>1?"":"none";
     if(kind==="inventory") {
+      document.getElementById("balance-net-card")?.setAttribute("data-balance-sign",
+        data.massBalance.netKgS>0.05?"gain":data.massBalance.netKgS<-.05?"loss":"balanced");
       const line=document.getElementById("cpp-waterline");
       if(line){
         const scale=Number(line.getAttribute("data-metres-scale"))||21;

@@ -233,6 +233,24 @@ La circulation naturelle dépend de l'écart thermique primaire–GV, du niveau 
 
 `cppInventory` distribue la masse liquide dans des capacités équivalentes selon leur altitude. Le PZR absorbe d'abord la variation normale, les boucles restant pleines. Une surface libre schématique descend dans les capacités après épuisement de cette réserve. Les quatre faisceaux ont des altitudes légèrement décalées pour représenter un désamorçage progressif. Cette géométrie est un modèle de visualisation et de capacité, pas une description dimensionnelle certifiée.
 
+#### Bilan massique visible
+
+`primaryMassBalance(state)` expose les débits **réalisés à la frontière du CPP**, en kg/s. Les apports MP, BP et accumulateurs conservent leur origine pendant leur transit. Le débit pompé peut donc différer temporairement du débit arrivé. La charge RCV comprend les retours des joints regroupés dans l'inventaire équivalent.
+
+```text
+dM_CPP/dt = charge_RCV_arrivée + RIS_MP_arrivée + RIS_BP_arrivée
+         + accumulateurs_arrivés − décharge_RCV − brèche_totale − soupapes_PZR
+M_CPP = M_liquide + M_vapeur
+dM_vapeur/dt = changement_de_phase_net − vapeur_brèche − soupapes_PZR
+dM_liquide/dt = dM_CPP/dt − dM_vapeur/dt
+```
+
+Le changement de phase net inclut détente et condensation ; il peut être négatif. Il se distingue du débit de vaporisation calculé à partir de la chaleur transférée au cœur. Le débit total de brèche contient déjà ses parts liquide et vapeur : ne pas lui ajouter une seconde fois la vapeur produite. Aspersion normale et RRA sont des circulations internes ; l'aspersion auxiliaire détourne une part de la charge déjà comptée. ARE et ASG alimentent le secondaire et ne constituent pas une entrée d'eau primaire.
+
+Le panneau du synoptique Inventaire CPP montre entrées, sorties, solde, variations des stocks liquide et vapeur. Les m³/h sont des **équivalents liquides**, convertis à 1 000 kg/m³ pour RIS, 720 kg/m³ pour RCV et soupapes, et avec la densité utilisée dans la loi de brèche pour celle-ci. Un débit diphasique n'est pas un volume réel de vapeur. Comparer les kg/s pour fermer le bilan.
+
+Une pression stable n'impose pas `dM_CPP/dt = 0`. La loi simplifiée actuelle est `dP/dt = (dM_CPP/dt)/650 + 0,2 × dTMOY/dt + gain_PZR × chaleur_nette_PZR`. Le refroidissement peut compenser la remontée de pression due à un gain de masse. Dans le cas d'étude par défaut, brèche 300 cm² après 20 min, environ 344 kg/s arrivent par RIS contre 334 kg/s à la brèche ; le stock gagne encore environ 10 kg/s malgré une pression proche de 31 bar. Ce résultat relève de la loi globale approchée de pression et ne constitue pas un équilibre thermohydraulique qualifié.
+
 ### 5.7 GV et vapeur
 
 Chaque GV possède sa masse et son bilan d'énergie : capacité d'eau variable plus 100 MJ/°C de métal équivalent. La masse secondaire nominale est d'environ 63,8 t par GV. L'inventaire primaire est compté dans le bilan primaire, pas ajouté une seconde fois à cette capacité.
@@ -250,6 +268,8 @@ Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40
 ### 5.8 PZR et RCV
 
 La pression primaire évolue avec les changements de masse, de température moyenne et le bilan thermique effectif du PZR. Ce dernier comporte chauffe, aspersion et échange passif calibré au nominal. Il ne s'agit pas d'un modèle séparé vapeur/liquide détaillé du PZR.
+
+Les trois étages de soupapes restent commandables manuellement avec les ateliers CC actifs. Leur débit d'étude vaut 50 × sqrt(P/155) kg/s par étage ouvert, limité par la masse disponible. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente `qsvpSignal`, le tableau de bord et la sortie du bilan CPP. L'ouverture manuelle ne crée pas un ordre AAR. Aucun seuil automatique d'ouverture des soupapes n'est ajouté par cette commande.
 
 Les deux lignes réglantes d'aspersion prennent leur eau en BF1/BF2. À ouverture 100 %, chacune débite 125 m³/h aux conditions nominales ; chacune possède aussi 0,230 m³/h continus. L'ouverture est linéaire en débit à pression motrice nominale, puis multipliée par `sqrt(deltaP / 3,5 bar)`. La pression motrice suit le carré du débit forcé GMPP. L'ouverture évolue à 50 %/s. L'aspersion auxiliaire manuelle détourne jusqu'à 8 m³/h de charge RCV vers le PZR, sans ajouter une nouvelle masse injectée.
 

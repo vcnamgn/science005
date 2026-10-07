@@ -25,6 +25,7 @@ const notes={
   refreshReactivity:'Recalcule les composantes en pcm et leur somme, sans avancer le temps ; modifie state et le renvoie.',
   refreshAxial:'Recalcule forme, DPAX, Fxy, PLIN et DNBR sans faire évoluer les poisons ni l’horloge ; modifie state.',
   cppInventory:'Convertit une masse liquide (kg) en niveau CPP (m), masses des capacités, couverture cœur et amorçage des boucles.',
+  primaryMassBalance:'Expose les apports arrivés et sorties réalisés en kg/s, leurs équivalents liquides en m³/h, le solde et les variations des stocks liquide/vapeur ; lecture seule.',
   latentHeatJkg:'Chaleur latente primaire, J/kg ; interpolation tabulée selon pression absolue en bar.',
   gvThermalCapacityJk:'Capacité thermique secondaire, J/°C : eau en kg plus contribution métallique constante.',
   gvLatentHeatJkg:'Chaleur latente secondaire effective en J/kg, dépendant de la pression absolue en bar et calée au nominal.',

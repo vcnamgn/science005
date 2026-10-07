@@ -516,6 +516,7 @@
       primaryMassKg: C.nominalPrimaryMassKg, coveragePct: 100,
       inventory:cppInventory(C.nominalPrimaryMassKg),
       vaporMassKg:0, vaporEnergyJ:0, vaporizationKgS:0, sensibleCoreMW:C.nominalThermalMW,
+      primaryMassRateKgS:0,vaporMassRateKgS:0,phaseChangeKgS:0,
       primaryEnergyJ:C.nominalPrimaryMassKg*C.primaryCpJkgK*C.primaryMeanC,
       lidC:324.6, saturationC:saturationTemperatureC(C.primaryPressureBar),
       breakLiquidKgS:0,breakSteamKgS:0,risCoreKgS:0,coreFlowKgS:C.nominalPrimaryFlowKgS,
@@ -531,11 +532,13 @@
       rcvLetdownKgS: C.rcvLetdownM3h*C.primaryDensityKgM3/3600,
       rcvDeliveredKgS: C.rcvNominalM3h*C.primaryDensityKgM3/3600,
       rcvInjectionLitres: {dilution:0,borication:0},
-      reliefKgS: 0, reliefStages: [false,false,false],
+      reliefKgS: 0, reliefStages: [false,false,false],reliefStageKgS:[0,0,0],
       risMpKgS: 0, risBpKgS: 0, accumulatorKgS: 0,
-      risDeliveredKgS: 0, risCoolingMW: 0, risTankRemainingKg: 600000,
+      risDeliveredKgS: 0,risDeliveredMpKgS:0,risDeliveredBpKgS:0,risDeliveredAccumulatorKgS:0,
+      risCoolingMW: 0, risTankRemainingKg: 600000,
       accumulatorsKg: Array(4).fill(C.accumulatorKgPerLoop),
-      breakKgS: 0, breakAreaCm2: 0, breakLoop: 1, breakBranch: "froide",
+      breakKgS: 0,breakDensityKgM3:C.primaryDensityKgM3,
+      breakAreaCm2: 0, breakLoop: 1, breakBranch: "froide",
       rods, g3Count: 780, g3Target: 780, rLimitPas: 186,
       loops: Array.from({length:4}, (_,i) => ({ index:i+1, flowKgS:nominalFlow,
         forcedFlowKgS:nominalFlow, naturalFlowKgS:0,
@@ -1044,15 +1047,17 @@
   }
   function deliverPipe(pipe, time, injectionLitres = null) {
     let massKg=0, boron=0,energyJ=0;
+    const sources={mp:0,bp:0,accumulator:0};
     while (pipe.length && pipe[0].at <= time+1e-9) {
       const parcel = pipe.shift();
       massKg += parcel.massKg;
       boron += parcel.massKg*parcel.boronPpm;
       energyJ += parcel.massKg*C.primaryCpJkgK*(parcel.tempC??C.risInjectionTempC);
+      if(Object.hasOwn(sources,parcel.source))sources[parcel.source]+=parcel.massKg;
       if(injectionLitres && Object.hasOwn(injectionLitres,parcel.mode))
         injectionLitres[parcel.mode]+=parcel.litres;
     }
-    return { massKg, boron,energyJ };
+    return { massKg, boron,energyJ,sources };
   }
 
   function updateGv(s, u, dt) {
@@ -1178,7 +1183,8 @@
       accumulator:s.accumulatorKgS,risMp:s.risMpKgS,risBp:s.risBpKgS,
       cppLevel:s.inventory.levelM,cppMass:s.primaryMassKg,vaporization:s.vaporizationKgS,
       vaporMass:s.vaporMassKg,breakSteam:s.breakSteamKgS,
-      breakDensity:clamp(C.primaryDensityKgM3*(s.pressureBar/155)**0.08,150,760),
+      breakDensity:s.breakDensityKgM3,
+      massBalance:primaryMassBalance(s),relief:s.reliefKgS,
       pline:s.peakLinearWcm,dpax:s.dpaxPctPn });
     if (s.history.length>8*3600) s.history.shift();
   }
@@ -1280,6 +1286,7 @@
 
     // Brèche primaire, RIS à pression variable et transit des volumes injectés.
     const density=clamp(C.primaryDensityKgM3*(s.pressureBar/155)**0.08,150,760);
+    s.breakDensityKgM3=density;
     const fluxOrifice=0.68*Math.sqrt(2*density*Math.max(0,s.pressureBar-1)*1e5);
     const fluxLimit=C.breakCriticalFluxKgM2S*Math.sqrt(Math.max(0,s.pressureBar)/155);
     s.breakKgS=s.breakAreaCm2*1e-4*Math.min(fluxOrifice,fluxLimit);
@@ -1308,12 +1315,21 @@
     }else s.risTankRemainingKg-=risPump*dt;
     if(risReserveBefore>0&&s.risTankRemainingKg<=0)
       addEvent(s,"protection","Réserve RIS épuisée : bascule en recirculation possible depuis la conduite manuelle");
-    pumpToPipe(s.risPipe,s.time+C.risTransitS,risPump*dt,
-      sourceBoron,{tempC:sourceTemp});
+    const pumpTotal=s.risMpKgS+s.risBpKgS;
+    const mpPumped=pumpTotal>0?risPump*s.risMpKgS/pumpTotal:0;
+    // Garder l'origine des paquets jusqu'à leur arrivée : le bilan CPP
+    // utilise les débits livrés, pas les demandes à la sortie des pompes.
+    pumpToPipe(s.risPipe,s.time+C.risTransitS,mpPumped*dt,
+      sourceBoron,{tempC:sourceTemp,source:"mp"});
+    pumpToPipe(s.risPipe,s.time+C.risTransitS,(risPump-mpPumped)*dt,
+      sourceBoron,{tempC:sourceTemp,source:"bp"});
     pumpToPipe(s.risPipe,s.time+C.accumulatorTransitS,accumPump*dt,
-      clamp(Number(u.risBoronPpm),0,4000),{tempC:C.risInjectionTempC});
+      clamp(Number(u.risBoronPpm),0,4000),{tempC:C.risInjectionTempC,source:"accumulator"});
     const arrivedRis=deliverPipe(s.risPipe,s.time);
     s.risDeliveredKgS=arrivedRis.massKg/dt;
+    s.risDeliveredMpKgS=arrivedRis.sources.mp/dt;
+    s.risDeliveredBpKgS=arrivedRis.sources.bp/dt;
+    s.risDeliveredAccumulatorKgS=arrivedRis.sources.accumulator/dt;
     // Apport BF : hypothèse de mélange, avec 50 % de court-circuit sur la seule
     // boucle rompue. Les autres 3/4 de l'injection traversent entièrement le cœur.
     s.risCoreKgS=s.risDeliveredKgS*(s.breakAreaCm2>0&&s.breakBranch==="froide"?0.875:1);
@@ -1337,14 +1353,17 @@
     s.rcvDeliveredKgS=arrivedRcv.massKg/dt;
 
     s.reliefStages=u.manualReliefStages.map(Boolean);
-    s.reliefKgS=s.reliefStages.filter(Boolean).length*50
-      *Math.sqrt(Math.max(0,s.pressureBar)/155);
+    s.reliefStageKgS=s.reliefStages.map(open=>open?50*Math.sqrt(Math.max(0,s.pressureBar)/155):0);
+    s.reliefKgS=s.reliefStageKgS.reduce((sum,q)=>sum+q,0);
     const oldMass=s.primaryMassKg;
+    const oldVaporMass=s.vaporMassKg;
     const availableMass=oldMass+arrivedRis.massKg+arrivedRcv.massKg;
     const totalOut=s.breakKgS+letdown+s.reliefKgS;
     const outScale=Math.min(1,Math.max(0,availableMass-1)/Math.max(1,totalOut*dt));
     s.breakKgS*=outScale;s.reliefKgS*=outScale;
-    const outMass=(s.breakKgS+letdown*outScale+s.reliefKgS)*dt;
+    s.reliefStageKgS=s.reliefStageKgS.map(q=>q*outScale);
+    s.rcvLetdownKgS=letdown*outScale;
+    const outMass=(s.breakKgS+s.rcvLetdownKgS+s.reliefKgS)*dt;
     const oldTemp=s.tavgC,oldLatent=s.vaporEnergyJ;
     const latent=latentHeatJkg(s.pressureBar);
     const steamDensity=s.pressureBar*1e5/(461.5*(saturationTemperatureC(s.pressureBar)+273.15));
@@ -1445,6 +1464,11 @@
     s.tavgC=Math.min(s.saturationC,Math.max(20,netEnergy/(s.primaryMassKg*C.primaryCpJkgK)));
     s.vaporMassKg=Math.min(s.primaryMassKg-1,s.vaporEnergyJ/latentHeatJkg(s.pressureBar));
     s.vaporEnergyJ=s.vaporMassKg*latentHeatJkg(s.pressureBar);
+    s.primaryMassRateKgS=(s.primaryMassKg-oldMass)/dt;
+    s.vaporMassRateKgS=(s.vaporMassKg-oldVaporMass)/dt;
+    // Transfert interne liquide ↔ vapeur : inclut détente et condensation.
+    // Ce terme ne s'ajoute pas une seconde fois à la fuite totale de brèche.
+    s.phaseChangeKgS=s.vaporMassRateKgS+s.breakSteamKgS+s.reliefKgS;
     s.primaryEnergyJ=s.primaryMassKg*C.primaryCpJkgK*s.tavgC+s.vaporEnergyJ;
     s.boronPpm=clamp(s.boronInventory/Math.max(1,s.primaryMassKg-s.vaporMassKg),0,C.reaBoronPpm);
     s.inventory=cppInventory(Math.max(0,s.primaryMassKg-s.vaporMassKg));
@@ -1507,6 +1531,32 @@
   }
   // Lecture commune aux synoptiques, au tableau de bord et aux éditeurs CC.
   // Les commandes demandées ne remplacent jamais les positions/débits réalisés.
+  function primaryMassBalance(s) {
+    const inputKgS=s.rcvDeliveredKgS+s.risDeliveredKgS;
+    const outputKgS=s.rcvLetdownKgS+s.breakKgS+s.reliefKgS;
+    const netKgS=inputKgS-outputKgS;
+    const totalRateKgS=s.primaryMassRateKgS;
+    return {
+      chargeKgS:s.rcvDeliveredKgS,chargeM3h:s.rcvDeliveredKgS*3600/C.primaryDensityKgM3,
+      risMpKgS:s.risDeliveredMpKgS,risBpKgS:s.risDeliveredBpKgS,
+      accumulatorKgS:s.risDeliveredAccumulatorKgS,
+      risMpM3h:s.risDeliveredMpKgS*3600/C.risWaterDensityKgM3,
+      risBpM3h:s.risDeliveredBpKgS*3600/C.risWaterDensityKgM3,
+      accumulatorM3h:s.risDeliveredAccumulatorKgS*3600/C.risWaterDensityKgM3,
+      risKgS:s.risDeliveredKgS,risM3h:s.risDeliveredKgS*3600/C.risWaterDensityKgM3,
+      letdownKgS:s.rcvLetdownKgS,letdownM3h:s.rcvLetdownKgS*3600/C.primaryDensityKgM3,
+      breakKgS:s.breakKgS,breakLiquidKgS:s.breakLiquidKgS,breakSteamKgS:s.breakSteamKgS,
+      breakDensityKgM3:s.breakDensityKgM3,
+      // Équivalent liquide de la masse rejetée, et non volume diphasique réel.
+      breakM3h:s.breakKgS*3600/s.breakDensityKgM3,
+      reliefKgS:s.reliefKgS,reliefM3h:s.reliefKgS*3600/C.primaryDensityKgM3,
+      inputKgS,outputKgS,netKgS,totalRateKgS,
+      liquidRateKgS:totalRateKgS-s.vaporMassRateKgS,
+      vaporRateKgS:s.vaporMassRateKgS,phaseChangeKgS:s.phaseChangeKgS,
+      closureErrorKgS:totalRateKgS-netKgS,
+      trend:netKgS>0.05?"Inventaire total en hausse":netKgS<-.05?"Inventaire total en baisse":"Bilan massique équilibré"
+    };
+  }
   function instrumentSnapshot(model, selectedGv=1) {
     const s=model.state,u=model.controls;
     const gv=Math.max(1,Math.min(4,Math.trunc(Number(selectedGv)||1)));
@@ -1526,7 +1576,7 @@
       coreDamageWarning:s.coreDamageWarning?{...s.coreDamageWarning}:null,
       heaterImmersionPct:Math.max(0,Math.min(100,s.pzrLevelPct/15*100)),
       hotC:s.hotC,coldC:s.coldC,tRicC:s.tRicC,tavgC:s.tavgC,lidC:s.lidC,
-      inventory:s.inventory,primaryMassKg:s.primaryMassKg,
+      inventory:s.inventory,primaryMassKg:s.primaryMassKg,massBalance:primaryMassBalance(s),
       vaporMassKg:s.vaporMassKg,vaporizationKgS:s.vaporizationKgS,
       saturationC:saturationTemperatureC(s.pressureBar),risCoreKgS:s.risCoreKgS,
       accumulatorsKg:[...s.accumulatorsKg],accumulatorNitrogenBar:[...s.accumulatorNitrogenBar],
@@ -1540,7 +1590,7 @@
       steamKgS:s.totalSteamKgS,steamTh:s.totalSteamKgS*3.6,
       turbinePct:s.turbinePct,thermalMW:s.thermalPowerMW,electricMW:s.electricMW,
       reliefStages:[...s.reliefStages],reliefOpeningPct:s.reliefStages.map(open=>open?100:0),
-      reliefKgS:s.reliefKgS,gvSetpoint:u.gvLevelSetpointPct,
+      reliefKgS:s.reliefKgS,reliefStageKgS:[...s.reliefStageKgS],gvSetpoint:u.gvLevelSetpointPct,
       risDelivered:s.risDeliveredKgS,
       risLoopM3h:s.risDeliveredKgS*3600/C.risWaterDensityKgM3/4,
       rraLoopM3h:s.rraFlowKgS*3600/C.primaryDensityKgM3/2,
@@ -1587,7 +1637,7 @@
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
     CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,
     cppInventory,latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
-    instrumentSnapshot,controlSignals,
+    instrumentSnapshot,controlSignals,primaryMassBalance,
     evolveAxialPoisons,
     g3Target,gcpPositions,rInsertionLimit,rodIntegral,rodsReactivityPcm,
     axialInsertionFraction,solveAxialShape,smoothAxialProfile,

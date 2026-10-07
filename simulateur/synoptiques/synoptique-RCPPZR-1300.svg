@@ -110,6 +110,7 @@
   <path d="M845 403L860 418L875 403Z" class="pipe" stroke="#2497c5" stroke-width="2" id="path125" />
   <path d="M851 425L840 449 M860 427V452 M869 425L880 449" class="pipe" stroke="#2497c5" stroke-width="1.6" stroke-dasharray="3 5" id="path127" />
   <text id="texte-38" x="1160.00" y="63.00" font-size="17" font-weight="650" text-anchor="start" style="fill:#233f55">SOUPAPES</text>
+  <text id="soupapes-debit-total" x="1160" y="93" font-size="18" font-weight="650" data-value="reliefKgS" data-decimals="1" data-template="Débit total : {value} kg/s">Débit total : 0,0 kg/s</text>
   <path id="collecteur-amont-soupapes" d="m 964,344 c 0,0 16.11604,-37.96756 32.82541,-37.8864 21.95649,0.10665 20.70419,50.96263 42.64769,50.20026 21.6435,-0.75194 5.2681,-52.02591 38.5269,-52.31386 154,-1.33331 462,-4 462,-4" class="pipe" stroke="#bc6655" stroke-width="4" sodipodi:nodetypes="caasc" />
   <path id="collecteur-aval-soupapes" d="M1160 150H1620" class="pipe" stroke="#bc6655" stroke-width="4" />
   <g id="renvoi-rdp" data-renvoi="RDP" data-navigation="" aria-disabled="true" data-link-disabled="true">
@@ -129,6 +130,7 @@
     <path d="M0 43H58V15" class="pipe" stroke="#738899" stroke-width="1.5" stroke-dasharray="4 4" id="path152" />
   <title data-actuator-title="1" /></g>
   <text id="soupape-1-ouverture" x="1160.00" y="347.00" font-size="13" font-weight="600" text-anchor="middle" style="fill:#738899" data-value="reliefOpeningPct.0" data-decimals="0" data-template="Étage 1 · {value} %" data-unit="%">Étage 1 · 0 %</text>
+  <text id="soupape-1-debit" x="1160" y="376" font-size="17" text-anchor="middle" data-value="reliefStageKgS.0" data-decimals="1" data-template="{value} kg/s">0,0 kg/s</text>
   <path id="ligne-soupape-2" d="M1350 300V150" class="pipe" stroke="#bc6655" stroke-width="3.5" />
   <circle cx="1350" cy="300" r="4.3" fill="#bc6655" stroke="#fbfcfe" stroke-width="1.7" id="circle157" />
   <circle cx="1350" cy="150" r="4.3" fill="#bc6655" stroke="#fbfcfe" stroke-width="1.7" id="circle159" />
@@ -142,6 +144,7 @@
     <path d="M0 43H58V15" class="pipe" stroke="#738899" stroke-width="1.5" stroke-dasharray="4 4" id="path172" />
   <title data-actuator-title="1" /></g>
   <text id="soupape-2-ouverture" x="1350.00" y="347.00" font-size="13" font-weight="600" text-anchor="middle" style="fill:#738899" data-value="reliefOpeningPct.1" data-decimals="0" data-template="Étage 2 · {value} %" data-unit="%">Étage 2 · 0 %</text>
+  <text id="soupape-2-debit" x="1350" y="376" font-size="17" text-anchor="middle" data-value="reliefStageKgS.1" data-decimals="1" data-template="{value} kg/s">0,0 kg/s</text>
   <path id="ligne-soupape-3" d="M1540 300V150" class="pipe" stroke="#bc6655" stroke-width="3.5" />
   <circle cx="1540" cy="300" r="4.3" fill="#bc6655" stroke="#fbfcfe" stroke-width="1.7" id="circle177" />
   <circle cx="1540" cy="150" r="4.3" fill="#bc6655" stroke="#fbfcfe" stroke-width="1.7" id="circle179" />
@@ -155,6 +158,7 @@
     <path d="M0 43H58V15" class="pipe" stroke="#738899" stroke-width="1.5" stroke-dasharray="4 4" id="path192" />
   <title data-actuator-title="1" /></g>
   <text id="soupape-3-ouverture" x="1540.00" y="347.00" font-size="13" font-weight="600" text-anchor="middle" style="fill:#738899" data-value="reliefOpeningPct.2" data-decimals="0" data-template="Étage 3 · {value} %" data-unit="%">Étage 3 · 0 %</text>
+  <text id="soupape-3-debit" x="1540" y="376" font-size="17" text-anchor="middle" data-value="reliefStageKgS.2" data-decimals="1" data-template="{value} kg/s">0,0 kg/s</text>
   <path d="M1583 145L1590 150L1583 155" class="pipe" stroke="#bc6655" stroke-width="2" id="path196" />
   <path d="M790 996V898Q790 888 800 888Q810 888 810 898V996" class="pipe" stroke="#e87d45" stroke-width="3" id="path198" />
   <path d="M830 996V898Q830 888 840 888Q850 888 850 898V996" class="pipe" stroke="#e87d45" stroke-width="3" id="path200" />
@@ -175,4 +179,4 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
-<script type="application/ecmascript" href="../centurion-svg-bridge.js?v=20261007-certificat" /></svg>
+<script type="application/ecmascript" href="../centurion-svg-bridge.js?v=20261007-bilan-masses" /></svg>

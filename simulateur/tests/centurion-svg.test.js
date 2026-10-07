@@ -19,8 +19,8 @@ function checkBindings(surface,snapshot,entry){
   }
 }
 
-test('les 68 mesures ont une liaison explicite ; les sources locales disponibles restent intactes',()=>{
-  assert.equal(manifest.reduce((n,m)=>n+m.bindings.length,0),68);
+test('les 72 mesures ont une liaison explicite ; les sources locales disponibles restent intactes',()=>{
+  assert.equal(manifest.reduce((n,m)=>n+m.bindings.length,0),72);
   const privateManifest=path.join(__dirname,'..','..','support','inventaires','liaisons-synoptiques.json');
   if(fs.existsSync(privateManifest)){
     for(const entry of JSON.parse(fs.readFileSync(privateManifest,'utf8'))){
