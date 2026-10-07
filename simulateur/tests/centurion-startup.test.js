@@ -278,8 +278,7 @@ function connectedApplication({synchronous=false,engine=E,svgUpdates=true}={}){
 }
 
 function referenceModel(mode){
-  return JSON.parse(fs.readFileSync(path.join(__dirname,mode==='protect'
-    ? '../modele-de-protection.simurep_complet.json' : '../modele-de-regulation.simurep_complet.json'),'utf8'));
+  return require('./helpers/reference-model')(mode);
 }
 
 test('application : commandes groupées hors CIA et aspersion auxiliaire toujours manuelle',()=>{

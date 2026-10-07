@@ -73,12 +73,12 @@ test('bilan d’enthalpie primaire : injections froides, sensible, latent et rej
   for(let i=0;i<2500&&!m.state.endState;i++){
     const s=m.state,dt=.1,oldT=s.tavgC,p=s.pressureBar;
     const before=s.primaryMassKg*E.C.primaryCpJkgK*oldT+s.vaporEnergyJ;
-    const inflow=[...s.rcvPipe,...s.risPipe].filter(p=>p.at<=s.time+1e-9)
-      .reduce((e,p)=>e+p.massKg*E.C.primaryCpJkgK*(p.tempC??20),0);
     E.step(m,dt);
+    const inflow=(s.rcvDeliveredKgS*s.flowProperties.charge.tempC
+      +s.risDeliveredKgS*s.flowProperties.ris.tempC)*E.C.primaryCpJkgK*dt;
     const out=(s.breakKgS+s.rcvLetdownKgS+s.reliefKgS)*dt*E.C.primaryCpJkgK*oldT
-      +(s.breakSteamKgS+s.reliefKgS)*dt*E.latentHeatJkg(p);
-    const expected=before+(s.coreTransferMW-s.totalGvMW)*1e6*dt+inflow-out;
+      +(s.breakSteamKgS+s.reliefSteamKgS)*dt*E.latentHeatJkg(p);
+    const expected=before+(s.coreTransferMW+s.pumpHeatMW-s.totalGvMW)*1e6*dt+inflow-out;
     close(s.primaryEnergyJ,expected,.01);
     if(s.vaporMassKg>0)phaseSteps++;
   }

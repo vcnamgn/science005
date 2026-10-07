@@ -125,7 +125,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-sauvegarde-capture-2";
+      $("diagramObject").data=svgFiles[name]+"?v=20261008-pzr-piston";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -207,6 +207,11 @@
     const balance=E.primaryMassBalance(model.state);
     $("inventoryPlantState").textContent=E.reactorOperatingState(model.state).code;
     $("inventoryBalanceConditions").textContent=`P ${fmt(model.state.pressureBar,1)} bar · TMOY ${fmt(model.state.tavgC,1)} °C`;
+    const inv=model.state.inventory;
+    $("inventoryVolume").textContent=`Eau liquide : ${fmt(inv.liquidVolumeM3,2)} / ${fmt(inv.capacityM3,2)} m³ · densité ${fmt(inv.densityKgM3,1)} kg/m³`;
+    $("inventoryPzrPocket").textContent=`Volume libre équivalent : ${fmt(inv.steamSpaceM3,2)} m³ · PZR ${fmt(model.state.pzrLevelPct,1)} %`
+      +(inv.steamSpaceM3<.4?" · CPP plein : pression gouvernée par la compressibilité de l’eau":" · compression / condensation de la poche de vapeur");
+    $("inventoryChargeHead").textContent=`RCV : demande ${fmt(model.state.rcvDemandM3h,1)} · réalisé ${fmt(model.state.rcvChargeM3h,1)} · capacité à cette pression ${fmt(model.state.rcvCapacityM3h,1)} m³/h`;
     const breach=$("inventoryBreakStatus"),s=model.state;
     breach.hidden=s.breakAreaCm2<=0;
     breach.textContent=`Brèche ouverte : ${fmt(s.breakAreaCm2)} cm² · boucle ${s.breakLoop}, branche ${s.breakBranch} · ΔP ${fmt(Math.max(0,s.pressureBar-1),1)} bar`
@@ -816,7 +821,8 @@
     $("pzrLevelValue").textContent=fmt(s.pzrLevelPct,1);
     $("rcvFlowValue").textContent=`${fmt(v.chargeM3h,1)} m³/h`;
     $("rcvLetdownValue").textContent=`${fmt(v.letdownM3h,1)} m³/h`;
-    $("chargeValue").textContent=`${fmt(regulationActive?s.rcvChargeKgS*3600/E.C.primaryDensityKgM3:u.rcvChargeM3h,1)} m³/h`;
+    $("chargeValue").textContent=`${fmt(regulationActive?s.rcvChargeM3h:u.rcvChargeM3h,1)} m³/h`;
+    $("chargeHydraulic").textContent=`Réalisé ${fmt(s.rcvChargeM3h,1)} m³/h · maximum pompe ${fmt(s.rcvCapacityM3h,1)} m³/h à ${fmt(s.pressureBar,1)} bar`;
     $("gcpCalibrationValue").textContent=`+${fmt(u.gcpCalibrationPct,1)} % PN`;
     $("sprayActualValue").textContent=
       `${fmt(s.sprayFlowM3h,2)} m³/h (${fmt(s.sprayFlowPct,2)} %)`;
@@ -837,7 +843,7 @@
       $("heaterValue").textContent=`${fmt(s.heaterKW)} kW`;
       $("sprayInput").value=s.sprayPct;
       $("sprayValue").textContent=`${fmt(s.sprayPct,1)} %`;
-      $("chargeInput").value=s.rcvChargeKgS*3600/E.C.primaryDensityKgM3;
+      $("chargeInput").value=s.rcvChargeM3h;
     }
     for(let i=0;i<4;i++){
       const output=$(`gvSteamOut${i}`);
@@ -1076,7 +1082,7 @@
       u.gvManualFeedPct=model.state.gv.map(g=>g.feedValvePct);
       u.manualHeaterKW=model.state.heaterKW;
       u.manualSprayPct=model.state.sprayPct;
-      u.rcvChargeM3h=model.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3;
+      u.rcvChargeM3h=model.state.rcvChargeM3h;
       u.g3GraphTarget=null;u.gvGraphFeedPct=[null,null,null,null];
       u.pressureGraphHeaterKW=null;u.pressureGraphSprayPct=null;
       u.nrefGraphPct=null;u.turbineLimitGraphPct=null;
@@ -1120,7 +1126,7 @@
       u.pressureGraphSprayPct=Number.isFinite(out.qaspOut)?Math.max(0,Math.min(100,out.qaspOut)):null;
       u.nrefGraphPct=Number.isFinite(out.nrefOut)?out.nrefOut:null;
       u.rcvChargeGraphM3h=Number.isFinite(out.qchargeOut)
-        ? Math.max(E.C.rcvSealM3h,Math.min(E.C.rcvNominalM3h,out.qchargeOut)) : null;
+        ? Math.max(0,Math.min(E.C.rcvMaxCommandM3h,out.qchargeOut)) : null;
       E.setRcvGraphInjection(model,out.boricationOut,out.dilutionOut);
     }
     if(message.mode==="protect"&&protectionActive&&message.enabled){

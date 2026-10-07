@@ -63,17 +63,22 @@ test('liaisons complètes CC → actionneurs → moteur → synoptiques et signa
   };
   E.startTransient(m,'pilotage');
   for(let t=0;t<30;t+=.25){
-    if(t===10)m.state.pressureBar=158.5;
+    if(t===10){m.state.pressureBar=158.5;m.state.pzrThermalPressureBar=158.5;}
     cc.setSignals(appSignals(m));apply('regul',cc.evaluate(.25,true).outputs);
     E.advance(m,.25);check();
   }
   assert.ok(m.state.g3Count<780,'la courbe G3 du vrai CC déplace les groupes');
-  assert.ok(m.state.sprayPct>0,'le vrai CC a commandé une aspersion');
+  assert.ok(m.controls.pressureGraphSprayPct!==null,'le vrai CC pilote l’aspersion');
   assert.equal(m.state.heaterKW,m.controls.pressureGraphHeaterKW);
   m.state.pressureBar=80;protect.setSignals(appSignals(m));
   const requests=protect.evaluate(.1,true).outputs;
   assert.equal(requests.aarOut.value,1);assert.equal(requests.risOut.value,1);
-  apply('protect',requests);E.advance(m,80);check();
+  apply('protect',requests);
+  // Maintenir le point hydraulique pour isoler ici le transit et les liaisons.
+  for(let i=0;i<800;i++){
+    m.state.pressureBar=80;m.state.pzrThermalPressureBar=80;E.step(m,.1);
+  }
+  check();
   assert.notEqual(m.state.tripAt,null);assert.notEqual(m.state.risAt,null);
   assert.equal(m.state.rods.R,0);assert.ok(m.state.risDeliveredKgS>0);
   assert.equal(rcp.get('texte-20').textContent,'—');
@@ -125,8 +130,7 @@ function editorFunction(name) {
 function editor(mode='protect',fullGraph=false) {
   // Les essais physiques chargent explicitement la correction complète ;
   // le démarrage des ateliers étudiants est testé sur la page entière.
-  const baseModelText=fs.readFileSync(path.join(__dirname,mode==='protect'
-    ? '../modele-de-protection.simurep_complet.json' : '../modele-de-regulation.simurep_complet.json'),'utf8');
+  const baseModelText=JSON.stringify(require('./helpers/reference-model')(mode));
   const context=vm.createContext({console,baseModelText});
   const specs=html.slice(html.indexOf('    const BLOCK_TYPES ='),html.indexOf('    const SPECIAL_CURVE_PRESETS ='));
   const functions=['regSignalDisplay','regSourceSignal','compareOperatorValue','runtimeStateFor',
@@ -248,7 +252,7 @@ test('transitoire 6 corrigé : boucle stable à 10 % PN, indépendamment du surp
       if(m.state.time>1680)tail.push({T:m.state.tavgC,P:m.state.powerPct});
     }
     const span=key=>Math.max(...tail.map(r=>r[key]))-Math.min(...tail.map(r=>r[key]));
-    assert.ok(span('T')<.3,`${dt} s : étendue TMOY ${span('T')} °C`);
+    assert.ok(span('T')<.5,`${dt} s : étendue TMOY ${span('T')} °C, sous la bande morte`);
     assert.ok(span('P')<.5,`${dt} s : étendue puissance ${span('P')} % PN`);
     assert.ok(Math.abs(m.state.tavgC-m.state.trefC)<.6,'température dans la bande de régulation');
     assert.ok(m.state.rods.R>190&&m.state.rods.R<220,'R stabilisé avec marge de manœuvre');
@@ -303,14 +307,14 @@ test('un graphe CC-RÉGUL sauvegardé adopte le débit RCV nominal de 36 m³/h',
   const complete=JSON.parse(embedded[1]);
   cc.migrateRegulation(complete);
   const limit=complete.nodes.find(node=>node.label==='Limite QCHARGE');
-  assert.equal(limit.params.max,36);
+  assert.equal(limit.params.max,60);
 });
 
 test('la régulation de charge reçoit le débit réel des orifices et respecte le maximum de la pompe',()=>{
-  for(const [qdec,expected] of [[18,18],[36,36],[54,36]]){
+  for(const [qdec,expected] of [[18,18],[36,36],[54,54]]){
     const {cc}=editor('regul',true),m=E.make();
     m.state.pzrLevelPct=41.8;
-    m.state.rcvLetdownKgS=qdec*E.C.primaryDensityKgM3/3600;
+    m.state.rcvLetdownKgS=qdec*E.liquidWaterDensityKgM3(m.state.tavgC,m.state.pressureBar)/3600;
     cc.setSignals(appSignals(m));
     assert.ok(Math.abs(cc.evaluate(0,true).outputs.qchargeOut.value-expected)<1e-8);
   }

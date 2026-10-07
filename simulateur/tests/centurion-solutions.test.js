@@ -4,8 +4,7 @@ const E=require('../centurion-engine');
 const {editorSurface}=require('./helpers/editor-surface');
 const catalog=JSON.parse(fs.readFileSync(path.join(__dirname,'../../scripts/cc-solution-tiers.json'),'utf8'));
 const plain=value=>JSON.parse(JSON.stringify(value));
-const reference=mode=>JSON.parse(fs.readFileSync(path.join(__dirname,mode==='protect'
-  ? '../modele-de-protection.simurep_complet.json' : '../modele-de-regulation.simurep_complet.json'),'utf8'));
+const reference=require('./helpers/reference-model');
 function choose(editor,key,code){
   for(const radio of editor.queryAll('input[name="solutionTier"]'))radio.checked=radio.value===key;
   editor.get('solutionsForm').fire('change');

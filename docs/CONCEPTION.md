@@ -219,7 +219,7 @@ L'échange combustible–primaire est `Q = K × (TCRA − TMOY)`, avec K fixe à
 
 Le primaire a un inventaire nominal de 269 064 kg, Cp effectif 6 000 J/(kg·°C) et débit nominal total de 17 588 kg/s. Il n'est pas multiplié par quatre. Les bilans comptent les injections arrivées, les décharges, la brèche et les soupapes. La température moyenne est déduite de l'énergie ; l'énergie excédant le liquide saturé devient une contribution latente et une masse de vapeur.
 
-La pression de saturation utilise l'équation de la région 4 IF97 ; son inverse est recherché par dichotomie. La chaleur latente primaire est interpolée sur une table. La décomposition liquide/vapeur reste homogène et approchée : densité liquide et Cp ne proviennent pas d'une équation d'état complète.
+La pression et la température de saturation utilisent les équations directes et inverses de la région 4 IF97. La densité liquide dépend de T et P (région 1 IF97 jusqu'à 350 °C) ; les densités saturées suivent SR1-86(1992). Au-delà de 350 °C, la correction de compression liquide est une extension d'étude, pas une implémentation de la région 3. Cp reste effectif et constant, et la chaleur latente primaire est interpolée : le bilan énergétique n'est donc pas une EOS IF97 complète.
 
 Le calcul BF/BC retire la contribution de vaporisation à la chaleur sensible et borne l'écart de température par la saturation. Il ne divise pas par un débit nul. T RIC est la température moyenne de sortie cœur avant le mélange avec 7 % de bypass ; les branches chaudes représentent la sortie après mélange. La température du couvercle est bornée par la saturation.
 
@@ -245,19 +245,19 @@ La circulation naturelle dépend de l'écart thermique primaire–GV, du niveau 
 dM_CPP/dt = charge_RCV_arrivée + RIS_MP_arrivée + RIS_BP_arrivée
          + accumulateurs_arrivés − décharge_RCV − brèche_totale − soupapes_PZR
 M_CPP = M_liquide + M_vapeur
-dM_vapeur/dt = changement_de_phase_net − vapeur_brèche − soupapes_PZR
+dM_vapeur/dt = changement_de_phase_net − vapeur_brèche − vapeur_soupapes_PZR
 dM_liquide/dt = dM_CPP/dt − dM_vapeur/dt
 ```
 
 Le changement de phase net inclut détente et condensation ; il peut être négatif. Il se distingue du débit de vaporisation calculé à partir de la chaleur transférée au cœur. Le débit total de brèche contient déjà ses parts liquide et vapeur : ne pas lui ajouter une seconde fois la vapeur produite. Aspersion normale et RRA sont des circulations internes ; l'aspersion auxiliaire détourne une part de la charge déjà comptée. ARE et ASG alimentent le secondaire et ne constituent pas une entrée d'eau primaire.
 
-Le panneau du synoptique Inventaire CPP montre entrées, sorties, solde, variations des stocks liquide et vapeur. Les m³/h sont des **équivalents liquides**, convertis à 1 000 kg/m³ pour RIS, 720 kg/m³ pour RCV et soupapes, et avec la densité utilisée dans la loi de brèche pour celle-ci. Un débit diphasique n'est pas un volume réel de vapeur. Comparer les kg/s pour fermer le bilan.
+Le panneau du synoptique Inventaire CPP montre entrées, sorties, solde, variations des stocks liquide et vapeur, densité, volume occupé et volume libre. Les m³/h RCV sont convertis avec la densité liquide à la température du débit et à la pression primaire ; RIS utilise 1 000 kg/m³. Les soupapes sont affichées en équivalent liquide, la brèche avec la densité de sa loi d'écoulement. Un débit diphasique n'est pas un volume réel de vapeur. Comparer les kg/s pour fermer le bilan.
 
 Chaque ligne donne aussi la **température et la CB**. Les injections utilisent les caractéristiques des parcelles réellement arrivées après transit, avec pondération massique si deux sources se mélangent pendant une bascule. Les prélèvements liquides emploient TMOY et la CB au début du bilan homogénéisé ; la vapeur rejetée est indiquée à saturation et à 0 ppm de bore. Les totaux sont des moyennes pondérées des débits ; les conditions ne sont pas affichées quand le débit est nul. La température équivalente de charge RCV reste celle du modèle primaire simplifié, sans échangeur RCV détaillé.
 
 `primaryFlowDiagnostics(model)` donne les débits forcé, naturel et total de chaque boucle, le débit RIS traversant le cœur et leur somme. L'affichage explique les facteurs effectivement employés : amorçage, couverture du cœur, inventaire secondaire, écart TMOY−TGV et brèche locale. Le désamorçage commence dans les 0,30 m sous le sommet du faisceau et devient total sous cette bande, selon la géométrie d'étude. Un GV sans eau ou TMOY≤TGV annule également le thermosiphon. L'arrêt électrique et la perte d'amorçage sont distingués ; le débit RIS peut rester positif même avec les quatre thermosiphons perdus.
 
-Une pression stable n'impose pas `dM_CPP/dt = 0`. La loi simplifiée actuelle est `dP/dt = (dM_CPP/dt)/650 + 0,2 × dTMOY/dt + gain_PZR × chaleur_nette_PZR`. Le refroidissement peut compenser la remontée de pression due à un gain de masse. Dans le cas d'étude par défaut, brèche 300 cm² après 20 min, environ 344 kg/s arrivent par RIS contre 334 kg/s à la brèche ; le stock gagne encore environ 10 kg/s malgré une pression proche de 31 bar. Ce résultat relève de la loi globale approchée de pression et ne constitue pas un équilibre thermohydraulique qualifié.
+Une pression stable n'impose pas `dM_CPP/dt = 0` : contraction thermique et changement de phase modifient aussi le volume. En revanche, le stock ne peut plus s'accumuler dans un volume déjà plein sans comprimer le liquide et monter en pression. Le calcul à volume fini de §5.8 remplace la précédente loi linéaire à capacité massique constante. L'inventaire ne retire aucune masse pour faire disparaître un excès : il emploie la même densité et la même pression que le bilan physique.
 
 ### 5.7 GV et vapeur
 
@@ -277,25 +277,53 @@ Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40
 
 ### 5.8 PZR et RCV
 
-La pression primaire évolue avec les changements de masse, de température moyenne et le bilan thermique effectif du PZR. Ce dernier comporte chauffe, aspersion et échange passif calibré au nominal. Il ne s'agit pas d'un modèle séparé vapeur/liquide détaillé du PZR.
+#### Volume fini et effet piston
+
+La géométrie équivalente est recalée sur **269 064 kg à 306,5 °C et 155 bar**, avec niveau PZR 42 %. Sa capacité totale vaut environ **401,05 m³**. Pour l'inventaire, `V_liquide = M_liquide / rho(TMOY, P)` ; refroidir l'eau augmente sa densité et libère du volume. Un affichage à densité fixe pouvait donc annoncer un excès fictif dans un CPP refroidi.
+
+À chaque sous-pas, le moteur conserve la masse injectée et recherche la pression satisfaisant :
+
+```text
+V_liquide(P, énergie) + V_vapeur_de_détente(P, énergie)
+  + V_poche × (P_reference / P)^(1/n) = V_CPP
+```
+
+La poche équivalente représente l'effet piston : une insurge ou une dilatation la comprime, une outsurge la détend. `n = 1,2` est une hypothèse polytropique d'étude. Une fois le volume libre nul, le terme de poche disparaît ; la dépendance de `rho` à P gouverne la pression du circuit plein d'eau. L'algorithme utilise une recherche encadrée avec Newton, sans changer le sous-pas de 0,1 s à ×200.
+
+La pression thermique de référence évolue avec le déplacement d'eau, le travail de compression, les chaufferettes, l'aspersion et l'échange passif. La compliance d'équilibre comprend celle de l'eau, celle de la poche et une contribution de flash/condensation : `C_phase = C_thermique × (dTsat/dP) / Lv × (1/rho_vapeur − 1/rho_liquide_saturé)`. La capacité thermique participante vaut **120 MJ/°C au niveau nominal**, varie avec le niveau PZR et s'annule quand la poche disparaît. La relaxation entre compression rapide et pression thermique a une constante de **2 s**. Ces deux nombres sont des hypothèses du modèle réduit, pas des caractéristiques qualifiées d'un pressuriseur.
+
+Le bilan thermique conserve son calage nominal (288 kW, deux aspersions continues de 0,230 m³/h) et le gradient de pleine aspersion voisin de −0,15 bar/s une fois la réponse établie. Cette modélisation ne résout pas séparément les masses et enthalpies des couches chaude/froide du PZR : la poche de pilotage reste un volume compressible équivalent, sa masse propre n'est pas ajoutée au stock suivi. La masse « vapeur de détente » affichée correspond à celle du bilan sensible/latent du CPP. Ce modèle reste pédagogique.
+
+#### Soupapes et aspersion
 
 Les trois étages de soupapes s'ouvrent automatiquement aux pressions **166, 170 et 172 bar absolus**, puis se referment à **160, 164 et 166 bar**, selon REF-01 §4.8. Chaque étage possède sa propre hystérésis, un délai de 0,3 s et une course linéaire de 1,5 s. Cet automatisme d'organe fonctionne indépendamment de CC-RÉGUL et CC-PROTECT et ne crée pas à lui seul d'AAR ou de CIA. Les commandes manuelles restent disponibles ; une commande manuelle et une ouverture automatique du même organe ne doublent pas son débit.
 
-Leur débit d'étude à pleine ouverture reste 50 × sqrt(P/155) kg/s par étage, multiplié par son ouverture réalisée et limité par la masse disponible. Cette capacité approchée est distincte des seuils et temps documentés. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente `qsvpSignal`, le tableau de bord et la sortie du bilan CPP. Les cases manuelles indiquent les ordres manuels, tandis que les positions SVG montrent l'ouverture réalisée, automatique ou manuelle.
+Leur débit d'étude à pleine ouverture reste 50 × sqrt(P/155) kg/s par étage, multiplié par son ouverture réalisée et limité par la masse disponible. Cette capacité approchée est distincte des seuils et temps documentés. Si le CPP est plein, le rejet devient **liquide**, emporte du bore et ne retire pas une chaleur latente fictive. Le partage est continu dans les derniers 0,4 m³ de volume libre. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente `qsvpSignal`, le tableau de bord et la sortie du bilan CPP. Les cases manuelles indiquent les ordres manuels, tandis que les positions SVG montrent l'ouverture réalisée, automatique ou manuelle.
 
 Les deux lignes réglantes d'aspersion prennent leur eau en BF1/BF2. À ouverture 100 %, chacune débite 125 m³/h aux conditions nominales ; chacune possède aussi 0,230 m³/h continus. L'ouverture est linéaire en débit à pression motrice nominale, puis multipliée par `sqrt(deltaP / 3,5 bar)`. La pression motrice suit le carré du débit forcé GMPP. L'ouverture évolue à 50 %/s. L'aspersion auxiliaire manuelle détourne jusqu'à 8 m³/h de charge RCV vers le PZR, sans ajouter une nouvelle masse injectée.
 
-La charge RCV totale vaut jusqu'à 36 m³/h, dont 6 vers les joints et 30 sur la charge directe équivalente. Les orifices de décharge donnent chacun 18 m³/h ; deux sont ouverts au départ. QCHARGE peut être commandée par le CC de niveau. La CB réglée reste manuelle. Les boutons dilution/borication imposent temporairement 0/7 000 ppm à la charge existante, restaurent ensuite la CB réglée et comptent les litres **arrivés** après 8 s de transit.
+#### Courbe de la pompe de charge RCV
+
+La demande QCHARGE, manuelle ou CC, est réglable de **0 à 60 m³/h**. Le point fourni est **44 m³/h à 177 bar**. Faute de courbe complète, la hauteur à débit nul est fixée à **180 bar** et une courbe parabolique d'étude est utilisée :
+
+```text
+Q_max(P) = min(60, 44 × sqrt(max(0, 180 − P) / 3))   [m³/h]
+Q_réalisé = min(Q_demande, Q_max(P))
+```
+
+Le débit tombe continûment à zéro à 180 bar, sans débit minimum imposé artificiellement. Au nominal, la demande reste **36 m³/h**, dont jusqu'à 6 vers les joints et 30 sur la charge directe équivalente. La contre-pression limite aussi l'admission des parcelles déjà en tuyauterie : une parcelle bloquée reste en ligne, avec sa masse, son bore et son énergie. Le transit reste de 8 s ; le débit pompé et celui arrivé peuvent donc différer. L'inventaire et la conduite manuelle distinguent demande, réalisé et capacité disponible.
+
+Les orifices de décharge donnent chacun 18 m³/h ; deux sont ouverts au départ. QCHARGE peut être commandée par le CC de niveau. Les solutions embarquées acceptent 0–60 m³/h ; les graphes personnalisés conservant un limiteur 6–36 gardent ce réglage jusqu'à sa modification par l'utilisateur. La CB réglée reste manuelle. Les boutons dilution/borication imposent temporairement 0/7 000 ppm à la charge existante, restaurent ensuite la CB réglée et comptent les litres **arrivés** après transit.
 
 Une chaîne facultative construite dans CC-RÉGUL peut utiliser les sorties `boricationOut` et `dilutionOut` : valeurs TOR, 1 = marche, 0 = arrêt (seuil 0,5). Elles reprennent la charge existante, sans débit supplémentaire, avec le même transit et les mêmes compteurs. Deux demandes simultanées suspendent l'apport direct et donnent une alarme. Une sortie raccordée remplace les boutons manuels ; désactiver les régulations ou enlever les sorties rend la commande manuelle et la CB réglée. Aucune chaîne de régulation du bore n'est préchargée. Les entrées `posgSignal`, `g3CountSignal` et `gcpCalibrationSignal` donnent respectivement les pas extraits de R, les pas de chevauchement des GCP et le décalibrage manuel en % PN.
 
-Les conversions RCV utilisent la densité primaire équivalente de 720 kg/m³. Le RIS froid et l'ASG utilisent 1 000 kg/m³. Un débit en kg/s ne se convertit donc pas toujours avec la même densité.
+Les conversions RCV utilisent `rho(T, P)` ; le RIS froid et l'ASG conservent 1 000 kg/m³. La température de charge demeure celle de la reprise RCV régénérée équivalente, sans modèle détaillé d'échangeur. Les propriétés d'eau reposent sur [IF97](https://iapws.org/technical-guidance/release/IF97-Rev) et [SR1-86(1992)](https://iapws.org/relguide/Supp-sat.html) ; la loi de pompe et les paramètres de phase ci-dessus restent des hypothèses explicites d'exercice.
 
 ### 5.9 RIS, accumulateurs et recirculation
 
 Les lois MP/BP dépendent de la pression primaire, des disponibilités, du délai d'ordre, de l'alimentation et du stock de la source. L'injection directe prend la bâche PTR : **2 315 m³ disponibles**, soit 2 315 t avec la densité froide équivalente, à **20 °C et 2 500 ppm** par défaut. Ce volume est le réglage utilisateur de l'exercice. La CB PTR réglable est distincte de l'eau REA à 7 000 ppm utilisée par la borication RCV. La recirculation reprend masse, bore et énergie du puisard modélisé. Les apports arrivent après transit ; les courbes distinguent débit pompé et débit livré.
 
-Les accumulateurs sont des capacités passives avec azote polytropique. La pression d'azote baisse avec la vidange ; le débit suit la racine de la différence de pression positive. Une inertie hydraulique d'étude de 1 s évite une commutation brutale ; le transit vaut 1 s. L'arrêt manuel des pompes RIS ne ferme pas ces capacités passives. Leur autorisation reste cependant reliée à la demande IS dans le modèle actuel.
+Les accumulateurs sont des capacités passives avec azote polytropique. La pression d'azote baisse avec la vidange ; le débit suit la racine de la différence de pression positive. Une inertie hydraulique d'étude de 1 s évite une commutation brutale ; le transit vaut 1 s. En fin de réserve, le débit est aussi limité par `M_restante / 3 s`, pour représenter une sortie qui se découvre progressivement, sans effacer la masse restante. Cette constante est une hypothèse d'exercice. L'arrêt manuel des pompes RIS ne ferme pas ces capacités passives. Leur autorisation reste cependant reliée à la demande IS dans le modèle actuel.
 
 La brèche utilise le minimum d'une loi d'orifice et d'un flux critique borné. Un partage liquide/vapeur dépend de la fraction de vide homogène et de la branche rompue. Le puisard reçoit les sorties modélisées ; il n'existe pas de modèle complet d'enceinte.
 
@@ -352,7 +380,7 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 | `pchauffOut` | `pressureGraphHeaterKW` | Puissance chauffe, kW |
 | `qaspOut` | `pressureGraphSprayPct` | Ouverture aspersion, % |
 | `nrefOut` | `nrefGraphPct` | Référence niveau PZR, % |
-| `qchargeOut` | `rcvChargeGraphM3h` | Débit total de charge, borné à 6–36 m³/h |
+| `qchargeOut` | `rcvChargeGraphM3h` | Demande totale de charge 0–60 m³/h, limitée par la courbe Q(P) de la pompe |
 | `turbineLimitOut` | `turbineLimitGraphPct` | Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée |
 | `aarOut` | demande AAR mémorisée | CC-PROTECT actif ; signal ≥0,5 |
 | `risOut` | demande IS mémorisée | CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR et arrêt GMPP |

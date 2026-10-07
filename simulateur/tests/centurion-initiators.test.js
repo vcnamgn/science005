@@ -19,7 +19,7 @@ function countdownHarness() {
   const ctx=vm.createContext({E,$:id=>elements[id],performance:{now:()=>now},
     setInterval(fn){const id=++nextTimer;timers.set(id,fn);return id;},
     clearInterval(id){timers.delete(id);},render:()=>{},syncInputs:()=>{},
-    editorSignals:()=>({}),editorReady:{regul:false,protect:false},sendEditorTick:()=>{}});
+    editorSignals:()=>({}),editorReady:{regul:false,protect:false},sendEditorTick:()=>{},stateStatus:()=>{}});
   const functions=app.slice(app.indexOf('  function renderInitiatorCountdown('),app.indexOf('  function setDiagram('));
   const handlers=app.slice(app.indexOf('    $("cancelInitiator").addEventListener'),
     app.indexOf('    document.querySelectorAll(".program-choice")'));
@@ -27,6 +27,7 @@ function countdownHarness() {
     app.indexOf('    $("simSpeed").addEventListener'));
   vm.runInContext(`let model=E.make(),pendingInitiator=null,initiatorTimer=null,running=false;
     let historyFollowing=true,historyEndS=null,carry=0,regulationActive=false,protectionActive=true;
+    let editorTickPending=null,editorCycle=0;
     ${functions}\n${handlers}\n${reset}
     globalThis.getModel=()=>model;`,ctx);
   return {elements,model:()=>ctx.getModel(),click:id=>elements[id].events.click(),

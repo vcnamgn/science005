@@ -5,7 +5,15 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const file=path.join(root,'simulateur/centurion-cc-regul.html');
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'scripts/cc-solution-tiers.json'),'utf8'));
-const read=kind=>JSON.parse(fs.readFileSync(path.join(root,`simulateur/modele-de-${kind}.simurep_complet.json`),'utf8').replace(/^\uFEFF/,''));
+const read=kind=>{
+  const source=path.join(root,`simulateur/modele-de-${kind}.simurep_complet.json`);
+  if(fs.existsSync(source))return JSON.parse(fs.readFileSync(source,'utf8').replace(/^\uFEFF/,''));
+  const id=kind==='protection'?'solutionDataProtectComplete':'solutionDataComplete';
+  const match=new RegExp(`<script[^>]+id="${id}"[^>]*>([\\s\\S]*?)<\\/script>`)
+    .exec(fs.readFileSync(file,'utf8'));
+  if(!match)throw Error(`Source de la correction ${kind} absente`);
+  return JSON.parse(match[1]);
+};
 const regulation=read('regulation'),protection=read('protection');
 // Remonter les liaisons conserve les paramètres et la géométrie des chaînes finales.
 function subset(model,outputs,exclude=new Set(),name){

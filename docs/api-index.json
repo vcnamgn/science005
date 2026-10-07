@@ -2,13 +2,13 @@
   "format": "Centurion-Documentation",
   "version": 1,
   "date": "2026-10-06",
-  "noteHash": "f36f7bf602af16a75c645b6ccd61da2c81f1a268f8f33c1520987e487bb51ff6",
+  "noteHash": "4d5fceebd6a4bdfc7d3458b8f1529680f0f6054d86f326cf1e06580fcb7268be",
   "modules": [
     {
       "file": "simulateur/centurion-engine.js",
       "title": "Moteur",
       "description": "Physique et API indépendante du navigateur.",
-      "sha256": "59d9320ab30eab2ba844e9b0e7faca1a495a737def714ebd1fb80d7c43ad2007",
+      "sha256": "e0ec91e7ec6d479abe898e22a7afa792f210b96a8fc14dc3d5e71e80db854588",
       "functions": [
         {
           "name": "saturationPressureBar",
@@ -23,592 +23,632 @@
           "line": 22,
           "signature": "saturationTemperatureC(pressureBar)",
           "publicApi": true,
-          "description": "Température de saturation en °C par dichotomie de la pression absolue en bar.",
+          "description": "Température de saturation en °C à partir de P absolue en bar : inverse analytique IF97 région 4, équation 31.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L22"
         },
         {
+          "name": "saturatedWaterDensities",
+          "line": 49,
+          "signature": "saturatedWaterDensities(tempC)",
+          "publicApi": true,
+          "description": "Densités liquide/vapeur saturées en kg/m³ à partir de T en °C : IAPWS SR1-86(1992).",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L49"
+        },
+        {
+          "name": "liquidWaterDensityKgM3",
+          "line": 60,
+          "signature": "liquidWaterDensityKgM3(tempC,pressureBar)",
+          "publicApi": true,
+          "description": "Densité liquide rho(T,P), kg/m³ : IF97 R1 jusqu’à 350 °C, extension d’étude au-delà ; température bornée à saturation.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L60"
+        },
+        {
           "name": "cppInventory",
-          "line": 146,
-          "signature": "cppInventory(liquidMassKg)",
+          "line": 202,
+          "signature": "cppInventory(liquidMassKg,tempC=C.primaryMeanC,pressureBar=C.primaryPressureBar)",
           "publicApi": true,
-          "description": "Convertit une masse liquide (kg) en niveau CPP (m), masses des capacités, couverture cœur et amorçage des boucles.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L146"
+          "description": "Convertit masse liquide (kg), température (°C) et pression (bar) en volume, densité, niveau CPP (m), masses des capacités et amorçage ; T/P nominaux par défaut.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L202"
         },
         {
-          "name": "latentHeatJkg",
-          "line": 178,
-          "signature": "latentHeatJkg(p)",
-          "publicApi": true,
-          "description": "Chaleur latente primaire, J/kg ; interpolation tabulée selon pression absolue en bar.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L178"
-        },
-        {
-          "name": "gvThermalCapacityJk",
-          "line": 182,
-          "signature": "gvThermalCapacityJk(waterKg)",
-          "publicApi": true,
-          "description": "Capacité thermique secondaire, J/°C : eau en kg plus contribution métallique constante.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L182"
-        },
-        {
-          "name": "gvLatentHeatJkg",
-          "line": 185,
-          "signature": "gvLatentHeatJkg(pressureBar)",
-          "publicApi": true,
-          "description": "Chaleur latente secondaire effective en J/kg, dépendant de la pression absolue en bar et calée au nominal.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L185"
-        },
-        {
-          "name": "accumulatorFlowKgS",
-          "line": 188,
-          "signature": "accumulatorFlowKgS(pressureBar,waterKg)",
-          "publicApi": true,
-          "description": "Calcule pression d’azote (bar) et débit d’équilibre (kg/s) à partir de P primaire (bar) et du stock d’eau (kg).",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L188"
-        },
-        {
-          "name": "ptLimits",
-          "line": 196,
-          "signature": "ptLimits(tempC)",
-          "publicApi": true,
-          "description": "Retourne limites basse/haute en bar et disponibilité du domaine schématique à la température donnée en °C.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L196"
-        },
-        {
-          "name": "reactorOperatingState",
-          "line": 206,
-          "signature": "reactorOperatingState(s)",
-          "publicApi": true,
-          "description": "Classe l’état RP, AN/GV ou CIA et indique si le domaine standard s’applique ; lecture seule.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L206"
-        },
-        {
-          "name": "isPtOutside",
-          "line": 220,
-          "signature": "isPtOutside(s)",
-          "publicApi": true,
-          "description": "Test de dépassement du domaine selon l’état ; tolérance RP et limites plus strictes AN/GV.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L220"
-        },
-        {
-          "name": "rraConditions",
-          "line": 228,
-          "signature": "rraConditions(s)",
-          "publicApi": true,
-          "description": "Retourne {allowed, reasons} à partir de P, T, puissance et couverture ; sans AAR ni seuil de réactivité requis.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L228"
-        },
-        {
-          "name": "connectRra",
+          "name": "rcvPumpCapacityM3h",
           "line": 238,
-          "signature": "connectRra(model)",
+          "signature": "rcvPumpCapacityM3h(pressureBar)",
           "publicApi": true,
-          "description": "Connecte seulement si admissible, journalise et termine la partie dans l’état safe ; renvoie un booléen.",
+          "description": "Capacité de charge à la pression primaire en bar : 44 m³/h à 177 bar, zéro à 180 bar ; parabole et plafond 60 m³/h d’étude.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L238"
         },
         {
-          "name": "setRisOperation",
-          "line": 245,
-          "signature": "setRisOperation(model,mode)",
-          "publicApi": true,
-          "description": "Sélectionne auto/on/off et journalise. on mémorise une demande IS ; ne ferme pas les accumulateurs.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L245"
-        },
-        {
-          "name": "axialInsertionFraction",
-          "line": 273,
-          "signature": "axialInsertionFraction(position, zone)",
-          "publicApi": true,
-          "description": "Fraction de la maille axiale occupée par une grappe ; position en pas extraits et indice bas→haut.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L273"
-        },
-        {
-          "name": "axialCoolantTemperatures",
-          "line": 279,
-          "signature": "axialCoolantTemperatures(coldC, thermalMW, flowFraction, shape)",
+          "name": "primaryPhaseAt",
+          "line": 243,
+          "signature": "primaryPhaseAt(massKg,energyJ,pressureBar)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L279"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L243"
         },
         {
-          "name": "solveAxialShape",
-          "line": 295,
-          "signature": "solveAxialShape(rods, xenon, temperatureOffset, initial, coefficients=AXIAL_ROD_ABSORPTION,xenonAbsorption=C.axialXenonAbsorption)",
+          "name": "solvePrimaryPressure",
+          "line": 252,
+          "signature": "solvePrimaryPressure(oldState,massKg,energyJ,pzrHeatMW,dt,thermalPressureBar=null)",
           "publicApi": true,
-          "description": "Mode fondamental positif de diffusion/absorption 1D sur 32 mailles ; renvoie une forme de moyenne 1.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L295"
+          "description": "Recherche P (bar) à volume CPP fini : eau compressible, vapeur de détente, poche polytropique et relaxation vers la pression thermique optionnelle ; lecture seule.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L252"
         },
         {
-          "name": "detectorMeans",
+          "name": "latentHeatJkg",
+          "line": 290,
+          "signature": "latentHeatJkg(p)",
+          "publicApi": true,
+          "description": "Chaleur latente primaire, J/kg ; interpolation tabulée selon pression absolue en bar.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L290"
+        },
+        {
+          "name": "gvThermalCapacityJk",
+          "line": 294,
+          "signature": "gvThermalCapacityJk(waterKg)",
+          "publicApi": true,
+          "description": "Capacité thermique secondaire, J/°C : eau en kg plus contribution métallique constante.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L294"
+        },
+        {
+          "name": "gvLatentHeatJkg",
+          "line": 297,
+          "signature": "gvLatentHeatJkg(pressureBar)",
+          "publicApi": true,
+          "description": "Chaleur latente secondaire effective en J/kg, dépendant de la pression absolue en bar et calée au nominal.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L297"
+        },
+        {
+          "name": "accumulatorFlowKgS",
+          "line": 300,
+          "signature": "accumulatorFlowKgS(pressureBar,waterKg)",
+          "publicApi": true,
+          "description": "Calcule pression d’azote (bar) et débit d’équilibre (kg/s) à partir de P primaire (bar) et du stock d’eau (kg).",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L300"
+        },
+        {
+          "name": "ptLimits",
+          "line": 308,
+          "signature": "ptLimits(tempC)",
+          "publicApi": true,
+          "description": "Retourne limites basse/haute en bar et disponibilité du domaine schématique à la température donnée en °C.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L308"
+        },
+        {
+          "name": "reactorOperatingState",
+          "line": 318,
+          "signature": "reactorOperatingState(s)",
+          "publicApi": true,
+          "description": "Classe l’état RP, AN/GV ou CIA et indique si le domaine standard s’applique ; lecture seule.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L318"
+        },
+        {
+          "name": "isPtOutside",
+          "line": 332,
+          "signature": "isPtOutside(s)",
+          "publicApi": true,
+          "description": "Test de dépassement du domaine selon l’état ; tolérance RP et limites plus strictes AN/GV.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L332"
+        },
+        {
+          "name": "rraConditions",
           "line": 340,
-          "signature": "detectorMeans(shape)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "signature": "rraConditions(s)",
+          "publicApi": true,
+          "description": "Retourne {allowed, reasons} à partir de P, T, puissance et couverture ; sans AAR ni seuil de réactivité requis.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L340"
         },
         {
+          "name": "connectRra",
+          "line": 350,
+          "signature": "connectRra(model)",
+          "publicApi": true,
+          "description": "Connecte seulement si admissible, journalise et termine la partie dans l’état safe ; renvoie un booléen.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L350"
+        },
+        {
+          "name": "setRisOperation",
+          "line": 357,
+          "signature": "setRisOperation(model,mode)",
+          "publicApi": true,
+          "description": "Sélectionne auto/on/off et journalise. on mémorise une demande IS ; ne ferme pas les accumulateurs.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L357"
+        },
+        {
+          "name": "axialInsertionFraction",
+          "line": 385,
+          "signature": "axialInsertionFraction(position, zone)",
+          "publicApi": true,
+          "description": "Fraction de la maille axiale occupée par une grappe ; position en pas extraits et indice bas→haut.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L385"
+        },
+        {
+          "name": "axialCoolantTemperatures",
+          "line": 391,
+          "signature": "axialCoolantTemperatures(coldC, thermalMW, flowFraction, shape)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L391"
+        },
+        {
+          "name": "solveAxialShape",
+          "line": 407,
+          "signature": "solveAxialShape(rods, xenon, temperatureOffset, initial, coefficients=AXIAL_ROD_ABSORPTION,xenonAbsorption=C.axialXenonAbsorption)",
+          "publicApi": true,
+          "description": "Mode fondamental positif de diffusion/absorption 1D sur 32 mailles ; renvoie une forme de moyenne 1.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L407"
+        },
+        {
+          "name": "detectorMeans",
+          "line": 452,
+          "signature": "detectorMeans(shape)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L452"
+        },
+        {
           "name": "smoothAxialProfile",
-          "line": 354,
+          "line": 466,
           "signature": "smoothAxialProfile(shape, z)",
           "publicApi": true,
           "description": "Interpolation cubique pour l’affichage à hauteur relative z (0–1), préservant les extrema.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L354"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L466"
         },
         {
           "name": "interpolation",
-          "line": 409,
+          "line": 521,
           "signature": "interpolation(points, x)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L409"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L521"
         },
         {
           "name": "g3Target",
-          "line": 419,
+          "line": 531,
           "signature": "g3Target(powerPct, campaign)",
           "publicApi": true,
           "description": "Interpolation de la cible G3 (pas de chevauchement) à partir de la puissance (%) et campagne debut/milieu/fin.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L419"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L531"
         },
         {
           "name": "gcpPositions",
-          "line": 422,
+          "line": 534,
           "signature": "gcpPositions(counter)",
           "publicApi": true,
           "description": "Retourne [G1,G2,N1,N2] en pas extraits, depuis le compteur condensé de chevauchement.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L422"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L534"
         },
         {
           "name": "rInsertionLimit",
-          "line": 426,
+          "line": 538,
           "signature": "rInsertionLimit(powerPct, halfCycle)",
           "publicApi": true,
           "description": "IL de R en pas extraits, en fonction de puissance (% PN) et moitié de cycle premiere/seconde.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L426"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L538"
         },
         {
           "name": "dpaxRightLimit",
-          "line": 430,
+          "line": 542,
           "signature": "dpaxRightLimit(powerPct)",
           "publicApi": true,
           "description": "Limite droite DPAX en % PN, interpolée sur (0,0), (15,15), (6,100).",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L430"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L542"
         },
         {
           "name": "isDpaxRightExceeded",
-          "line": 434,
+          "line": 546,
           "signature": "isDpaxRightExceeded(s)",
           "publicApi": true,
           "description": "Teste DPAX > limite droite à la puissance du cœur ; lecture seule.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L434"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L546"
         },
         {
           "name": "rcvLetdownM3h",
-          "line": 437,
+          "line": 549,
           "signature": "rcvLetdownM3h(model)",
           "publicApi": true,
           "description": "Débit de décharge (m³/h) : nombre d’orifices ES × 18.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L437"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L549"
         },
         {
           "name": "rcvChargeBoronPpm",
-          "line": 440,
+          "line": 552,
           "signature": "rcvChargeBoronPpm(model)",
           "publicApi": true,
           "description": "CB demandée à la charge (ppm) ; dilution/borication surchargent temporairement la valeur manuelle.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L440"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L552"
         },
         {
           "name": "rcvInjectionMode",
-          "line": 446,
+          "line": 558,
           "signature": "rcvInjectionMode(model)",
           "publicApi": true,
           "description": "Renvoie le mode effectif off/dilution/borication, en donnant priorité aux sorties CC raccordées.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L446"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L558"
         },
         {
           "name": "setRcvGraphInjection",
-          "line": 449,
+          "line": 561,
           "signature": "setRcvGraphInjection(model,borication,dilution)",
           "publicApi": true,
           "description": "Applique les deux ordres TOR du CC au mode RCV ; deux demandes simultanées sont rejetées. Des entrées absentes rendent la commande manuelle.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L449"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L561"
         },
         {
           "name": "rodIntegral",
-          "line": 465,
+          "line": 577,
           "signature": "rodIntegral(position)",
           "publicApi": true,
           "description": "Fraction d’efficacité intégrale sur une course de 0–260 pas extraits ; courbe en S.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L465"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L577"
         },
         {
           "name": "rodsReactivityPcm",
-          "line": 468,
+          "line": 580,
           "signature": "rodsReactivityPcm(rods, ejectedWorthPcm, worth = ROD_WORTH_PCM)",
           "publicApi": true,
           "description": "Somme des efficacités relatives aux positions initiales, en pcm, avec contribution d’éjection.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L468"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L580"
         },
         {
           "name": "addEvent",
-          "line": 474,
+          "line": 586,
           "signature": "addEvent(s, kind, text)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L474"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L586"
         },
         {
           "name": "gvLevels",
-          "line": 478,
+          "line": 590,
           "signature": "gvLevels(waterKg)",
           "publicApi": true,
           "description": "Déduit hauteur (m), niveau GE (%) et niveau GL (%) d’une masse secondaire (kg).",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L478"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L590"
         },
         {
           "name": "asgFlowKgS",
-          "line": 487,
+          "line": 599,
           "signature": "asgFlowKgS(pressureBar)",
           "publicApi": true,
           "description": "Débit ASG par GV (kg/s), depuis la table symétrique en fonction de pression (bar).",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L487"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L599"
         },
         {
           "name": "nominalGv",
-          "line": 493,
+          "line": 605,
           "signature": "nominalGv()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L493"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L605"
         },
         {
           "name": "initialState",
-          "line": 511,
+          "line": 623,
           "signature": "initialState()",
           "publicApi": false,
           "description": "Construit l’état physique nominal avant le recalcul axial de make.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L511"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L623"
         },
         {
           "name": "make",
-          "line": 613,
+          "line": 729,
           "signature": "make()",
           "publicApi": true,
           "description": "Crée {state, controls}, initialise le régime nominal et recalcule la forme axiale. Aucun DOM requis.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L613"
-        },
-        {
-          "name": "transientDemand",
-          "line": 670,
-          "signature": "transientDemand(name, elapsed)",
-          "publicApi": true,
-          "description": "Calcule la demande (%) selon le nom et le temps écoulé (s) ; seul le suivi de charge boucle.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L670"
-        },
-        {
-          "name": "turbineLoadTargetPct",
-          "line": 689,
-          "signature": "turbineLoadTargetPct(model)",
-          "publicApi": true,
-          "description": "Renvoie la consigne turbine admise (%) : minimum de la demande et du plafond CC LIM. TURB., borné à 0–100. Lecture seule ; l’arrêt turbine est arbitré séparément.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L689"
-        },
-        {
-          "name": "startTransient",
-          "line": 694,
-          "signature": "startTransient(model, name)",
-          "publicApi": true,
-          "description": "Prépare un programme de charge nommé, sa rampe de raccordement et sa mémoire ; modifie controls.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L694"
-        },
-        {
-          "name": "isTransientActive",
-          "line": 708,
-          "signature": "isTransientActive(model)",
-          "publicApi": true,
-          "description": "Indique si un programme prend actuellement la main sur la demande turbine.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L708"
-        },
-        {
-          "name": "pauseTransient",
-          "line": 711,
-          "signature": "pauseTransient(model)",
-          "publicApi": true,
-          "description": "Fige le programme et conserve la demande turbine courante ; la physique peut continuer.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L711"
-        },
-        {
-          "name": "resumeTransient",
-          "line": 716,
-          "signature": "resumeTransient(model)",
-          "publicApi": true,
-          "description": "Reprend le programme en pause sans redémarrer sa chronologie.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L716"
-        },
-        {
-          "name": "interruptTransient",
-          "line": 721,
-          "signature": "interruptTransient(model)",
-          "publicApi": true,
-          "description": "Arrête le programme et rend la demande turbine manuelle à sa valeur courante.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L721"
-        },
-        {
-          "name": "updateTurbineDemand",
-          "line": 729,
-          "signature": "updateTurbineDemand(model,dt)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L729"
         },
         {
-          "name": "initiate",
-          "line": 762,
-          "signature": "initiate(model, name, details = {})",
+          "name": "transientDemand",
+          "line": 786,
+          "signature": "transientDemand(name, elapsed)",
           "publicApi": true,
-          "description": "Applique une demande d’événement au modèle : brèche, retrait, éjection, perte de tension, AAR, IS ou ASG selon name/details.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L762"
+          "description": "Calcule la demande (%) selon le nom et le temps écoulé (s) ; seul le suivi de charge boucle.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L786"
         },
         {
-          "name": "prepareRcvTank",
-          "line": 797,
-          "signature": "prepareRcvTank(model, volumeM3, boronPpm)",
+          "name": "turbineLoadTargetPct",
+          "line": 805,
+          "signature": "turbineLoadTargetPct(model)",
           "publicApi": true,
-          "description": "Applique la concentration de charge demandée, bornée en ppm, et journalise ; capacité du ballon non détaillée.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L797"
+          "description": "Renvoie la consigne turbine admise (%) : minimum de la demande et du plafond CC LIM. TURB., borné à 0–100. Lecture seule ; l’arrêt turbine est arbitré séparément.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L805"
         },
         {
-          "name": "setRManualOverride",
-          "line": 803,
-          "signature": "setRManualOverride(model, enabled)",
+          "name": "startTransient",
+          "line": 810,
+          "signature": "startTransient(model, name)",
           "publicApi": true,
-          "description": "Bascule la surcharge manuelle de R et synchronise la reprise avec la position réelle.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L803"
+          "description": "Prépare un programme de charge nommé, sa rampe de raccordement et sa mémoire ; modifie controls.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L810"
         },
         {
-          "name": "setRcvInjection",
-          "line": 809,
-          "signature": "setRcvInjection(model, mode)",
+          "name": "isTransientActive",
+          "line": 824,
+          "signature": "isTransientActive(model)",
           "publicApi": true,
-          "description": "Bascule off/dilution/borication, sans ajouter un débit distinct de la charge ; journalise.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L809"
+          "description": "Indique si un programme prend actuellement la main sur la demande turbine.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L824"
         },
         {
-          "name": "requestTrip",
-          "line": 816,
-          "signature": "requestTrip(s, text)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L816"
+          "name": "pauseTransient",
+          "line": 827,
+          "signature": "pauseTransient(model)",
+          "publicApi": true,
+          "description": "Fige le programme et conserve la demande turbine courante ; la physique peut continuer.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L827"
         },
         {
-          "name": "stopPrimaryPumps",
-          "line": 822,
-          "signature": "stopPrimaryPumps(s,text)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L822"
+          "name": "resumeTransient",
+          "line": 832,
+          "signature": "resumeTransient(model)",
+          "publicApi": true,
+          "description": "Reprend le programme en pause sans redémarrer sa chronologie.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L832"
         },
         {
-          "name": "requestRis",
-          "line": 829,
-          "signature": "requestRis(s, text)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L829"
-        },
-        {
-          "name": "commandAllRods",
+          "name": "interruptTransient",
           "line": 837,
-          "signature": "commandAllRods(model,targetPas)",
+          "signature": "interruptTransient(model)",
           "publicApi": true,
-          "description": "Demande une manœuvre normale de tous les groupes vers 0 ou 260 pas ; null rend la conduite. N’est pas un AAR.",
+          "description": "Arrête le programme et rend la demande turbine manuelle à sa valeur courante.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L837"
         },
         {
+          "name": "updateTurbineDemand",
+          "line": 845,
+          "signature": "updateTurbineDemand(model,dt)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L845"
+        },
+        {
+          "name": "initiate",
+          "line": 878,
+          "signature": "initiate(model, name, details = {})",
+          "publicApi": true,
+          "description": "Applique une demande d’événement au modèle : brèche, retrait, éjection, perte de tension, AAR, IS ou ASG selon name/details.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L878"
+        },
+        {
+          "name": "prepareRcvTank",
+          "line": 913,
+          "signature": "prepareRcvTank(model, volumeM3, boronPpm)",
+          "publicApi": true,
+          "description": "Applique la concentration de charge demandée, bornée en ppm, et journalise ; capacité du ballon non détaillée.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L913"
+        },
+        {
+          "name": "setRManualOverride",
+          "line": 919,
+          "signature": "setRManualOverride(model, enabled)",
+          "publicApi": true,
+          "description": "Bascule la surcharge manuelle de R et synchronise la reprise avec la position réelle.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L919"
+        },
+        {
+          "name": "setRcvInjection",
+          "line": 925,
+          "signature": "setRcvInjection(model, mode)",
+          "publicApi": true,
+          "description": "Bascule off/dilution/borication, sans ajouter un débit distinct de la charge ; journalise.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L925"
+        },
+        {
+          "name": "requestTrip",
+          "line": 932,
+          "signature": "requestTrip(s, text)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L932"
+        },
+        {
+          "name": "stopPrimaryPumps",
+          "line": 938,
+          "signature": "stopPrimaryPumps(s,text)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L938"
+        },
+        {
+          "name": "requestRis",
+          "line": 945,
+          "signature": "requestRis(s, text)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L945"
+        },
+        {
+          "name": "commandAllRods",
+          "line": 953,
+          "signature": "commandAllRods(model,targetPas)",
+          "publicApi": true,
+          "description": "Demande une manœuvre normale de tous les groupes vers 0 ou 260 pas ; null rend la conduite. N’est pas un AAR.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L953"
+        },
+        {
           "name": "updateRods",
-          "line": 849,
+          "line": 965,
           "signature": "updateRods(s, u, dt)",
           "publicApi": false,
           "description": "Arbitre AAR, manœuvre globale, surcharge R, sorties CC et manuel ; applique vitesses et compteur GCP.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L849"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L965"
         },
         {
           "name": "evolveAxialPoisons",
-          "line": 882,
+          "line": 998,
           "signature": "evolveAxialPoisons(s, dt, scale=1)",
           "publicApi": true,
           "description": "Évolution locale I/Xe dans state sur dt (s), avec facteur d’échelle séparé ; pas de résolution de forme.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L882"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L998"
         },
         {
           "name": "spinFxy32",
-          "line": 914,
+          "line": 1030,
           "signature": "spinFxy32(rods, ungapped=1.4, tableScale=1, thermalRelative=1)",
           "publicApi": true,
           "description": "Retourne les 32 Fxy selon positions et occupation locale, facteurs non grappé/table et puissance thermique relative.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L914"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1030"
         },
         {
           "name": "coreProtectionProfile",
-          "line": 940,
+          "line": 1056,
           "signature": "coreProtectionProfile(s,u)",
           "publicApi": true,
           "description": "Calcule Fxy, PLIN (W/cm), FΔH, enthalpies et proxy local DNBR depuis l’état et les paramètres.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L940"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1056"
         },
         {
           "name": "updateAxial",
-          "line": 975,
+          "line": 1091,
           "signature": "updateAxial(s, u, dt)",
           "publicApi": false,
           "description": "Fait évoluer I/Xe puis forme, mesures idéales RPN, DPAX et calculs PLIN/DNBR.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L975"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1091"
         },
         {
           "name": "updateProtection",
-          "line": 1008,
+          "line": 1124,
           "signature": "updateProtection(s, u, dt)",
           "publicApi": false,
           "description": "Actualise les informations de protection et réalise les demandes mémorisées ; mode interne par seuils seulement hors protectionGraphMode.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1008"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1124"
         },
         {
           "name": "risPumpFlows",
-          "line": 1050,
+          "line": 1166,
           "signature": "risPumpFlows(s, u)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1050"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1166"
         },
         {
           "name": "pumpToPipe",
-          "line": 1067,
+          "line": 1183,
           "signature": "pumpToPipe(pipe, at, massKg, boronPpm, metadata = {})",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1067"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1183"
         },
         {
           "name": "deliverPipe",
-          "line": 1073,
-          "signature": "deliverPipe(pipe, time, injectionLitres = null)",
+          "line": 1189,
+          "signature": "deliverPipe(pipe, time, injectionLitres = null, maxMassKg=Infinity)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1073"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1189"
         },
         {
           "name": "deliveredProperties",
-          "line": 1094,
+          "line": 1214,
           "signature": "deliveredProperties(parcel, fallback)",
           "publicApi": false,
           "description": "Température et CB pondérées des volumes arrivés après transit, ou caractéristiques de la source si aucun débit.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1094"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1214"
         },
         {
           "name": "coolRisSump",
-          "line": 1098,
+          "line": 1218,
           "signature": "coolRisSump(s,dt)",
           "publicApi": false,
           "description": "Enlève explicitement la chaleur excédentaire par EAS pour garder les puisards sous 90 °C sans modifier masse ni bore.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1098"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1218"
         },
         {
           "name": "updateRelief",
-          "line": 1109,
+          "line": 1229,
           "signature": "updateRelief(s,u,dt)",
           "publicApi": false,
           "description": "Hystérésis propre des trois soupapes, délais et course automatique ; combine les ordres manuels sans doubler le débit.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1109"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1229"
         },
         {
           "name": "updateGv",
-          "line": 1131,
+          "line": 1251,
           "signature": "updateGv(s, u, dt)",
           "publicApi": false,
           "description": "Met à jour les quatre GV : échanges, inventaires/énergie, ARE/ASG, VPU/GCT-A et puissance réseau.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1131"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1251"
         },
         {
           "name": "sample",
-          "line": 1235,
+          "line": 1355,
           "signature": "sample(s)",
           "publicApi": false,
           "description": "Échantillonne l’historique physique à environ 1 s ; conserve au plus 28 800 points.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1235"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1355"
         },
         {
           "name": "refreshReactivity",
-          "line": 1261,
+          "line": 1381,
           "signature": "refreshReactivity(model)",
           "publicApi": true,
           "description": "Recalcule les composantes en pcm et leur somme, sans avancer le temps ; modifie state et le renvoie.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1261"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1381"
         },
         {
           "name": "step",
-          "line": 1279,
+          "line": 1399,
           "signature": "step(model, dt)",
           "publicApi": true,
           "description": "Fait évoluer le modèle sur place ; dt en secondes, borné à 0–0,1. Renvoie state ; reste inactif après une fin de partie.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1279"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1399"
         },
         {
           "name": "updateCoreDamageWarning",
-          "line": 1591,
+          "line": 1756,
           "signature": "updateCoreDamageWarning(s,dt)",
           "publicApi": false,
           "description": "Suit un dépassement PLIN/dénoyage continu ; annule si récupéré, termine après plus de 5 s.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1591"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1756"
         },
         {
           "name": "advance",
-          "line": 1608,
+          "line": 1773,
           "signature": "advance(model, seconds, dt=0.1)",
           "publicApi": true,
           "description": "Répète les pas physiques pendant seconds (s), avec sous-pas au plus 0,1 s. Ne fait pas tourner les graphes CC.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1608"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1773"
         },
         {
           "name": "refreshAxial",
-          "line": 1617,
+          "line": 1782,
           "signature": "refreshAxial(model)",
           "publicApi": true,
           "description": "Recalcule forme, DPAX, Fxy, PLIN et DNBR sans faire évoluer les poisons ni l’horloge ; modifie state.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1617"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1782"
         },
         {
           "name": "primaryMassBalance",
-          "line": 1623,
+          "line": 1788,
           "signature": "primaryMassBalance(s)",
           "publicApi": true,
           "description": "Expose les apports arrivés et sorties réalisés en kg/s, leurs équivalents liquides en m³/h, le solde et les variations des stocks liquide/vapeur ; lecture seule.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1623"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1788"
         },
         {
           "name": "primaryFlowDiagnostics",
-          "line": 1666,
+          "line": 1833,
           "signature": "primaryFlowDiagnostics(model)",
           "publicApi": true,
           "description": "Débits forcé/naturel par boucle et RIS au cœur ; explique désamorçage, inventaire secondaire et absence de source froide.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1666"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1833"
         },
         {
           "name": "instrumentSnapshot",
-          "line": 1706,
+          "line": 1873,
           "signature": "instrumentSnapshot(model, selectedGv=1)",
           "publicApi": true,
           "description": "Construit la projection instrumentale commune ; selectedGv va de 1 à 4. Grandeurs réalisées et conversions pour les vues.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1706"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1873"
         },
         {
           "name": "controlSignals",
-          "line": 1750,
+          "line": 1918,
           "signature": "controlSignals(model)",
           "publicApi": true,
           "description": "Renvoie le dictionnaire des sources CC : chaque clé possède [valeur numérique, unité].",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1750"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-engine.js#L1918"
         }
       ]
     },
@@ -616,7 +656,7 @@
       "file": "simulateur/centurion-app.js",
       "title": "Application",
       "description": "Horloge, commandes, arbitrage CC et présentation.",
-      "sha256": "3d63126838381a7586c4903c3087cd45e88bfce517691a4a60525286d006f7da",
+      "sha256": "96e2d5a0301e008b0c0c9ef9772c10d6e1bb982498f68826eba0f431d09e9670",
       "functions": [
         {
           "name": "activateView",
@@ -708,339 +748,339 @@
         },
         {
           "name": "renderBoard",
-          "line": 235,
+          "line": 240,
           "signature": "renderBoard()",
           "publicApi": false,
           "description": "Application : affiche mesures réalisées, informations calculées, alarmes et positions.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L235"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L240"
         },
         {
           "name": "renderAlarms",
-          "line": 311,
+          "line": 316,
           "signature": "renderAlarms(s,g,l)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L311"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L316"
         },
         {
           "name": "renderAlarmTable",
-          "line": 329,
+          "line": 334,
           "signature": "renderAlarmTable()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L329"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L334"
         },
         {
           "name": "setModelPage",
-          "line": 333,
-          "signature": "setModelPage(page)",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L333"
-        },
-        {
-          "name": "setModelDetailPage",
           "line": 338,
-          "signature": "setModelDetailPage(page)",
+          "signature": "setModelPage(page)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L338"
         },
         {
+          "name": "setModelDetailPage",
+          "line": 343,
+          "signature": "setModelDetailPage(page)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L343"
+        },
+        {
           "name": "renderSignals",
-          "line": 346,
+          "line": 351,
           "signature": "renderSignals()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L346"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L351"
         },
         {
           "name": "renderAxial",
-          "line": 379,
+          "line": 384,
           "signature": "renderAxial()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L379"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L384"
         },
         {
           "name": "drawCoreCharts",
-          "line": 386,
+          "line": 391,
           "signature": "drawCoreCharts()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L386"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L391"
         },
         {
           "name": "drawHistory",
-          "line": 570,
+          "line": 575,
           "signature": "drawHistory()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L570"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L575"
         },
         {
           "name": "drawLoadProgramChart",
-          "line": 703,
+          "line": 708,
           "signature": "drawLoadProgramChart()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L703"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L708"
         },
         {
           "name": "renderTransientControls",
-          "line": 728,
+          "line": 733,
           "signature": "renderTransientControls()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L728"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L733"
         },
         {
           "name": "render",
-          "line": 750,
+          "line": 755,
           "signature": "render()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L750"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L755"
         },
         {
           "name": "bindNumber",
-          "line": 884,
+          "line": 890,
           "signature": "bindNumber(id,callback)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L884"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L890"
         },
         {
           "name": "bindNumericInputs",
-          "line": 887,
+          "line": 893,
           "signature": "bindNumericInputs(target,callback,selector=null)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L887"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L893"
         },
         {
           "name": "bindModelParameters",
-          "line": 915,
+          "line": 921,
           "signature": "bindModelParameters()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L915"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L921"
         },
         {
           "name": "renderManualExtras",
-          "line": 935,
+          "line": 941,
           "signature": "renderManualExtras()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L935"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L941"
         },
         {
           "name": "changeManualROverride",
-          "line": 955,
+          "line": 961,
           "signature": "changeManualROverride(enabled)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L955"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L961"
         },
         {
           "name": "bindManualExtras",
-          "line": 965,
+          "line": 971,
           "signature": "bindManualExtras()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L965"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L971"
         },
         {
           "name": "editorSignals",
-          "line": 992,
+          "line": 998,
           "signature": "editorSignals()",
           "publicApi": false,
           "description": "Application : délègue la projection des sources à controlSignals, sans duplication des mesures.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L992"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L998"
         },
         {
           "name": "editorBridge",
-          "line": 996,
+          "line": 1002,
           "signature": "editorBridge(mode)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L996"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1002"
         },
         {
           "name": "dispatchEditor",
-          "line": 1000,
+          "line": 1006,
           "signature": "dispatchEditor(mode,payload)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1000"
-        },
-        {
-          "name": "sendEditorTick",
-          "line": 1006,
-          "signature": "sendEditorTick(dt=0)",
-          "publicApi": false,
-          "description": "Application : envoie dt et les signaux communs aux deux éditeurs prêts.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1006"
         },
         {
+          "name": "sendEditorTick",
+          "line": 1012,
+          "signature": "sendEditorTick(dt=0)",
+          "publicApi": false,
+          "description": "Application : envoie dt et les signaux communs aux deux éditeurs prêts.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1012"
+        },
+        {
           "name": "advanceControlledStep",
-          "line": 1018,
+          "line": 1024,
           "signature": "advanceControlledStep()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1018"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1024"
         },
         {
           "name": "finishCcStep",
-          "line": 1036,
+          "line": 1042,
           "signature": "finishCcStep(tick)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1036"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1042"
         },
         {
           "name": "receiveCcStepOutput",
-          "line": 1043,
+          "line": 1049,
           "signature": "receiveCcStepOutput(message)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1043"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1049"
         },
         {
           "name": "advanceSimulationTime",
-          "line": 1054,
+          "line": 1060,
           "signature": "advanceSimulationTime()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1054"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1060"
         },
         {
           "name": "connectEditor",
-          "line": 1065,
+          "line": 1071,
           "signature": "connectEditor(mode,id)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1065"
-        },
-        {
-          "name": "setRegulationActive",
-          "line": 1071,
-          "signature": "setRegulationActive(enabled,notifyEditor=true)",
-          "publicApi": false,
-          "description": "Application : active/désactive la commande CC-RÉGUL ; synchronise le repli manuel sur les actionneurs réalisés.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1071"
         },
         {
+          "name": "setRegulationActive",
+          "line": 1077,
+          "signature": "setRegulationActive(enabled,notifyEditor=true)",
+          "publicApi": false,
+          "description": "Application : active/désactive la commande CC-RÉGUL ; synchronise le repli manuel sur les actionneurs réalisés.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1077"
+        },
+        {
           "name": "setProtectionActive",
-          "line": 1093,
+          "line": 1099,
           "signature": "setProtectionActive(enabled,notifyEditor=true)",
           "publicApi": false,
           "description": "Application : commande CC-PROTECT et fixe le mode de protection par graphe.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1093"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1099"
         },
         {
           "name": "applyEditorOutputs",
-          "line": 1104,
+          "line": 1110,
           "signature": "applyEditorOutputs(message)",
           "publicApi": false,
           "description": "Application : traduit les sorties finies des ateliers actifs en commandes du moteur ; AAR/IS/ASG sont mémorisés.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1104"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1110"
         },
         {
           "name": "handleEditorMessage",
-          "line": 1133,
+          "line": 1139,
           "signature": "handleEditorMessage(data)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1133"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1139"
         },
         {
           "name": "stateStatus",
-          "line": 1155,
+          "line": 1161,
           "signature": "stateStatus(text,error=false)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1155"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1161"
         },
         {
           "name": "editorStateCommand",
-          "line": 1158,
+          "line": 1164,
           "signature": "editorStateCommand(mode,type,saved)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1158"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1164"
         },
         {
           "name": "waitForCcIdle",
-          "line": 1172,
+          "line": 1178,
           "signature": "waitForCcIdle()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1172"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1178"
         },
         {
           "name": "saveEditors",
-          "line": 1180,
+          "line": 1186,
           "signature": "saveEditors()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1180"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1186"
         },
         {
           "name": "stateUi",
-          "line": 1184,
-          "signature": "stateUi()",
-          "publicApi": false,
-          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1184"
-        },
-        {
-          "name": "saveSimulationState",
           "line": 1190,
-          "signature": "saveSimulationState()",
+          "signature": "stateUi()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
           "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1190"
         },
         {
+          "name": "saveSimulationState",
+          "line": 1196,
+          "signature": "saveSimulationState()",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1196"
+        },
+        {
           "name": "loadSimulationState",
-          "line": 1206,
+          "line": 1212,
           "signature": "loadSimulationState(file)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1206"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1212"
         },
         {
           "name": "restoreStateUi",
-          "line": 1241,
+          "line": 1247,
           "signature": "restoreStateUi(ui)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1241"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1247"
         },
         {
           "name": "bindControls",
-          "line": 1249,
+          "line": 1255,
           "signature": "bindControls()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1249"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1255"
         },
         {
           "name": "syncInputs",
-          "line": 1421,
+          "line": 1427,
           "signature": "syncInputs()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1421"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1427"
         },
         {
           "name": "frame",
-          "line": 1459,
+          "line": 1465,
           "signature": "frame(now)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1459"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1465"
         }
       ]
     },
@@ -1328,55 +1368,63 @@
       "file": "simulateur/centurion-state.js",
       "title": "États JSON",
       "description": "Sauvegarde complète, validation et reprise locale pour le débogage.",
-      "sha256": "61632d6f243d005bc5a583620530cc05f23b5678ace4a6b0c3d5b4ac07f3a0c1",
+      "sha256": "c14d28dd350d87848a8b63541d1cc2294f4138de397ae7d7306f25b60da21c14",
       "functions": [
         {
           "name": "checkJson",
-          "line": 10,
+          "line": 11,
           "signature": "checkJson(value,path=\"fichier\",depth=0)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L10"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L11"
         },
         {
           "name": "sameShape",
-          "line": 20,
+          "line": 21,
           "signature": "sameShape(value,example,path)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L20"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L21"
         },
         {
           "name": "validateModel",
-          "line": 34,
+          "line": 35,
           "signature": "validateModel(E,model)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L34"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L35"
         },
         {
           "name": "validateEditor",
-          "line": 80,
+          "line": 81,
           "signature": "validateEditor(saved,mode)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L80"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L81"
+        },
+        {
+          "name": "migrateLegacy",
+          "line": 92,
+          "signature": "migrateLegacy(E,raw)",
+          "publicApi": false,
+          "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L92"
         },
         {
           "name": "read",
-          "line": 91,
+          "line": 122,
           "signature": "read(E,raw)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L91"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L122"
         },
         {
           "name": "write",
-          "line": 136,
+          "line": 169,
           "signature": "write(E,model,editors,ui,certificateArchive)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L136"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L169"
         }
       ]
     },
@@ -1384,7 +1432,7 @@
       "file": "simulateur/centurion-cc-regul.html",
       "title": "Ateliers CC",
       "description": "Édition, évaluation, stockage et code hérité inactif.",
-      "sha256": "6c41d6e31692a3aa4e3c3cee66a9cbd58092032f490cb16898fb8b46a21ec614",
+      "sha256": "a6a090da98da19068a59420bf204b35133cff963e36c4c3102cc4e3449cf1191",
       "functions": [
         {
           "name": "saturationPressureMPa",
@@ -2593,7 +2641,7 @@
     {
       "name": "mt3Signal",
       "unit": "°C",
-      "nominal": 280.858851184768
+      "nominal": 280.85885118476824
     },
     {
       "name": "mt4Signal",
@@ -2628,7 +2676,7 @@
     {
       "name": "tpzrSignal",
       "unit": "°C",
-      "nominal": 344.79155160355134
+      "nominal": 344.7915516035506
     },
     {
       "name": "reacSignal",
@@ -2653,7 +2701,7 @@
     {
       "name": "tsubSignal",
       "unit": "°C",
-      "nominal": 20.191551603551318
+      "nominal": 20.19155160355058
     },
     {
       "name": "pchauffSignal",

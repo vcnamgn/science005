@@ -20,14 +20,23 @@ test('GMPP : AAR seul sans arrêt, IS/perte de tension mémorisées et inertie p
 
 test('aspersion auxiliaire : 8 m³/h sans HMT, partage RCV, même masse et bore, effet sur pression',()=>{
   const a=E.make(),b=E.make();
-  for(const m of [a,b]){m.controls.protectionGraphMode=true;E.initiate(m,'voltage');}
+  for(const m of [a,b]){m.controls.protectionGraphMode=true;
+    m.controls.gctAOpeningPressureBar=65;E.initiate(m,'voltage');}
   b.controls.manualAuxiliarySprayM3h=20;
   E.step(a,.1);E.step(b,.1);
   close(b.state.boronInventory,a.state.boronInventory);
-  E.advance(a,69.9);E.advance(b,69.9);
+  assert.ok(b.state.auxiliarySprayCoolingKW>0);
+  assert.ok(b.state.pressureBar<a.state.pressureBar,'effet de pression à état initial identique');
+  for(let i=0;i<699;i++){
+    // Isoler la ligne auxiliaire à contre-pression disponible. La coupure
+    // de charge au-delà de 180 bar est vérifiée dans le test de pompe RCV.
+    for(const m of [a,b]){m.state.pressureBar=155;m.state.pzrThermalPressureBar=155;}
+    E.step(a,.1);const before=b.state.primaryMassKg;E.step(b,.1);
+    close(b.state.primaryMassKg-before,E.primaryMassBalance(b.state).netKgS*.1);
+  }
   assert.equal(b.state.sprayFlowM3h,0);assert.equal(b.state.auxiliarySprayM3h,8);
-  assert.equal(b.state.totalSprayFlowM3h,8);assert.ok(b.state.pressureBar<a.state.pressureBar);
-  close(b.state.primaryMassKg,a.state.primaryMassKg);
+  assert.equal(b.state.totalSprayFlowM3h,8);
+  assert.ok(b.state.rcvDeliveredM3h<=b.state.rcvCapacityM3h+.001,'l’auxiliaire ne crée pas une nouvelle injection');
   assert.equal(E.controlSignals(b).qaspAuxSignal[0],8);
   assert.equal(E.controlSignals(b).qaspSignal[0],0);
   b.controls.rcvChargeM3h=6;E.advance(b,10);close(b.state.auxiliarySprayM3h,0);

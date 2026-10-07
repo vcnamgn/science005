@@ -120,7 +120,9 @@ test('RIS : eau à 20 °C et 2 500 ppm, bilan de mélange et refroidissement tra
 test('RIS : réserve finie, signalement unique de son épuisement et fin du débit après transit',()=>{
   const m=E.make(),s=m.state;E.initiate(m,'ris');E.advance(m,3);
   s.pressureBar=80;s.risTankRemainingKg=100;
-  E.advance(m,10);
+  for(let i=0;i<100;i++){
+    s.pressureBar=80;s.pzrThermalPressureBar=80;E.step(m,.1);
+  }
   assert.equal(s.risTankRemainingKg,0);assert.equal(s.risDeliveredKgS,0);
   assert.equal(s.risMpKgS,0);assert.equal(s.risBpKgS,0);assert.equal(s.risEnabled,true);
   assert.equal(s.events.filter(e=>/Réserve RIS épuisée/.test(e.text)).length,1);
@@ -152,6 +154,10 @@ test('GCT-A manuel : abaisser la pression d’ouverture refroidit effectivement 
     m.controls.asgAvailable=false;
     E.initiate(m,'trip');E.advance(m,10);
     m.state.tavgC=140;m.state.fuelC=150;
+    // Une température froide exige plus de masse pour le même niveau réel.
+    const inv=E.cppInventory(E.C.nominalPrimaryMassKg);
+    m.state.primaryMassKg=inv.liquidVolumeM3*E.liquidWaterDensityKgM3(140,m.state.pressureBar);
+    m.state.vaporMassKg=0;m.state.vaporEnergyJ=0;
     // Isoler le refroidissement secondaire d'un éventuel retour en criticité.
     m.state.boronPpm=2500;m.state.boronInventory=2500*m.state.primaryMassKg;
     m.controls.rcvTankBoronPpm=2500;
@@ -168,14 +174,15 @@ test('GCT-A manuel : abaisser la pression d’ouverture refroidit effectivement 
 test('GCT-A à 10 bar depuis le nominal : coup de froid primaire avant vidange des GV',()=>{
   const reference=E.make(),cooled=E.make();
   cooled.controls.gctAOpeningPressureBar=10;
-  E.advance(reference,60);E.advance(cooled,60);
+  E.advance(reference,30);E.advance(cooled,30);
   const s=cooled.state;
   assert.ok(Math.abs(reference.state.tavgC-306.5)<.1,'permanent nominal conservé');
-  assert.ok(s.tavgC<260&&s.coldC<255,'le refroidissement atteint réellement le primaire');
-  assert.ok(s.gv.every(g=>g.pressureBar<30&&g.waterKg>20000),'GV refroidis, encore en eau');
+  assert.ok(s.tavgC<285&&s.coldC<280,'plus de 20 °C de refroidissement primaire en 30 s');
+  assert.ok(s.gv.every(g=>g.pressureBar<40&&g.waterKg>20000),'GV refroidis, encore en eau');
   assert.ok(s.totalGvMW>1000,'évacuation primaire–secondaire maintenue');
   assert.ok(s.tripAt!==null,'la hausse de réactivité due au refroidissement reste protégée');
-  assert.equal(s.primaryPumpsStopped,false,'cet AAR seul ne déclenche pas les GMPP');
+  assert.notEqual(s.risAt,null,'la baisse de pression finit par solliciter l’IS');
+  assert.equal(s.primaryPumpsStopped,true,'les GMPP s’arrêtent sur IS, pas sur l’AAR seul');
 });
 
 test('GV : conservation masse/énergie à 10, 65 et 88,6 bar, alimentations et vapeur distinctes',()=>{

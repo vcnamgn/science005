@@ -68,8 +68,8 @@ test('orifices RCV : 0, 18, 36 ou 54 m³/h sans modifier la charge',()=>{
     m.controls.rcvLetdownOrifices=[0,1,2].map(i=>i<count);
     E.step(m,.1);
     assert.equal(E.rcvLetdownM3h(m),18*count);
-    assert.ok(Math.abs(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3-18*count)<1e-9);
-    assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3,36);
+    assert.ok(Math.abs(E.instrumentSnapshot(m).letdownM3h-18*count)<.001);
+    assert.equal(m.state.rcvChargeM3h,36);
   }
 });
 
@@ -83,12 +83,12 @@ test('dilution/borication : charge seule, compteurs livrés après transit et re
     E.advance(m,7);assert.equal(s.rcvInjectionLitres[mode],0);
     E.advance(m,3);
     assert.ok(s.rcvInjectionLitres[mode]>0);
-    assert.equal(s.rcvChargeKgS*3600/E.C.primaryDensityKgM3,36);
+    assert.equal(s.rcvChargeM3h,36);
     E.setRcvInjection(m,'off');assert.equal(s.rcvTankBoronPpm,1250);
     E.advance(m,8.2);
     assert.ok(Math.abs(s.rcvInjectionLitres[mode]-100)<1e-7,'10 s de charge à 36 m³/h = 100 L');
     assert.equal(s.rcvInjectionLitres[mode==='dilution'?'borication':'dilution'],0);
-    assert.ok(Math.abs(s.primaryMassKg-initialMass)<1e-7,'aucun débit supplémentaire');
+    assert.ok(Math.abs(s.primaryMassKg-initialMass)<.1,'aucun apport supplémentaire ; conversion avec la densité réelle');
     assert.ok(mode==='dilution'?s.boronPpm<1200:s.boronPpm>1200);
     const litres=s.rcvInjectionLitres[mode];E.advance(m,5);
     assert.equal(s.rcvInjectionLitres[mode],litres);
@@ -100,7 +100,7 @@ test('la régulation peut réduire la charge pendant une borication ; les litres
   m.controls.rcvChargeGraphM3h=18;E.setRcvInjection(m,'borication');
   E.advance(m,10);E.setRcvInjection(m,'off');E.advance(m,8.2);
   assert.ok(Math.abs(m.state.rcvInjectionLitres.borication-50)<1e-7);
-  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3,18);
+  assert.equal(m.state.rcvChargeM3h,18);
 });
 
 test('interface manuelle : R repris malgré CC actif, CB immédiate à la molette et boutons exclusifs',()=>{

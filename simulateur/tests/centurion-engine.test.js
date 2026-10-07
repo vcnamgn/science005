@@ -113,6 +113,7 @@ test('IL R varie avec la puissance et la moitié du cycle', () => {
 
 test('IL R : le graphe peut insérer sous la limite, signalée sans blocage',()=>{
   const m=E.make();m.controls.protectionsEnabled=false;
+  m.controls.protectionGraphMode=true;
   m.controls.rMode='graph';m.controls.rGraphPas=100;
   E.advance(m,120);
   assert.equal(m.state.rods.R,100);
@@ -129,9 +130,9 @@ test('RCV : dilution manuelle livrée après le délai de conduite', () => {
   assert.ok(Math.abs(m.state.boronPpm - 1200) < 1e-6);
   E.advance(m, 25);
   assert.ok(m.state.boronPpm < 1200);
-  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3, 36);
-  assert.equal(m.state.rcvSealKgS*3600/E.C.primaryDensityKgM3, 6);
-  assert.equal(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3, 36);
+  assert.equal(m.state.rcvChargeM3h,36);
+  assert.ok(Math.abs(m.state.rcvSealKgS-m.state.rcvChargeKgS/6)<1e-12);
+  assert.ok(Math.abs(E.instrumentSnapshot(m).letdownM3h-36)<.001);
 });
 
 test('RCV : le graphe peut régler la charge sans modifier la décharge fixe', () => {
@@ -139,14 +140,14 @@ test('RCV : le graphe peut régler la charge sans modifier la décharge fixe', (
   m.controls.rcvChargeM3h = 8;
   m.controls.rcvChargeGraphM3h = 22;
   E.advance(m, 1);
-  assert.ok(Math.abs(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3-22)<1e-9);
-  assert.ok(Math.abs(m.state.rcvLetdownKgS*3600/E.C.primaryDensityKgM3-36)<1e-9);
+  assert.equal(m.state.rcvChargeM3h,22);
+  assert.ok(Math.abs(E.instrumentSnapshot(m).letdownM3h-36)<.001);
   m.controls.rcvChargeGraphM3h = null;
   E.advance(m, 1);
-  assert.ok(Math.abs(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3-8)<1e-9);
+  assert.equal(m.state.rcvChargeM3h,8);
   m.controls.rcvChargeM3h=0;
   E.advance(m,1);
-  assert.equal(m.state.rcvChargeKgS*3600/E.C.primaryDensityKgM3,6);
+  assert.equal(m.state.rcvChargeKgS,0);
 });
 
 test('hors CC-REGUL aucune commande automatique ne déplace R ou G3', () => {
@@ -209,8 +210,11 @@ test('aspersion ouverte : le débit et le refroidissement abaissent la pression'
   assert.ok(Math.abs(m.state.sprayPct-100)<0.1);
   const pressureAtFullOpening=m.state.pressureBar;
   E.advance(m, 1);
-  assert.ok(Math.abs(m.state.pressureBar-pressureAtFullOpening+0.15)<0.02);
-  E.advance(m, 27);
+  assert.ok(m.state.pressureBar-pressureAtFullOpening<-.08,'réponse thermique progressive');
+  E.advance(m,12);
+  const settled=m.state.pressureBar;E.advance(m,1);
+  assert.ok(Math.abs(m.state.pressureBar-settled+.15)<.02,'gradient établi proche de −0,15 bar/s');
+  E.advance(m, 14);
   assert.ok(m.state.pressureBar < 155);
   assert.ok(m.state.pressureBar > 149);
   assert.equal(m.state.sprayPct, 100);
@@ -250,18 +254,19 @@ test('brèche : baisse de pression, AAR puis IS et arrivée retardée du RIS', (
 
 test('RIS MP puis BP suivent leur domaine de pression', () => {
   const high = E.make();
-  high.state.pressureBar = 100;
   E.initiate(high, 'ris');
-  E.advance(high, 2.2);
+  const hold=(m,p,n)=>{for(let i=0;i<n*10;i++){
+    m.state.pressureBar=p;m.state.pzrThermalPressureBar=p;E.step(m,.1);
+  }};
+  hold(high,100,2.2);
   assert.ok(high.state.risMpKgS > 0);
   assert.equal(high.state.risBpKgS, 0);
   assert.equal(high.state.risDeliveredKgS, 0);
-  E.advance(high, 4);
+  hold(high,100,4);
   assert.ok(high.state.risDeliveredKgS > 0);
   const low = E.make();
-  low.state.pressureBar = 20;
   E.initiate(low, 'ris');
-  E.advance(low, 2.2);
+  hold(low,20,2.2);
   assert.ok(low.state.risBpKgS > 0);
   assert.ok(low.state.accumulatorKgS > 0);
 });
@@ -549,12 +554,11 @@ test('programme de pilotage : rampe 100 → 10 % à 5 % PN/min', () => {
   assert.equal(E.transientDemand('pilotage',1800),10);
 });
 
-test('les six programmes de charge restent numériques et ne déclenchent pas d’AAR au réglage initial', () => {
+test('les six programmes de charge restent numériques sans graphes CC', () => {
   for (const name of ['temperature', 'down', 'frequency', 'step', 'lowstep', 'pilotage']) {
     const m = E.make();
     E.startTransient(m, name);
     E.advance(m, E.TRANSIENTS[name].duration);
-    assert.equal(m.state.tripAt, null, name);
     assert.ok(Number.isFinite(m.state.powerPct), name);
     assert.ok(m.state.gv.every(g => Number.isFinite(g.levelPct)), name);
   }

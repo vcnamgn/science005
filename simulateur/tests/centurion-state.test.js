@@ -6,6 +6,29 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('migration état v1 : nouvelle densité sans perte de masse, puis reprise du piston',()=>{
+  const m=E.make(),s=m.state;
+  s.primaryMassKg=288919.9433620741;s.pressureBar=129.39650007044798;s.tavgC=235.44715534379134;
+  s.boronInventory=s.primaryMassKg*s.boronPpm;
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,m,editors,ui,null);
+  raw.engineRevision='20261007-state-v1';
+  for(const key of ['rcvChargeM3h','rcvDeliveredM3h','rcvDemandM3h','rcvCapacityM3h',
+    'pzrThermalPressureBar','pzrPistonBarS','reliefSteamKgS','reliefLiquidKgS'])delete raw.model.state[key];
+  for(const key of ['densityKgM3','liquidVolumeM3','capacityM3','steamSpaceM3','compressedLiquidKg'])
+    delete raw.model.state.inventory[key];
+  raw.model.state.inventory.overfillKg=3111.617;
+  const migrated=State.read(E,raw);
+  assert.equal(migrated.engineRevision,State.REVISION);
+  assert.equal(migrated.model.state.primaryMassKg,s.primaryMassKg);
+  assert.equal(migrated.model.state.pressureBar,s.pressureBar);
+  assert.equal(migrated.model.state.inventory.overfillKg,0);
+  assert.ok(migrated.model.state.inventory.densityKgM3>820);
+  E.step(migrated.model,.1);
+  assert.ok(Number.isFinite(migrated.model.state.pressureBar));
+  assert.equal(raw.engineRevision,'20261007-state-v1','le fichier fourni reste intact');
+});
+
 test('état JSON : reprise identique de la brèche, des tuyaux, poisons et inventaires',()=>{
   const m=E.make();m.controls.protectionGraphMode=false;E.initiate(m,'break',{areaCm2:300,loop:2});
   E.setRcvInjection(m,'borication');E.advance(m,30);E.setRisOperation(m,'off');

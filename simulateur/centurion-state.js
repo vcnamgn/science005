@@ -5,7 +5,8 @@
   else root.CenturionState=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261007-state-v1";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-pzr-v2";
+  const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
     if(depth>30)throw new Error(`${path} : imbrication excessive.`);
@@ -42,7 +43,7 @@
         throw new Error(`${label} : valeur hors domaine.`);
     };
     range(s.time,0,1e9,"Horloge");range(s.primaryMassKg,1,1e8,"Masse primaire");
-    range(s.pressureBar,1,180,"Pression primaire");
+    range(s.pressureBar,1,E.C.primaryPressureMaxBar,"Pression primaire");
     range(u.breakAreaCm2,0,2000,"Section de brèche");
     if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
       throw new Error("La brèche physique et sa commande sont incohérentes.");
@@ -88,14 +89,46 @@
     if(ids.size!==nodes.length||saved.runtime.some(([id,state])=>!ids.has(id)||!state||typeof state!=="object"))
       throw new Error(`Mémoires CC-${mode} invalides.`);
   }
+  function migrateLegacy(E,raw){
+    const s=raw.model.state,u=raw.model.controls;
+    const rho=E.liquidWaterDensityKgM3(s.tavgC,s.pressureBar);
+    s.inventory=E.cppInventory(s.primaryMassKg-s.vaporMassKg,s.tavgC,s.pressureBar);
+    s.pzrLevelPct=s.inventory.components.pzr.fillPct;s.coveragePct=s.inventory.coveragePct;
+    for(const loop of s.loops){
+      loop.primingFraction=s.inventory.loopPriming[loop.index-1];
+      loop.coreCoverageFraction=s.coveragePct/100;
+      if(loop.primingFraction===0)loop.naturalFlowKgS=0;
+      loop.flowKgS=loop.forcedFlowKgS+loop.naturalFlowKgS;
+    }
+    s.coreFlowKgS=s.loops.reduce((n,l)=>n+l.flowKgS,0)+s.risCoreKgS;
+    s.coreFlowFraction=Math.min(1,s.loops.reduce((n,l)=>n+l.flowKgS,0)/E.C.nominalPrimaryFlowKgS);
+    s.rcvChargeM3h=s.rcvChargeKgS*3600/rho;
+    s.rcvDeliveredM3h=s.rcvDeliveredKgS*3600
+      /E.liquidWaterDensityKgM3(s.flowProperties.charge.tempC,s.pressureBar);
+    s.rcvDemandM3h=u.rcvChargeGraphM3h??u.rcvChargeM3h;
+    s.rcvCapacityM3h=E.rcvPumpCapacityM3h(s.pressureBar);
+    s.pzrThermalPressureBar=s.pressureBar;s.pzrPistonBarS=0;
+    s.reliefSteamKgS=s.reliefKgS;s.reliefLiquidKgS=0;
+    for(const r of raw.certificateArchive?.records??[]){
+      const v=r.snapshot;
+      v.inventory=E.cppInventory(v.inventory.liquidMassKg,v.tavgC,v.pressure);
+      v.pzrLevel=v.inventory.components.pzr.fillPct;
+      v.rcvCapacityM3h=E.rcvPumpCapacityM3h(v.pressure);v.rcvDemandM3h=v.chargeM3h;
+      v.pzrPistonBarS=0;
+      v.massBalance.reliefSteamKgS=v.massBalance.reliefKgS;v.massBalance.reliefLiquidKgS=0;
+    }
+    raw.engineRevision=REVISION;
+  }
   function read(E,raw){
     if(typeof raw==="string"){
       if(raw.length>80*1024*1024)throw new Error("Fichier trop volumineux (80 Mo maximum).");
       raw=JSON.parse(raw);
     }
     checkJson(raw);
-    if(raw.format!==FORMAT||raw.version!==VERSION||raw.engineRevision!==REVISION)
+    if(raw.format!==FORMAT||raw.version!==VERSION||![REVISION,LEGACY_REVISION].includes(raw.engineRevision))
       throw new Error("Ce fichier n'est pas une sauvegarde d'état Centurion compatible.");
+    raw=clone(raw);
+    if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
     validateModel(E,raw.model);
     for(const mode of ["regul","protect"])validateEditor(raw.editors?.[mode],mode);
     if(!raw.ui||![1,5,20,50,200].includes(raw.ui.speed)
