@@ -360,3 +360,16 @@ input[type=number],select{background:#fff;border:1px solid #b8d1df;border-radius
 .balance-net[data-sign=gain]{background:#e6f4ec}.balance-net[data-sign=loss]{background:#fff0e8}
 .balance-net p{width:100%;margin:0;font-size:12px}.balance-stocks td{font-weight:650}.balance-stocks td:last-child{display:none}.balance-stocks th{width:75%}
 .balance-foot{margin:8px 12px;color:#637f90;font-size:10px;line-height:1.5}
+.inventory-balance .balance-flows th{width:34%}
+.inventory-balance .balance-flows td,.inventory-balance .balance-flows thead th:not(:first-child){width:16.5%;font-size:11px;padding:5px 3px}
+.inventory-balance .balance-flows tbody th{font-size:11px;padding:5px 3px}
+.inventory-balance .balance-flows th[colspan]{width:auto}
+.balance-reserves{margin:10px 12px;padding:7px 9px;border-radius:7px;background:#eef7fb;font-size:11px;line-height:1.5}
+.balance-reserves p{margin:3px 0}
+.balance-circulation{margin:10px 12px;border:1px solid #d6e5ee;border-radius:8px;padding:8px}
+.balance-circulation summary{cursor:pointer;color:#285770;font-weight:700;font-size:12px}
+#inventoryCoreFlow{font-size:11px;line-height:1.5;margin:8px 0}
+.balance-loop{margin-top:6px;padding:7px;border-left:3px solid #44a780;background:#f3faf7;font-size:11px;line-height:1.45}
+.balance-loop[data-severity=reduced]{border-color:#d29837;background:#fff9ef}
+.balance-loop[data-severity=lost]{border-color:#d15b47;background:#fff0ed}
+.balance-loop strong{font-size:11px}.balance-loop p{margin:3px 0}.balance-loop .loop-reason{color:#5d7280}

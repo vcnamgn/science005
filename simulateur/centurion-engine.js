@@ -50,13 +50,17 @@
     steamTempC: nominalSteamTempC, steamPressureBar: 65, steamEnthalpyJkg: 1.8e6,
     primaryPressureCapacityKgBar: 650, breakCriticalFluxKgM2S: 25000,
     primaryDensityKgM3: 720, risWaterDensityKgM3: 1000,
-    risInjectionTempC: 20,
+    risInjectionTempC: 20, risBoronPpm: 2500, risTankVolumeM3: 2315,
+    easSumpMaxTempC: 89.9,
     minPrimaryMassFraction: 0.20,
     pumpHeadHotBar: 7, pumpHeadColdBar: 10,
     sprayDriveNominalBar: 3.5,
     sprayFullM3hPerValve: 125, sprayContinuousM3hPerValve: 0.230,
     sprayStrokePctPerS: 50,
     auxiliarySprayMaxM3h: 8, coreDamageDelayS: 5,
+    // REF-01, §4.8 : hystérésis de chaque groupe de soupapes PZR.
+    reliefOpenBar: [166,170,172], reliefCloseBar: [160,164,166],
+    reliefDelayS: 0.3, reliefStrokeS: 1.5,
     nominalSprayPct: 0, nominalHeaterKW: 288,
     // À 155 bar, 288 kW de chaufferettes compensent l'échange passif et
     // le refroidissement des deux lignes d'aspersion continue (0,46 m³/h).
@@ -520,7 +524,16 @@
       primaryEnergyJ:C.nominalPrimaryMassKg*C.primaryCpJkgK*C.primaryMeanC,
       lidC:324.6, saturationC:saturationTemperatureC(C.primaryPressureBar),
       breakLiquidKgS:0,breakSteamKgS:0,risCoreKgS:0,coreFlowKgS:C.nominalPrimaryFlowKgS,
-      sumpKg:0,sumpBoron:0,sumpEnergyJ:0,sumpTempC:20,sumpBoronPpm:2500,
+      sumpKg:0,sumpBoron:0,sumpEnergyJ:0,sumpTempC:20,sumpBoronPpm:C.risBoronPpm,easCoolingMW:0,
+      flowProperties:{charge:{tempC:C.primaryMeanC,boronPpm:C.boronInitialPpm},
+        risMp:{tempC:C.risInjectionTempC,boronPpm:C.risBoronPpm},
+        risBp:{tempC:C.risInjectionTempC,boronPpm:C.risBoronPpm},
+        accumulator:{tempC:C.risInjectionTempC,boronPpm:C.risBoronPpm},
+        ris:{tempC:C.risInjectionTempC,boronPpm:C.risBoronPpm},
+        letdown:{tempC:C.primaryMeanC,boronPpm:C.boronInitialPpm},
+        breakLiquid:{tempC:C.primaryMeanC,boronPpm:C.boronInitialPpm},
+        breakSteam:{tempC:saturationTemperatureC(C.primaryPressureBar),boronPpm:0},
+        relief:{tempC:saturationTemperatureC(C.primaryPressureBar),boronPpm:0}},
       accumulatorFlowsKgS:Array(4).fill(0),accumulatorNitrogenBar:Array(4).fill(C.accumulatorPressureBar),
       rraConnected:false,rraFlowKgS:0,endState:null,endReason:"",ptOutside:false,
       coreDamageWarning:null,normalShutdownAt:null,
@@ -533,9 +546,11 @@
       rcvDeliveredKgS: C.rcvNominalM3h*C.primaryDensityKgM3/3600,
       rcvInjectionLitres: {dilution:0,borication:0},
       reliefKgS: 0, reliefStages: [false,false,false],reliefStageKgS:[0,0,0],
+      reliefAutoArmed:[false,false,false],reliefAutoDemandAt:[null,null,null],
+      reliefAutoOpeningPct:[0,0,0],reliefOpeningPct:[0,0,0],
       risMpKgS: 0, risBpKgS: 0, accumulatorKgS: 0,
       risDeliveredKgS: 0,risDeliveredMpKgS:0,risDeliveredBpKgS:0,risDeliveredAccumulatorKgS:0,
-      risCoolingMW: 0, risTankRemainingKg: 600000,
+      risCoolingMW: 0, risTankRemainingKg: C.risTankVolumeM3*C.risWaterDensityKgM3,
       accumulatorsKg: Array(4).fill(C.accumulatorKgPerLoop),
       breakKgS: 0,breakDensityKgM3:C.primaryDensityKgM3,
       breakAreaCm2: 0, breakLoop: 1, breakBranch: "froide",
@@ -607,7 +622,7 @@
         rcvLetdownOrifices: [true,true,false],
         rcvInjectionMode: "off",
         rcvInjectionGraphMode: null,
-        risBoronPpm: 2500,risPumpMode:"auto",risSourceMode:"direct",
+        risBoronPpm: C.risBoronPpm,risPumpMode:"auto",risSourceMode:"direct",
         rodWorthPcm: {...ROD_WORTH_PCM},
         axialRodAbsorption: {...AXIAL_ROD_ABSORPTION},
         coolantWorthPcmC: C.coolantWorthPcmC, dopplerWorthPcmC: C.dopplerWorthPcmC,
@@ -1048,16 +1063,59 @@
   function deliverPipe(pipe, time, injectionLitres = null) {
     let massKg=0, boron=0,energyJ=0;
     const sources={mp:0,bp:0,accumulator:0};
+    const properties=Object.fromEntries(Object.keys(sources).map(key=>[key,{massKg:0,boron:0,energyJ:0}]));
     while (pipe.length && pipe[0].at <= time+1e-9) {
       const parcel = pipe.shift();
       massKg += parcel.massKg;
       boron += parcel.massKg*parcel.boronPpm;
       energyJ += parcel.massKg*C.primaryCpJkgK*(parcel.tempC??C.risInjectionTempC);
-      if(Object.hasOwn(sources,parcel.source))sources[parcel.source]+=parcel.massKg;
+      if(Object.hasOwn(sources,parcel.source)){
+        sources[parcel.source]+=parcel.massKg;
+        const stream=properties[parcel.source];stream.massKg+=parcel.massKg;
+        stream.boron+=parcel.massKg*parcel.boronPpm;
+        stream.energyJ+=parcel.massKg*C.primaryCpJkgK*(parcel.tempC??C.risInjectionTempC);
+      }
       if(injectionLitres && Object.hasOwn(injectionLitres,parcel.mode))
         injectionLitres[parcel.mode]+=parcel.litres;
     }
-    return { massKg, boron,energyJ,sources };
+    return { massKg, boron,energyJ,sources,properties };
+  }
+
+  function deliveredProperties(parcel, fallback) {
+    return parcel.massKg>0?{tempC:parcel.energyJ/(parcel.massKg*C.primaryCpJkgK),
+      boronPpm:parcel.boron/parcel.massKg}:{...fallback};
+  }
+  function coolRisSump(s,dt) {
+    // Enveloppe pédagogique EAS : enlever explicitement la chaleur nécessaire
+    // au maintien sous 90 °C, sans retirer de masse ou de bore du puisard.
+    if(s.sumpKg<=1e-9){s.sumpKg=0;s.sumpBoron=0;s.sumpEnergyJ=0;s.sumpTempC=20;return;}
+    const ceiling=s.sumpKg*C.primaryCpJkgK*C.easSumpMaxTempC;
+    const removed=Math.max(0,s.sumpEnergyJ-ceiling);
+    s.sumpEnergyJ=Math.max(0,s.sumpEnergyJ-removed);
+    s.easCoolingMW+=removed/dt/1e6;
+    s.sumpTempC=s.sumpEnergyJ/(s.sumpKg*C.primaryCpJkgK);
+    s.sumpBoronPpm=Math.max(0,s.sumpBoron/s.sumpKg);
+  }
+  function updateRelief(s,u,dt) {
+    for(let i=0;i<3;i++){
+      const previous=s.reliefAutoArmed[i];
+      if(s.pressureBar>=C.reliefOpenBar[i])s.reliefAutoArmed[i]=true;
+      else if(s.pressureBar<=C.reliefCloseBar[i])s.reliefAutoArmed[i]=false;
+      if(s.reliefAutoArmed[i]!==previous){
+        s.reliefAutoDemandAt[i]=s.time;
+        addEvent(s,"system",`Soupape PZR étage ${i+1} : ${s.reliefAutoArmed[i]?"ouverture":"fermeture"} automatique à ${s.pressureBar.toFixed(1)} bar`);
+      }
+      if(s.reliefAutoDemandAt[i]!==null&&s.time-s.reliefAutoDemandAt[i]+1e-9>=C.reliefDelayS){
+        const target=s.reliefAutoArmed[i]?100:0;
+        s.reliefAutoOpeningPct[i]+=clamp(target-s.reliefAutoOpeningPct[i],
+          -100*dt/C.reliefStrokeS,100*dt/C.reliefStrokeS);
+      }
+      // Même organe : la commande manuelle et l'automatique ne doublent pas le débit.
+      s.reliefOpeningPct[i]=u.manualReliefStages[i]?100:s.reliefAutoOpeningPct[i];
+      s.reliefStages[i]=s.reliefOpeningPct[i]>1e-9;
+      s.reliefStageKgS[i]=50*Math.sqrt(Math.max(0,s.pressureBar)/155)*s.reliefOpeningPct[i]/100;
+    }
+    s.reliefKgS=s.reliefStageKgS.reduce((sum,q)=>sum+q,0);
   }
 
   function updateGv(s, u, dt) {
@@ -1255,6 +1313,9 @@
       const fraction=loop.forcedFlowKgS/nominalLoopFlow;
       const gv=s.gv[loop.index-1];
       const thermalDrive=Math.max(0,s.tavgC-gv.tempC);
+      loop.primingFraction=priming;loop.thermalDriveC=thermalDrive;
+      loop.gvWaterFactor=clamp(gv.waterKg/C.gvNominalWaterKg,0,1);
+      loop.coreCoverageFraction=s.coveragePct/100;loop.breakFactor=localFactor;
       const naturalTarget=Math.min(C.naturalCirculationMaxKgSPerLoop,
         clamp(u.naturalCirculationKgSPerLoop,0,C.naturalCirculationMaxKgSPerLoop)
           *Math.sqrt(thermalDrive/C.naturalCirculationReferenceDeltaC))
@@ -1292,6 +1353,7 @@
     s.breakKgS=s.breakAreaCm2*1e-4*Math.min(fluxOrifice,fluxLimit);
     s.breakKgS=Math.min(s.breakKgS,Math.max(0,(s.primaryMassKg-1)/dt));
     risPumpFlows(s,u);
+    s.easCoolingMW=0;coolRisSump(s,dt);
     let accumPump=0;
     for(let i=0;i<4;i++) {
       const gas=accumulatorFlowKgS(s.pressureBar,s.accumulatorsKg[i]);
@@ -1330,6 +1392,12 @@
     s.risDeliveredMpKgS=arrivedRis.sources.mp/dt;
     s.risDeliveredBpKgS=arrivedRis.sources.bp/dt;
     s.risDeliveredAccumulatorKgS=arrivedRis.sources.accumulator/dt;
+    const risFallback={tempC:sourceTemp,boronPpm:sourceBoron};
+    s.flowProperties.risMp=deliveredProperties(arrivedRis.properties.mp,risFallback);
+    s.flowProperties.risBp=deliveredProperties(arrivedRis.properties.bp,risFallback);
+    s.flowProperties.accumulator=deliveredProperties(arrivedRis.properties.accumulator,
+      {tempC:C.risInjectionTempC,boronPpm:clamp(Number(u.risBoronPpm),0,4000)});
+    s.flowProperties.ris=deliveredProperties(arrivedRis,risFallback);
     // Apport BF : hypothèse de mélange, avec 50 % de court-circuit sur la seule
     // boucle rompue. Les autres 3/4 de l'injection traversent entièrement le cœur.
     s.risCoreKgS=s.risDeliveredKgS*(s.breakAreaCm2>0&&s.breakBranch==="froide"?0.875:1);
@@ -1351,10 +1419,9 @@
       {mode:rcvInjectionMode(model),litres:rcvFlow*dt*1000/C.primaryDensityKgM3,tempC:s.tavgC});
     const arrivedRcv=deliverPipe(s.rcvPipe,s.time,s.rcvInjectionLitres);
     s.rcvDeliveredKgS=arrivedRcv.massKg/dt;
+    s.flowProperties.charge=deliveredProperties(arrivedRcv,{tempC:s.tavgC,boronPpm:s.rcvTankBoronPpm});
 
-    s.reliefStages=u.manualReliefStages.map(Boolean);
-    s.reliefStageKgS=s.reliefStages.map(open=>open?50*Math.sqrt(Math.max(0,s.pressureBar)/155):0);
-    s.reliefKgS=s.reliefStageKgS.reduce((sum,q)=>sum+q,0);
+    updateRelief(s,u,dt);
     const oldMass=s.primaryMassKg;
     const oldVaporMass=s.vaporMassKg;
     const availableMass=oldMass+arrivedRis.massKg+arrivedRcv.massKg;
@@ -1372,6 +1439,11 @@
     const voidFraction=clamp(vaporVolume/(liquidVolume+vaporVolume),0,1);
     s.breakSteamKgS=s.breakKgS*voidFraction*(s.breakBranch==="chaude"?0.7:0.15);
     s.breakLiquidKgS=s.breakKgS-s.breakSteamKgS;
+    // Conditions effectivement employées au prélèvement dans le bilan homogénéisé.
+    s.flowProperties.letdown={tempC:oldTemp,boronPpm:s.boronPpm};
+    s.flowProperties.breakLiquid={tempC:oldTemp,boronPpm:s.boronPpm};
+    s.flowProperties.breakSteam={tempC:saturationTemperatureC(s.pressureBar),boronPpm:0};
+    s.flowProperties.relief={...s.flowProperties.breakSteam};
     const steamOut=(s.breakSteamKgS+s.reliefKgS)*dt;
     const liquidOut=outMass-steamOut;
     s.boronInventory+=arrivedRis.boron+arrivedRcv.boron-liquidOut*s.boronPpm;
@@ -1401,7 +1473,7 @@
     const collected=(s.breakKgS+s.reliefKgS)*dt;
     s.sumpKg+=collected;s.sumpBoron+=(s.breakLiquidKgS*dt)*s.boronPpm;
     s.sumpEnergyJ+=collected*C.primaryCpJkgK*Math.min(100,oldTemp);
-    if(s.sumpKg>0){s.sumpTempC=s.sumpEnergyJ/(s.sumpKg*C.primaryCpJkgK);s.sumpBoronPpm=s.sumpBoron/s.sumpKg;}
+    coolRisSump(s,dt);
     s.nrefPct=Number.isFinite(u.nrefGraphPct)
       ? clamp(u.nrefGraphPct,0,100)
       : clamp(20+21.8*(s.tavgC-297.2)/9.3,20,41.8);
@@ -1536,7 +1608,24 @@
     const outputKgS=s.rcvLetdownKgS+s.breakKgS+s.reliefKgS;
     const netKgS=inputKgS-outputKgS;
     const totalRateKgS=s.primaryMassRateKgS;
+    const properties=s.flowProperties;
+    const mix=(flows)=>{
+      const total=flows.reduce((sum,[q])=>sum+q,0);
+      return total>0?{tempC:flows.reduce((sum,[q,p])=>sum+q*p.tempC,0)/total,
+        boronPpm:flows.reduce((sum,[q,p])=>sum+q*p.boronPpm,0)/total}:null;
+    };
+    const streams={...properties,
+      break:mix([[s.breakLiquidKgS,properties.breakLiquid],[s.breakSteamKgS,properties.breakSteam]]),
+      input:mix([[s.rcvDeliveredKgS,properties.charge],[s.risDeliveredKgS,properties.ris]]),
+      output:mix([[s.rcvLetdownKgS,properties.letdown],[s.breakLiquidKgS,properties.breakLiquid],
+        [s.breakSteamKgS,properties.breakSteam],[s.reliefKgS,properties.relief]])};
+    const conditions={};
+    for(const [key,p] of Object.entries(streams)){
+      conditions[key+"TempC"]=p?.tempC??null;
+      conditions[key+"BoronPpm"]=p?.boronPpm??null;
+    }
     return {
+      ...conditions,
       chargeKgS:s.rcvDeliveredKgS,chargeM3h:s.rcvDeliveredKgS*3600/C.primaryDensityKgM3,
       risMpKgS:s.risDeliveredMpKgS,risBpKgS:s.risDeliveredBpKgS,
       accumulatorKgS:s.risDeliveredAccumulatorKgS,
@@ -1556,6 +1645,44 @@
       closureErrorKgS:totalRateKgS-netKgS,
       trend:netKgS>0.05?"Inventaire total en hausse":netKgS<-.05?"Inventaire total en baisse":"Bilan massique équilibré"
     };
+  }
+  function primaryFlowDiagnostics(model) {
+    const s=model.state,u=model.controls;
+    const loops=s.loops.map(loop=>{
+      const gv=s.gv[loop.index-1],stopped=s.primaryPumpsStopped||loop.pumpStopped;
+      const priming=loop.primingFraction??s.inventory.loopPriming[loop.index-1];
+      const drive=loop.thermalDriveC??Math.max(0,s.tavgC-gv.tempC);
+      const water=loop.gvWaterFactor??clamp(gv.waterKg/C.gvNominalWaterKg,0,1);
+      const coverage=loop.coreCoverageFraction??s.coveragePct/100;
+      const topM=s.inventory.components[`gv${loop.index}`].topM;
+      const reasons=[];
+      if(priming<.999)reasons.push(priming<=1e-6
+        ? `boucle désamorcée : niveau ${s.inventory.loopLevelM.toFixed(2)} m, sommet du faisceau ${topM.toFixed(2)} m (amorçage nul sous ${(topM-.3).toFixed(2)} m)`
+        : `amorçage partiel ${Math.round(priming*100)} % : niveau sous le sommet du faisceau ${topM.toFixed(2)} m`);
+      if(drive<=1e-6)reasons.push(`absence de source froide : TMOY ${s.tavgC.toFixed(1)} °C ≤ TGV ${gv.tempC.toFixed(1)} °C`);
+      if(water<=1e-6)reasons.push("GV sans eau côté secondaire");
+      else if(water<.99)reasons.push(`inventaire secondaire réduit (${Math.round(water*100)} % du nominal)`);
+      if(coverage<.999)reasons.push(`couverture du cœur ${Math.round(coverage*100)} %`);
+      if(Number(u.naturalCirculationKgSPerLoop)<=0)reasons.push("débit naturel de référence réglé à zéro");
+      if(loop.breakFactor<1)reasons.push("brèche sur cette boucle");
+      const lost=stopped&&loop.naturalFlowKgS<.1&&reasons.length>0;
+      const limited=stopped&&reasons.length>0;
+      const coastdown=stopped&&loop.forcedFlowKgS>0;
+      const status=!stopped?(priming<.999||loop.breakFactor<1?"Débit forcé réduit":"Circulation forcée")
+        :lost?"Thermosiphon perdu":limited?"Thermosiphon réduit":coastdown?"Ralentissement GMPP / relais naturel":"Thermosiphon établi";
+      const detail=stopped?(reasons.length?reasons.join(" · ")
+        :`boucle amorcée · écart primaire–GV ${drive.toFixed(1)} °C`)
+        :[`GMPP en marche`,...reasons.filter(r=>!r.startsWith("absence de source froide"))].join(" · ");
+      return {index:loop.index,status,detail,severity:lost?"lost":limited||priming<.999?"reduced":"normal",
+        forcedKgS:loop.forcedFlowKgS,naturalKgS:loop.naturalFlowKgS,totalKgS:loop.flowKgS,
+        flowPct:100*loop.flowKgS/(C.nominalPrimaryFlowKgS/4),primingFraction:priming,
+        thermalDriveC:drive,gvWaterFactor:water,coreCoverageFraction:coverage};
+    });
+    return {loops,forcedKgS:loops.reduce((sum,l)=>sum+l.forcedKgS,0),
+      naturalKgS:loops.reduce((sum,l)=>sum+l.naturalKgS,0),
+      loopKgS:loops.reduce((sum,l)=>sum+l.totalKgS,0),
+      risCoreKgS:s.risCoreKgS,coreKgS:s.coreFlowKgS,
+      corePct:100*s.coreFlowFraction,primedLoops:loops.filter(l=>l.primingFraction>.001).length};
   }
   function instrumentSnapshot(model, selectedGv=1) {
     const s=model.state,u=model.controls;
@@ -1577,19 +1704,21 @@
       heaterImmersionPct:Math.max(0,Math.min(100,s.pzrLevelPct/15*100)),
       hotC:s.hotC,coldC:s.coldC,tRicC:s.tRicC,tavgC:s.tavgC,lidC:s.lidC,
       inventory:s.inventory,primaryMassKg:s.primaryMassKg,massBalance:primaryMassBalance(s),
+      primaryFlow:primaryFlowDiagnostics(model),
       vaporMassKg:s.vaporMassKg,vaporizationKgS:s.vaporizationKgS,
       saturationC:saturationTemperatureC(s.pressureBar),risCoreKgS:s.risCoreKgS,
       accumulatorsKg:[...s.accumulatorsKg],accumulatorNitrogenBar:[...s.accumulatorNitrogenBar],
       accumulatorFlowsKgS:[...s.accumulatorFlowsKgS],accumulatorKgS:s.accumulatorKgS,
       risMpKgS:s.risMpKgS,risBpKgS:s.risBpKgS,risSourceMode:u.risSourceMode,
       risTankRemainingKg:s.risTankRemainingKg,sumpKg:s.sumpKg,sumpTempC:s.sumpTempC,
-      sumpBoronPpm:s.sumpBoronPpm,risPumpMode:u.risPumpMode,
+      sumpBoronPpm:s.sumpBoronPpm,easCoolingMW:s.easCoolingMW,risPumpMode:u.risPumpMode,
       rra:rraConditions(s),rraConnected:s.rraConnected,endState:s.endState,endReason:s.endReason,
       boron:s.boronPpm,g3:s.g3Count,g3Display:s.tripAt===null?s.g3Count:null,
       rods:{...s.rods},rLimit:s.rLimitPas,halfCycle:u.halfCycle,tripAt:s.tripAt,
       steamKgS:s.totalSteamKgS,steamTh:s.totalSteamKgS*3.6,
       turbinePct:s.turbinePct,thermalMW:s.thermalPowerMW,electricMW:s.electricMW,
-      reliefStages:[...s.reliefStages],reliefOpeningPct:s.reliefStages.map(open=>open?100:0),
+      reliefStages:[...s.reliefStages],reliefOpeningPct:[...s.reliefOpeningPct],
+      reliefAutoArmed:[...s.reliefAutoArmed],reliefAutoOpeningPct:[...s.reliefAutoOpeningPct],
       reliefKgS:s.reliefKgS,reliefStageKgS:[...s.reliefStageKgS],gvSetpoint:u.gvLevelSetpointPct,
       risDelivered:s.risDeliveredKgS,
       risLoopM3h:s.risDeliveredKgS*3600/C.risWaterDensityKgM3/4,
@@ -1637,7 +1766,7 @@
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
     CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,
     cppInventory,latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
-    instrumentSnapshot,controlSignals,primaryMassBalance,
+    instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,
     evolveAxialPoisons,
     g3Target,gcpPositions,rInsertionLimit,rodIntegral,rodsReactivityPcm,
     axialInsertionFraction,solveAxialShape,smoothAxialProfile,

@@ -249,6 +249,10 @@ Le changement de phase net inclut détente et condensation ; il peut être néga
 
 Le panneau du synoptique Inventaire CPP montre entrées, sorties, solde, variations des stocks liquide et vapeur. Les m³/h sont des **équivalents liquides**, convertis à 1 000 kg/m³ pour RIS, 720 kg/m³ pour RCV et soupapes, et avec la densité utilisée dans la loi de brèche pour celle-ci. Un débit diphasique n'est pas un volume réel de vapeur. Comparer les kg/s pour fermer le bilan.
 
+Chaque ligne donne aussi la **température et la CB**. Les injections utilisent les caractéristiques des parcelles réellement arrivées après transit, avec pondération massique si deux sources se mélangent pendant une bascule. Les prélèvements liquides emploient TMOY et la CB au début du bilan homogénéisé ; la vapeur rejetée est indiquée à saturation et à 0 ppm de bore. Les totaux sont des moyennes pondérées des débits ; les conditions ne sont pas affichées quand le débit est nul. La température équivalente de charge RCV reste celle du modèle primaire simplifié, sans échangeur RCV détaillé.
+
+`primaryFlowDiagnostics(model)` donne les débits forcé, naturel et total de chaque boucle, le débit RIS traversant le cœur et leur somme. L'affichage explique les facteurs effectivement employés : amorçage, couverture du cœur, inventaire secondaire, écart TMOY−TGV et brèche locale. Le désamorçage commence dans les 0,30 m sous le sommet du faisceau et devient total sous cette bande, selon la géométrie d'étude. Un GV sans eau ou TMOY≤TGV annule également le thermosiphon. L'arrêt électrique et la perte d'amorçage sont distingués ; le débit RIS peut rester positif même avec les quatre thermosiphons perdus.
+
 Une pression stable n'impose pas `dM_CPP/dt = 0`. La loi simplifiée actuelle est `dP/dt = (dM_CPP/dt)/650 + 0,2 × dTMOY/dt + gain_PZR × chaleur_nette_PZR`. Le refroidissement peut compenser la remontée de pression due à un gain de masse. Dans le cas d'étude par défaut, brèche 300 cm² après 20 min, environ 344 kg/s arrivent par RIS contre 334 kg/s à la brèche ; le stock gagne encore environ 10 kg/s malgré une pression proche de 31 bar. Ce résultat relève de la loi globale approchée de pression et ne constitue pas un équilibre thermohydraulique qualifié.
 
 ### 5.7 GV et vapeur
@@ -269,7 +273,9 @@ Le débit ASG par GV interpole 127, 140, 152, 157 m³/h aux pressions 80, 60, 40
 
 La pression primaire évolue avec les changements de masse, de température moyenne et le bilan thermique effectif du PZR. Ce dernier comporte chauffe, aspersion et échange passif calibré au nominal. Il ne s'agit pas d'un modèle séparé vapeur/liquide détaillé du PZR.
 
-Les trois étages de soupapes restent commandables manuellement avec les ateliers CC actifs. Leur débit d'étude vaut 50 × sqrt(P/155) kg/s par étage ouvert, limité par la masse disponible. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente `qsvpSignal`, le tableau de bord et la sortie du bilan CPP. L'ouverture manuelle ne crée pas un ordre AAR. Aucun seuil automatique d'ouverture des soupapes n'est ajouté par cette commande.
+Les trois étages de soupapes s'ouvrent automatiquement aux pressions **166, 170 et 172 bar absolus**, puis se referment à **160, 164 et 166 bar**, selon REF-01 §4.8. Chaque étage possède sa propre hystérésis, un délai de 0,3 s et une course linéaire de 1,5 s. Cet automatisme d'organe fonctionne indépendamment de CC-RÉGUL et CC-PROTECT et ne crée pas à lui seul d'AAR ou de CIA. Les commandes manuelles restent disponibles ; une commande manuelle et une ouverture automatique du même organe ne doublent pas son débit.
+
+Leur débit d'étude à pleine ouverture reste 50 × sqrt(P/155) kg/s par étage, multiplié par son ouverture réalisée et limité par la masse disponible. Cette capacité approchée est distincte des seuils et temps documentés. Le débit réalisé de chaque étage et leur somme sont affichés sur le synoptique PZR ; la somme alimente `qsvpSignal`, le tableau de bord et la sortie du bilan CPP. Les cases manuelles indiquent les ordres manuels, tandis que les positions SVG montrent l'ouverture réalisée, automatique ou manuelle.
 
 Les deux lignes réglantes d'aspersion prennent leur eau en BF1/BF2. À ouverture 100 %, chacune débite 125 m³/h aux conditions nominales ; chacune possède aussi 0,230 m³/h continus. L'ouverture est linéaire en débit à pression motrice nominale, puis multipliée par `sqrt(deltaP / 3,5 bar)`. La pression motrice suit le carré du débit forcé GMPP. L'ouverture évolue à 50 %/s. L'aspersion auxiliaire manuelle détourne jusqu'à 8 m³/h de charge RCV vers le PZR, sans ajouter une nouvelle masse injectée.
 
@@ -281,11 +287,13 @@ Les conversions RCV utilisent la densité primaire équivalente de 720 kg/m³. L
 
 ### 5.9 RIS, accumulateurs et recirculation
 
-Les lois MP/BP dépendent de la pression primaire, des disponibilités, du délai d'ordre, de l'alimentation et du stock de la source. L'injection directe prend une réserve de 600 t, à 20 °C et 2 500 ppm par défaut ; la recirculation reprend masse, bore et énergie du puisard modélisé. Les apports arrivent après transit ; les courbes distinguent débit pompé et débit livré.
+Les lois MP/BP dépendent de la pression primaire, des disponibilités, du délai d'ordre, de l'alimentation et du stock de la source. L'injection directe prend la bâche PTR : **2 315 m³ disponibles**, soit 2 315 t avec la densité froide équivalente, à **20 °C et 2 500 ppm** par défaut. Ce volume est le réglage utilisateur de l'exercice. La CB PTR réglable est distincte de l'eau REA à 7 000 ppm utilisée par la borication RCV. La recirculation reprend masse, bore et énergie du puisard modélisé. Les apports arrivent après transit ; les courbes distinguent débit pompé et débit livré.
 
 Les accumulateurs sont des capacités passives avec azote polytropique. La pression d'azote baisse avec la vidange ; le débit suit la racine de la différence de pression positive. Une inertie hydraulique d'étude de 1 s évite une commutation brutale ; le transit vaut 1 s. L'arrêt manuel des pompes RIS ne ferme pas ces capacités passives. Leur autorisation reste cependant reliée à la demande IS dans le modèle actuel.
 
 La brèche utilise le minimum d'une loi d'orifice et d'un flux critique borné. Un partage liquide/vapeur dépend de la fraction de vide homogène et de la branche rompue. Le puisard reçoit les sorties modélisées ; il n'existe pas de modèle complet d'enceinte.
+
+L'EAS maintient le puisard sous 90 °C (plafond numérique **89,9 °C**). Le moteur enlève explicitement l'énergie excédentaire et affiche la puissance extraite ; masse et quantité de bore restent inchangées. Il s'agit d'une enveloppe de refroidissement sans limite de capacité ni disponibilité EAS détaillée. La collecte conserve la simplification de condensation avec chaleur latente cédée à l'enceinte. Une bascule PTR/recirculation ne modifie pas rétroactivement la température ou la CB des parcelles déjà engagées dans les tuyaux.
 
 ## 6. Contrôle-commande et priorité
 

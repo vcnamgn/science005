@@ -123,7 +123,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-bilan-masses-phase";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-soupapes-ptr";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -208,6 +208,20 @@
     document.querySelectorAll("[data-mass-balance]").forEach(output=>{
       output.textContent=fmt(balance[output.dataset.massBalance],Number(output.dataset.decimals??1));
     });
+    document.querySelectorAll("[data-flow-condition]").forEach(output=>{
+      const value=balance[output.dataset.flowCondition],q=balance[output.dataset.flowRate];
+      output.textContent=q>1e-9&&Number.isFinite(value)?fmt(value,Number(output.dataset.decimals??1)):"—";
+    });
+    const s=model.state,u=model.controls,flow=E.primaryFlowDiagnostics(model);
+    $("inventoryRisSource").textContent=`PTR : ${fmt(s.risTankRemainingKg/E.C.risWaterDensityKgM3,1)} / ${fmt(E.C.risTankVolumeM3,0)} m³ · ${fmt(E.C.risInjectionTempC,0)} °C · CB ${fmt(u.risBoronPpm,0)} ppm`;
+    $("inventorySump").textContent=`Puisards : ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C · CB ${fmt(s.sumpBoronPpm,0)} ppm · EAS ${fmt(s.easCoolingMW,1)} MW (maintien < 90 °C)`;
+    $("inventoryCoreFlow").textContent=`Cœur : ${fmt(flow.coreKgS,1)} kg/s (${fmt(flow.corePct,1)} %) = boucles ${fmt(flow.loopKgS,1)} + RIS traversant le cœur ${fmt(flow.risCoreKgS,1)} kg/s`;
+    for(const loop of flow.loops){
+      $(`inventoryLoop${loop.index}`).dataset.severity=loop.severity;
+      $(`inventoryLoopFlow${loop.index}`).textContent=`Forcé ${fmt(loop.forcedKgS,1)} · naturel ${fmt(loop.naturalKgS,1)} · total ${fmt(loop.totalKgS,1)} kg/s (${fmt(loop.flowPct,1)} %)`;
+      $(`inventoryLoopStatus${loop.index}`).textContent=loop.status;
+      $(`inventoryLoopReason${loop.index}`).textContent=loop.detail;
+    }
     $("inventoryBalanceTrend").textContent=balance.trend;
     $("inventoryBalanceNet").dataset.sign=balance.netKgS>.05?"gain":balance.netKgS<-.05?"loss":"balanced";
   }
@@ -773,7 +787,7 @@
     }
     $("risSource").value=u.risSourceMode;
     $("risManualStatus").textContent=`Pompes : ${u.risPumpMode==="off"?"arrêt manuel":u.risPumpMode==="on"?"marche manuelle":"sur demande IS"} · livré ${fmt(s.risDeliveredKgS,1)} kg/s`;
-    $("risManualReserve").textContent=`PTR ${fmt(s.risTankRemainingKg/1000,1)} t · puisard ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C`;
+    $("risManualReserve").textContent=`PTR ${fmt(s.risTankRemainingKg/E.C.risWaterDensityKgM3,1)} m³ · ${fmt(E.C.risInjectionTempC,0)} °C · CB ${fmt(u.risBoronPpm,0)} ppm · puisard ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C · CB ${fmt(s.sumpBoronPpm,0)} ppm · refroidissement EAS`;
     $("connectRra").disabled=!v.rra.allowed||Boolean(s.endState);
     $("rraConditions").textContent=s.rraConnected?"RRA connecté":v.rra.allowed?"Connexion autorisée":v.rra.reasons.join(" · ");
     const rWorth=u.rodWorthPcm.R;
@@ -828,7 +842,7 @@
     document.querySelectorAll("[data-relief-stage]").forEach(input=>{
       input.checked=Boolean(u.manualReliefStages[Number(input.dataset.reliefStage)]);
     });
-    $("reliefStatus").textContent=`Débit réalisé : ${fmt(s.reliefKgS,1)} kg/s · ${s.reliefStages.filter(Boolean).length}/3 étages ouverts · commande manuelle disponible avec CC actif`;
+    $("reliefStatus").textContent=`Débit réalisé : ${fmt(s.reliefKgS,1)} kg/s · ${s.reliefStages.filter(Boolean).length}/3 étages ouverts · automatique ${s.reliefAutoArmed.some(Boolean)?"armé":"en veille"} (166 / 170 / 172 bar) · commande manuelle disponible avec CC actif`;
     $("manualModeStatus").textContent=`${regulationActive?"CC-RÉGUL actif · décalibrage et CB manuels":"Commandes manuelles"}${u.rManualOverride?" · R en manuel":""} · ${protectionActive?"protection active":"protection inactive"}`;
     $("toggleRegulationSynoptic").textContent=regulationActive?"Désactiver régulations":"Activer régulations";
     $("toggleRegulationSynoptic").setAttribute("aria-pressed",String(regulationActive));

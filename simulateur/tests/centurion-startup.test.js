@@ -108,6 +108,14 @@ test('application : bilan CPP lisible, débits réalisés et soupapes toujours c
   assert.equal(page.get('inventoryBalanceTrend').textContent,'Inventaire total en baisse');
   assert.equal(page.get('inventoryBalanceNet').dataset.sign,'loss');
   assert.match(page.get('reliefStatus').textContent,/50,0 kg\/s.*1\/3/);
+  assert.match(page.get('reliefStatus').textContent,/automatique.*166 \/ 170 \/ 172/);
+  assert.match(page.get('inventoryRisSource').textContent,/2\s?315.*2\s?500 ppm/);
+  assert.match(page.get('inventorySump').textContent,/EAS.*< 90/);
+  assert.match(page.get('inventoryCoreFlow').textContent,/Cœur.*RIS traversant/);
+  assert.match(page.get('inventoryLoopStatus1').textContent,/Circulation forcée/);
+  assert.match(page.get('inventoryLoopFlow1').textContent,/Forcé.*naturel.*total/);
+  assert.equal(page.query('[data-flow-condition="reliefBoronPpm"]').textContent,'0');
+  assert.equal(page.query('[data-flow-condition="risMpBoronPpm"]').textContent,'—');
   page.click('toggleRegulationSynoptic');flush();
   const relief=page.query('[data-relief-stage="1"]');assert.equal(relief.disabled,false);
   relief.checked=true;relief.fire('change');page.click('runButton');
