@@ -225,6 +225,10 @@ Le calcul BF/BC retire la contribution de vaporisation à la chaleur sensible et
 
 La chaleur résiduelle est séparée de la puissance neutronique : après AAR ou arrêt normal identifié par la commande de tous les groupes, elle suit une loi d'étude commençant vers 7 % du nominal et décroissant en `(1 + temps_depuis_arret)^−0,2`. Cette chaleur chauffe réellement le combustible.
 
+Chaque GMPP alimentée ajoute **6 MW thermiques à l'eau primaire**, soit **24 MW avec les quatre pompes**. Cette approximation d'exercice est cohérente avec le couple de 39 507 N·m à 1 480 tr/min de REF-01, tableau 43, p. PDF 120 (6,12 MW mécaniques). Le terme `pumpHeatMW` entre une seule fois dans `ΔU_CPP = (échange_combustible + chaleur_GMPP − échange_GV) × Δt + enthalpie_entrées − enthalpie_sorties`. Il n'entre ni dans le bilan combustible, ni dans POW1, PTHC, la chaleur résiduelle ou le calcul PLIN ; ses effets sur les températures puis la réactivité restent ceux des contre-réactions du modèle.
+
+L'apport de chaque pompe vaut 6 MW tant que son entraînement reste alimenté, indépendamment de PTUR et du débit naturel. Il devient nul dès le déclenchement de cette pompe ; un AAR seul laisse les GMPP en marche. Le débit forcé conserve son inertie après coupure, sans entretenir artificiellement les 6 MW. La dissipation de l'énergie cinétique du rotor et du circuit pendant le ralentissement n'est pas résolue. La puissance déposée n'est pas réduite en cas de désamorçage : l'échauffement d'une pompe à sec n'est pas modélisé. Le tableau de bord et l'inventaire affichent le total et les contributions de boucle ; les instantanés et l'historique les conservent.
+
 ### 5.6 Débits primaire, thermosiphon et inventaire
 
 En marche, une GMPP vise le débit nominal de sa boucle. Une baisse turbine ne doit pas diminuer ce débit. Un arrêt mémorisé des GMPP résulte d'une perte de tension ou d'une demande IS ; l'AAR seul ne les arrête pas. Le débit forcé décroît avec une constante de 15 s et est mis à zéro sous 2 % du nominal, soit environ une minute de décélération.
@@ -260,6 +264,8 @@ Une pression stable n'impose pas `dM_CPP/dt = 0`. La loi simplifiée actuelle es
 Chaque GV possède sa masse et son bilan d'énergie : capacité d'eau variable plus 100 MJ/°C de métal équivalent. La masse secondaire nominale est d'environ 63,8 t par GV. L'inventaire primaire est compté dans le bilan primaire, pas ajouté une seconde fois à cette capacité.
 
 L'échange primaire–GV dépend de l'écart TMOY–température secondaire, du débit de la boucle et de l'inventaire secondaire. ARE apporte de l'eau à 245 °C ; ASG à 20 °C. La vapeur évacuée emporte l'enthalpie sensible et une chaleur latente effective dépendant de la pression. La pression secondaire est déduite de la température par la saturation.
+
+Le permanent initial évacue **3 841 MW par les quatre GV**, soit 3 817 MW du cœur et 24 MW des GMPP (960,25 MW par GV). La conductance est recalée sur ces 3 841 MW à TMOY = 306,5 °C et P_GV = 65 bar. Le débit nominal de 530,14 kg/s par GV et le plafond réseau de 1 300 MWe sont conservés ; l'enthalpie effective d'évacuation secondaire est ajustée de 1,8 à **1,81132 MJ/kg**, d'où Lv effectif à 65 bar ≈ 1,66071 MJ/kg. Ce calage ferme les deux bilans au démarrage ; il reste une approximation et ne remplace pas une équation d'état secondaire complète. Le signal PGV, rapporté aux 3 817 MW du cœur, affiche donc 100,63 % PN au nominal.
 
 Le débit vapeur total d'un GV est la somme VPU + GCT-A. Le limiteur turbine plafonne le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.
 

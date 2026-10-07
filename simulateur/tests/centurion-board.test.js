@@ -25,6 +25,7 @@ test('tableau de bord : vapeur totale = GCT-A + VPU, DPAX et clignotements réve
   assert.equal(elements.boardGcta.textContent,'100.0 kg/s');
   assert.equal(elements.boardVpu.textContent,'300 kg/s');
   assert.equal(elements.boardDpax.textContent,'-6.25 % PN');
+  assert.equal(elements.boardPumpHeat.textContent,'24.0 MWth');
   assert.ok(!elements.boardDpax.classes.has('alarm-blink'));
   assert.ok(elements.boardGcta.classes.has('alarm-blink'));
   assert.ok(elements.boardR.classes.has('alarm-blink'));
@@ -48,4 +49,6 @@ test('tableau de bord : vapeur totale = GCT-A + VPU, DPAX et clignotements réve
   s.tripAt=0;s.rods.R=0;ctx.draw();
   assert.equal(elements.plantState.textContent,'CIA');
   assert.ok(!elements.boardR.classes.has('alarm-blink'));
+  E.initiate(model,'voltage');ctx.draw();
+  assert.equal(elements.boardPumpHeat.textContent,'0.0 MWth');
 });

@@ -112,6 +112,9 @@ test('application : bilan CPP lisible, débits réalisés et soupapes toujours c
   assert.match(page.get('inventoryRisSource').textContent,/2\s?315.*2\s?500 ppm/);
   assert.match(page.get('inventorySump').textContent,/EAS.*< 90/);
   assert.match(page.get('inventoryCoreFlow').textContent,/Cœur.*RIS traversant/);
+  assert.match(page.get('inventoryPumpHeat').textContent,/24,0 MWth.*primaire/);
+  assert.match(page.get('inventoryLoopReason1').textContent,/apport GMPP 6,0 MWth/);
+  assert.equal(page.get('boardPumpHeat').textContent,'24,0 MWth');
   assert.match(page.get('inventoryLoopStatus1').textContent,/Circulation forcée/);
   assert.match(page.get('inventoryLoopFlow1').textContent,/Forcé.*naturel.*total/);
   assert.equal(page.query('[data-flow-condition="reliefBoronPpm"]').textContent,'0');

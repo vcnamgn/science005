@@ -123,7 +123,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-soupapes-ptr";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-chaleur-gmpp";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -216,11 +216,12 @@
     $("inventoryRisSource").textContent=`PTR : ${fmt(s.risTankRemainingKg/E.C.risWaterDensityKgM3,1)} / ${fmt(E.C.risTankVolumeM3,0)} m³ · ${fmt(E.C.risInjectionTempC,0)} °C · CB ${fmt(u.risBoronPpm,0)} ppm`;
     $("inventorySump").textContent=`Puisards : ${fmt(s.sumpKg/1000,1)} t · ${fmt(s.sumpTempC,1)} °C · CB ${fmt(s.sumpBoronPpm,0)} ppm · EAS ${fmt(s.easCoolingMW,1)} MW (maintien < 90 °C)`;
     $("inventoryCoreFlow").textContent=`Cœur : ${fmt(flow.coreKgS,1)} kg/s (${fmt(flow.corePct,1)} %) = boucles ${fmt(flow.loopKgS,1)} + RIS traversant le cœur ${fmt(flow.risCoreKgS,1)} kg/s`;
+    $("inventoryPumpHeat").textContent=`Chaleur GMPP : ${fmt(flow.pumpHeatMW,1)} MWth ajoutés à l’eau primaire`;
     for(const loop of flow.loops){
       $(`inventoryLoop${loop.index}`).dataset.severity=loop.severity;
       $(`inventoryLoopFlow${loop.index}`).textContent=`Forcé ${fmt(loop.forcedKgS,1)} · naturel ${fmt(loop.naturalKgS,1)} · total ${fmt(loop.totalKgS,1)} kg/s (${fmt(loop.flowPct,1)} %)`;
       $(`inventoryLoopStatus${loop.index}`).textContent=loop.status;
-      $(`inventoryLoopReason${loop.index}`).textContent=loop.detail;
+      $(`inventoryLoopReason${loop.index}`).textContent=`${loop.detail} · apport GMPP ${fmt(loop.pumpHeatMW,1)} MWth`;
     }
     $("inventoryBalanceTrend").textContent=balance.trend;
     $("inventoryBalanceNet").dataset.sign=balance.netKgS>.05?"gain":balance.netKgS<-.05?"loss":"balanced";
@@ -276,6 +277,7 @@
     show("boardFuel",`${fmt(s.fuelC)} °C`);
     show("boardSubcool",`${fmt(s.subcoolingC,1)} °C`);
     show("boardGvPower",`${fmt(s.totalGvMW)} MWth`);
+    show("boardPumpHeat",`${fmt(s.pumpHeatMW,1)} MWth`);
     show("boardPrimaryFlow",`${fmt(s.coreFlowFraction*100)} %`);
     show("boardCharge",`${fmt(v.chargeM3h,1)} m³/h`);
     show("boardImmersion",`${fmt(v.heaterImmersionPct)} %`);

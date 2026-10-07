@@ -40,14 +40,21 @@
   const gvMetalHeatCapacityJk = 100e6;
   // Coefficient global combustible–primaire retenu pour l'étude : 10 MW/°C.
   const coreExchangeMWC = 10;
+  const nominalCoreThermalMW = 3817, primaryPumpHeatMWPerUnit = 6;
+  const nominalPrimaryHeatMW = nominalCoreThermalMW + 4*primaryPumpHeatMWPerUnit;
+  // Garder le débit vapeur nominal ; son enthalpie effective inclut désormais
+  // la chaleur des GMPP évacuée par les GV, en plus de celle du cœur.
+  const nominalSteamKgSPerGV = nominalCoreThermalMW*1e6/(4*1.8e6);
+  const steamEnthalpyJkg = nominalPrimaryHeatMW*1e6/(4*nominalSteamKgSPerGV);
   const C = Object.freeze({
-    nominalThermalMW: 3817, nominalElectricMW: 1300,
+    nominalThermalMW: nominalCoreThermalMW, nominalElectricMW: 1300,
+    primaryPumpHeatMWPerUnit, nominalPrimaryHeatMW,
     nominalPrimaryMassKg: 269064, nominalPrimaryFlowKgS: 17588,
     primaryCpJkgK: 6000, coreBypassFraction: 0.07,
     corePowerFraction: 0.99, fuelHeatCapacityJk: 45e6,
     primaryPressureBar: 155, primaryMeanC: 306.5,
-    fuelC: 306.5 + 3817 / coreExchangeMWC,
-    steamTempC: nominalSteamTempC, steamPressureBar: 65, steamEnthalpyJkg: 1.8e6,
+    fuelC: 306.5 + nominalCoreThermalMW / coreExchangeMWC,
+    steamTempC: nominalSteamTempC, steamPressureBar: 65, steamEnthalpyJkg,
     primaryPressureCapacityKgBar: 650, breakCriticalFluxKgM2S: 25000,
     primaryDensityKgM3: 720, risWaterDensityKgM3: 1000,
     risInjectionTempC: 20, risBoronPpm: 2500, risTankVolumeM3: 2315,
@@ -77,14 +84,14 @@
     lambdaGroups: [0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01],
     rodStroke: 260, rodSpeedPasS: 1.2, dropTimeS: 2.24,
     coreConductanceMWC: coreExchangeMWC,
-    gvConductanceMWCPerUnit: 3817 / (4 * (306.5 - nominalSteamTempC)),
+    gvConductanceMWCPerUnit: nominalPrimaryHeatMW / (4 * (306.5 - nominalSteamTempC)),
     gvNominalWaterKg, gvKgPerMetre, gvWideTopM, gvNarrowBottomM,
     gvNominalLevelPct: 55, gvMetalHeatCapacityJk,
     gvHeatCapacityJk: gvMetalHeatCapacityJk + gvNominalWaterKg*secondaryCpJkgK,
     areFeedTempC,
-    // Lv effectif calé pour conserver 530,14 kg/s et 954,25 MW/GV au nominal.
+    // Lv effectif calé pour conserver 530,14 kg/s avec 960,25 MW/GV au nominal.
     // Sa variation suit la table Lv(P) ; ce n'est pas une EOS secondaire complète.
-    gvLatentHeatNominalJkg: 1.8e6-secondaryCpJkgK*(nominalSteamTempC-areFeedTempC),
+    gvLatentHeatNominalJkg: steamEnthalpyJkg-secondaryCpJkgK*(nominalSteamTempC-areFeedTempC),
     steamValveStrokePctPerS: 50,
     gctATempC: saturationTemperatureC(88.6), gctAPressureBar: 88.6,
     // Hypothèses d'étude pour la modulation et la capacité du GCT-A par GV.
@@ -92,7 +99,7 @@
     // ASG : table symétrique utilisateur, avec hystérésis opérateur 10/90 % GE.
     asgStartDelayS: 5,
     asgFeedTempC: 20, secondaryCpJkgK,
-    nominalSteamKgSPerGV: 3817e6 / (4 * 1.8e6),
+    nominalSteamKgSPerGV,
     rcvNominalM3h: 36, rcvSealM3h: 6, rcvLetdownM3h: 36,
     rcvTransitS: 8, risTransitS: 4,
     rcvOrificeM3h: 18, reaBoronPpm: 7000,
@@ -493,7 +500,7 @@
       steamValvePct: 100, gctAValvePct: 0,
       turbineSteamKgS: C.nominalSteamKgSPerGV,
       steamKgS: C.nominalSteamKgSPerGV, dumpKgS: 0,
-      heatMW: C.nominalThermalMW / 4,
+      heatMW: C.nominalPrimaryHeatMW / 4,
       thermalCapacityJk: C.gvHeatCapacityJk,
       thermalEnergyJ: C.gvHeatCapacityJk*C.steamTempC,
       steamLatentJkg: C.gvLatentHeatNominalJkg,
@@ -508,6 +515,7 @@
     return {
       time: 0, powerPct: 100, thermalPowerMW: C.nominalThermalMW,
       fissionMW: C.nominalThermalMW, decayMW: 0, coreTransferMW: C.nominalThermalMW,
+      pumpHeatMW: 4*C.primaryPumpHeatMWPerUnit,
       electricMW: C.nominalElectricMW,
       turbinePct: 100, demandPct: 100, trefC: C.primaryMeanC, nrefPct: 41.8,
       precursors: precursor, reactivityPcm: 0,
@@ -557,10 +565,11 @@
       rods, g3Count: 780, g3Target: 780, rLimitPas: 186,
       loops: Array.from({length:4}, (_,i) => ({ index:i+1, flowKgS:nominalFlow,
         forcedFlowKgS:nominalFlow, naturalFlowKgS:0,
+        pumpHeatMW:C.primaryPumpHeatMWPerUnit,
         hotC:324.6, coldC:288.4, pumpStopped:false,
         pumpHeadHotBar:7, pumpHeadColdBar:7+3*(324.6-288.4)/(324.6-20),
         vesselDeltaBar:3.5, gvDeltaBar:3.5 })),
-      gv: nominalGv(), totalGvMW: C.nominalThermalMW,
+      gv: nominalGv(), totalGvMW: C.nominalPrimaryHeatMW,
       totalSteamKgS: 4 * C.nominalSteamKgSPerGV,
       totalTurbineSteamKgS: 4 * C.nominalSteamKgSPerGV,
       totalFeedKgS: 4 * C.nominalSteamKgSPerGV,
@@ -814,6 +823,7 @@
     if(s.primaryPumpsStopped)return;
     s.primaryPumpsStopped=true;
     s.primaryPumpStopAt=s.time;s.primaryPumpStopReason=text;
+    s.pumpHeatMW=0;s.loops.forEach(loop=>{loop.pumpHeatMW=0;});
     addEvent(s,"protection",text);
   }
   function requestRis(s, text) {
@@ -1228,6 +1238,7 @@
     s.history.push({ t:s.time, power:s.powerPct, electric:s.electricMW,
       thermalPower:100*s.thermalPowerMW/C.nominalThermalMW,
       residualPower:100*s.decayMW/C.nominalThermalMW,
+      pumpHeatMW:s.pumpHeatMW,
       cold:s.coldC,tavg:s.tavgC,hot:s.hotC,tric:s.tRicC,
       pzrTemp:saturationTemperatureC(s.pressureBar),reactivity:s.reactivityPcm,
       pressure:s.pressureBar,gvPressure:s.gv.map(g=>g.pressureBar),
@@ -1302,6 +1313,11 @@
     s.coveragePct=s.inventory.coveragePct;
     for (const loop of s.loops) {
       const stopped=s.primaryPumpsStopped||loop.pumpStopped;
+      // Apport thermique de l'entraînement alimenté, distinct du débit :
+      // ni PTUR ni le relais par thermosiphon ne le commandent.
+      // Après déclenchement, l'énergie cinétique du ralentissement n'est pas
+      // ajoutée : le modèle ne possède pas de stock d'énergie rotor/circuit.
+      loop.pumpHeatMW=stopped?0:C.primaryPumpHeatMWPerUnit;
       const nominalLoopFlow=C.nominalPrimaryFlowKgS/4;
       const flowTarget=stopped?0:nominalLoopFlow;
       const priming=s.inventory.loopPriming[loop.index-1];
@@ -1336,6 +1352,7 @@
         *loop.pumpHeadColdBar/nominalColdHead;
       loop.gvDeltaBar=loop.vesselDeltaBar;
     }
+    s.pumpHeatMW=s.loops.reduce((sum,loop)=>sum+loop.pumpHeatMW,0);
     s.coreFlowFraction=clamp(s.loops.reduce((a,l)=>a+l.flowKgS,0)/C.nominalPrimaryFlowKgS,0,1);
     // Loi globale à K fixe : le transfert ne s'annule pas à l'arrêt des GMPP.
     // Le même échange est retiré du combustible et ajouté au primaire.
@@ -1453,7 +1470,7 @@
     // la vapeur sortante emporte Cp*T + Lv. Aucun refroidissement forfaitaire.
     const oldEnergy=oldMass*C.primaryCpJkgK*oldTemp+oldLatent;
     const outgoingEnergy=outMass*C.primaryCpJkgK*oldTemp+steamOut*latent;
-    const netEnergy=oldEnergy+(coreTransferMW-s.totalGvMW)*1e6*dt
+    const netEnergy=oldEnergy+(coreTransferMW+s.pumpHeatMW-s.totalGvMW)*1e6*dt
       +arrivedRis.energyJ+arrivedRcv.energyJ-outgoingEnergy;
     const pBefore=s.pressureBar;
     const circulation=Math.max(0,s.coreFlowKgS);
@@ -1675,6 +1692,7 @@
         :[`GMPP en marche`,...reasons.filter(r=>!r.startsWith("absence de source froide"))].join(" · ");
       return {index:loop.index,status,detail,severity:lost?"lost":limited||priming<.999?"reduced":"normal",
         forcedKgS:loop.forcedFlowKgS,naturalKgS:loop.naturalFlowKgS,totalKgS:loop.flowKgS,
+        pumpHeatMW:loop.pumpHeatMW,
         flowPct:100*loop.flowKgS/(C.nominalPrimaryFlowKgS/4),primingFraction:priming,
         thermalDriveC:drive,gvWaterFactor:water,coreCoverageFraction:coverage};
     });
@@ -1682,6 +1700,7 @@
       naturalKgS:loops.reduce((sum,l)=>sum+l.naturalKgS,0),
       loopKgS:loops.reduce((sum,l)=>sum+l.totalKgS,0),
       risCoreKgS:s.risCoreKgS,coreKgS:s.coreFlowKgS,
+      pumpHeatMW:s.pumpHeatMW,
       corePct:100*s.coreFlowFraction,primedLoops:loops.filter(l=>l.primingFraction>.001).length};
   }
   function instrumentSnapshot(model, selectedGv=1) {
@@ -1716,7 +1735,7 @@
       boron:s.boronPpm,g3:s.g3Count,g3Display:s.tripAt===null?s.g3Count:null,
       rods:{...s.rods},rLimit:s.rLimitPas,halfCycle:u.halfCycle,tripAt:s.tripAt,
       steamKgS:s.totalSteamKgS,steamTh:s.totalSteamKgS*3.6,
-      turbinePct:s.turbinePct,thermalMW:s.thermalPowerMW,electricMW:s.electricMW,
+      turbinePct:s.turbinePct,thermalMW:s.thermalPowerMW,pumpHeatMW:s.pumpHeatMW,electricMW:s.electricMW,
       reliefStages:[...s.reliefStages],reliefOpeningPct:[...s.reliefOpeningPct],
       reliefAutoArmed:[...s.reliefAutoArmed],reliefAutoOpeningPct:[...s.reliefAutoOpeningPct],
       reliefKgS:s.reliefKgS,reliefStageKgS:[...s.reliefStageKgS],gvSetpoint:u.gvLevelSetpointPct,

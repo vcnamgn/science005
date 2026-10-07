@@ -12,6 +12,43 @@ function stoppedPlant(naturalFlow=250) {
   return model;
 }
 
+test('GMPP : 6 MW par entraînement en service, ajoutés uniquement au bilan primaire',()=>{
+  for(const running of [4,3,0]){
+    const m=E.make(),s=m.state,dt=.1;m.controls.protectionsEnabled=false;
+    s.loops.forEach((loop,i)=>{loop.pumpStopped=i>=running;});
+    // Annuler l'échange GV pendant ce seul pas pour mesurer l'énergie déposée.
+    s.gv.forEach(g=>{g.tempC=s.tavgC;g.pressureBar=E.saturationPressureBar(g.tempC);});
+    const oldEnergy=s.primaryEnergyJ,oldFuel=s.fuelC,oldMass=s.primaryMassKg;
+    E.step(m,dt);
+    close(s.pumpHeatMW,running*6);close(s.totalGvMW,0);close(s.primaryMassKg,oldMass);
+    close((s.primaryEnergyJ-oldEnergy)/1e6,(s.coreTransferMW+running*6)*dt,1e-6);
+    close((s.fuelC-oldFuel)*E.C.fuelHeatCapacityJk/1e6,
+      (s.thermalPowerMW-s.coreTransferMW)*dt);
+    close(s.thermalPowerMW,E.C.nominalThermalMW);
+    close(E.instrumentSnapshot(m).pumpHeatMW,running*6);
+    close(E.primaryFlowDiagnostics(m).pumpHeatMW,running*6);
+    close(s.history[0].pumpHeatMW,running*6);
+  }
+});
+
+test('GMPP : permanent initial équilibré, arrêt électrique distinct de l’inertie et du thermosiphon',()=>{
+  const m=E.make(),s=m.state;
+  close(s.pumpHeatMW,24);close(s.totalGvMW,3841);
+  close(s.totalGvMW,s.coreTransferMW+s.pumpHeatMW);
+  E.step(m,.1);close(s.tavgC,E.C.primaryMeanC,1e-9);
+  close(s.gv[0].tempC,E.C.steamTempC,1e-9);
+  E.advance(m,60);assert.ok(Math.abs(s.tavgC-E.C.primaryMeanC)<.1);
+  close(s.pumpHeatMW,24);close(s.electricMW,1300);
+  m.controls.demandPct=80;E.advance(m,1);close(s.pumpHeatMW,24);
+  E.initiate(m,'trip');assert.equal(s.pumpHeatMW,24,'un AAR seul laisse les GMPP alimentées');
+  E.step(m,.1);close(s.pumpHeatMW,24);
+  E.initiate(m,'voltage');close(s.pumpHeatMW,0);
+  E.step(m,.1);close(s.pumpHeatMW,0);
+  assert.ok(s.loops.every(l=>l.forcedFlowKgS>0&&l.pumpHeatMW===0));
+  E.advance(m,70);close(s.pumpHeatMW,0);
+  assert.ok(s.loops.some(l=>l.naturalFlowKgS>0),'le thermosiphon ne crée pas un apport électrique');
+});
+
 test('thermosiphon : après ralentissement, 200–300 kg/s par boucle évacuent la puissance vers les GV',()=>{
   const model=stoppedPlant(),noCirculation=stoppedPlant(0);
   E.advance(model,180);E.advance(noCirculation,180);
