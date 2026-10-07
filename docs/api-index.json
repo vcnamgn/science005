@@ -616,7 +616,7 @@
       "file": "simulateur/centurion-app.js",
       "title": "Application",
       "description": "Horloge, commandes, arbitrage CC et présentation.",
-      "sha256": "7eb3244a079a3afc930113d63f5d73dc36354a7f235326a0a0efe359418f432d",
+      "sha256": "3d63126838381a7586c4903c3087cd45e88bfce517691a4a60525286d006f7da",
       "functions": [
         {
           "name": "activateView",
@@ -1028,19 +1028,19 @@
         },
         {
           "name": "syncInputs",
-          "line": 1420,
+          "line": 1421,
           "signature": "syncInputs()",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1420"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1421"
         },
         {
           "name": "frame",
-          "line": 1458,
+          "line": 1459,
           "signature": "frame(now)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1458"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-app.js#L1459"
         }
       ]
     },

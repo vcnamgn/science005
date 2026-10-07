@@ -112,6 +112,8 @@ test('application : arrêt RIS indépendant de la brèche et reprise JSON en pau
   await page.click('runButton');page.frame(150);flush();page.frame(150);flush();
   assert.ok(page.snapshot.time>saved.model.state.time);
   assert.ok(page.snapshot.massBalance.breakKgS>0);
+  await page.click('resetButton');
+  assert.doesNotMatch(page.get('stateStatus').textContent,/État chargé/);
 });
 
 test('application : bilan CPP lisible, débits réalisés et soupapes toujours commandables',()=>{

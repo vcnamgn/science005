@@ -1335,6 +1335,7 @@
       historyFollowing=true;historyEndS=null;
       model.controls.protectionGraphMode=true;
       model.controls.protectionsEnabled=protectionActive;
+      stateStatus("État physique, historiques et ateliers CC. Chargement en pause.");
       carry=0;syncInputs();render();
       const signals=editorSignals();
       for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
