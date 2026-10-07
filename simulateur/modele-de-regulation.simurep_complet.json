@@ -392,8 +392,8 @@
       "y": 1143.0744974564182,
       "label": "Limite QCHARGE",
       "params": {
-        "min": 6,
-        "max": 36
+        "min": 0,
+        "max": 60
       }
     },
     {
