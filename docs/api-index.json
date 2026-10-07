@@ -2,13 +2,13 @@
   "format": "Centurion-Documentation",
   "version": 1,
   "date": "2026-10-06",
-  "noteHash": "4d5fceebd6a4bdfc7d3458b8f1529680f0f6054d86f326cf1e06580fcb7268be",
+  "noteHash": "437aeadb2a428fb9fcf2c5809cf28ddff730d96b69eebb1ebb3a930434978e0c",
   "modules": [
     {
       "file": "simulateur/centurion-engine.js",
       "title": "Moteur",
       "description": "Physique et API indépendante du navigateur.",
-      "sha256": "e0ec91e7ec6d479abe898e22a7afa792f210b96a8fc14dc3d5e71e80db854588",
+      "sha256": "39e3c13714d898826ea9101b7bc67b9d16bbfa0073ee6dbeb1708be8866f6cfa",
       "functions": [
         {
           "name": "saturationPressureBar",
@@ -1368,7 +1368,7 @@
       "file": "simulateur/centurion-state.js",
       "title": "États JSON",
       "description": "Sauvegarde complète, validation et reprise locale pour le débogage.",
-      "sha256": "c14d28dd350d87848a8b63541d1cc2294f4138de397ae7d7306f25b60da21c14",
+      "sha256": "e52067567c3f0978577999a6270a24d2ea858fb3482223416e2e025d574f3562",
       "functions": [
         {
           "name": "checkJson",
@@ -1412,19 +1412,19 @@
         },
         {
           "name": "read",
-          "line": 122,
+          "line": 123,
           "signature": "read(E,raw)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L122"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L123"
         },
         {
           "name": "write",
-          "line": 169,
+          "line": 170,
           "signature": "write(E,model,editors,ui,certificateArchive)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L169"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L170"
         }
       ]
     },

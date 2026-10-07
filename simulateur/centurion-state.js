@@ -92,6 +92,7 @@
   function migrateLegacy(E,raw){
     const s=raw.model.state,u=raw.model.controls;
     const rho=E.liquidWaterDensityKgM3(s.tavgC,s.pressureBar);
+    s.breakDensityKgM3=rho;
     s.inventory=E.cppInventory(s.primaryMassKg-s.vaporMassKg,s.tavgC,s.pressureBar);
     s.pzrLevelPct=s.inventory.components.pzr.fillPct;s.coveragePct=s.inventory.coveragePct;
     for(const loop of s.loops){

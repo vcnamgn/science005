@@ -676,7 +676,7 @@
       risDeliveredKgS: 0,risDeliveredMpKgS:0,risDeliveredBpKgS:0,risDeliveredAccumulatorKgS:0,
       risCoolingMW: 0, risTankRemainingKg: C.risTankVolumeM3*C.risWaterDensityKgM3,
       accumulatorsKg: Array(4).fill(C.accumulatorKgPerLoop),
-      breakKgS: 0,breakDensityKgM3:C.primaryDensityKgM3,
+      breakKgS: 0,breakDensityKgM3:liquidWaterDensityKgM3(C.primaryMeanC,C.primaryPressureBar),
       breakAreaCm2: 0, breakLoop: 1, breakBranch: "froide",
       rods, g3Count: 780, g3Target: 780, rLimitPas: 186,
       loops: Array.from({length:4}, (_,i) => ({ index:i+1, flowKgS:nominalFlow,
@@ -1483,7 +1483,7 @@
     s.fuelC=clamp(s.fuelC+fuelDelta,20,3000);
 
     // Brèche primaire, RIS à pression variable et transit des volumes injectés.
-    const density=clamp(C.primaryDensityKgM3*(s.pressureBar/155)**0.08,150,760);
+    const density=liquidWaterDensityKgM3(s.tavgC,s.pressureBar);
     s.breakDensityKgM3=density;
     const fluxOrifice=0.68*Math.sqrt(2*density*Math.max(0,s.pressureBar-1)*1e5);
     const fluxLimit=C.breakCriticalFluxKgM2S*Math.sqrt(Math.max(0,s.pressureBar)/155);
