@@ -42,6 +42,34 @@ test('état JSON : graphe et mémoires des filtres, intégrateurs et dérivés r
   }
 });
 
+test('état JSON : suppression de blocs CC sans mémoires orphelines ni perte des mémoires restantes',()=>{
+  const graph={format:'SimuREP-Regulation',version:1,name:'Édition pendant le TP',nodes:[
+    {id:'N1',type:'constant',x:0,y:0,params:{value:2,unit:'pas/min'}},
+    {id:'N2',type:'filter',x:150,y:0,params:{tau:60}},
+    {id:'N3',type:'integrator',x:300,y:0,params:{min:0,max:260,outputUnit:'pas extraits'}}],links:[
+    {from:'N1',to:'N2',toPort:0},{from:'N2',to:'N3',toPort:0}]};
+  for(const mode of ['regul','protect']){
+    const editor=editorSurface(mode,{saved:graph});
+    editor.bridge.receive({type:'centurion-editor-enable',enabled:true,signals:E.controlSignals(E.make())});
+    editor.bridge.receive({type:'centurion-editor-tick',dt:1,signals:E.controlSignals(E.make())});
+    const before=plain(snapshot(editor));
+    assert.ok(before.runtime.some(([id])=>id==='N2'));
+    editor.query('.logic-node[data-node-id="N2"]').fire('pointerdown',
+      {button:0,shiftKey:true,stopPropagation(){}});
+    editor.get('deleteRegNode').click();
+    const saved=plain(snapshot(editor));
+    assert.ok(!saved.graph.nodes.some(node=>node.id==='N2'));
+    assert.ok(!saved.runtime.some(([id])=>id==='N2'),'un bloc supprimé ne doit plus bloquer la sauvegarde');
+    assert.ok(!saved.lastSignals.some(([id])=>id==='N2'));
+    assert.deepEqual(saved.runtime.find(([id])=>id==='N3'),before.runtime.find(([id])=>id==='N3'),
+      'la mémoire de l’intégrateur conservé ne doit pas être remise à zéro');
+    State.validateEditor(saved,mode);
+    const restored=editorSurface(mode);
+    assert.equal(restored.bridge.receive({type:'centurion-editor-restore',saved}).error,undefined);
+    assert.deepEqual(plain(snapshot(restored).runtime),saved.runtime);
+  }
+});
+
 test('état JSON : fichiers incompatibles ou corrompus rejetés avant remplacement',()=>{
   const raw=State.write(E,E.make(),{regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))},ui,null);
   for(const mutate of [r=>r.version=99,r=>r.model.state.loops.pop(),r=>r.model.controls.breakAreaCm2=300,

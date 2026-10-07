@@ -5267,6 +5267,10 @@
       const before = regStateSnapshot(true);
       regNodes = regNodes.filter(item => !ids.has(item.id));
       regLinks = regLinks.filter(link => !ids.has(link.from) && !ids.has(link.to));
+      for (const id of ids) {
+        regRuntimeStates.delete(id);
+        regLastSignals.delete(id);
+      }
       if (pendingPort && ids.has(pendingPort.nodeId)) pendingPort = null;
       selectedRegNodeId = null;
       selectedRegNodeIds = new Set();
@@ -6263,8 +6267,12 @@
         try{
           let saved;
           if(data.type==="centurion-editor-save"){
-            saved={mode:CENTURION_EDITOR_MODE,enabled:regulationEnabled,graph:currentRegModel(),
-              runtime:[...regRuntimeStates],lastSignals:[...regLastSignals],diagnostics:regLastDiagnostics,
+            const graph=currentRegModel(),ids=new Set(graph.nodes.map(node=>node.id));
+            // Nettoyer aussi les mémoires orphelines des sessions déjà ouvertes
+            // avec l'ancien éditeur, sans réinitialiser les blocs conservés.
+            const liveEntries=map=>[...map].filter(([id])=>ids.has(id));
+            saved={mode:CENTURION_EDITOR_MODE,enabled:regulationEnabled,graph,
+              runtime:liveEntries(regRuntimeStates),lastSignals:liveEntries(regLastSignals),diagnostics:regLastDiagnostics,
               input:centurionInput,local:{rods:s.rods,letdown:s.letdown,heater:s.heater,spray:s.spray}};
           }else{
             saved=data.saved;
