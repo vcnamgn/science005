@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261007-bilan-masses-2">
+  <link rel="stylesheet" href="centurion.css?v=20261007-bilan-masses-phase-2">
 </head>
 <body>
   <header class="topbar">
@@ -50,7 +50,7 @@
       <div class="process-layout">
         <div class="diagram-frame" id="diagramFrame">
           <label class="pt-trail-controls" id="ptTrailPicker" hidden>Historique P–T <select id="ptTrailWindow" aria-label="Durée de la trace du diagramme P–T"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option></select></label>
-          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261007-bilan-masses" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
+          <object id="diagramObject" data="synoptiques/synoptique-RCP-1300.svg?v=20261007-bilan-masses-phase" type="image/svg+xml" aria-label="Synoptique RCP général">Chargement du synoptique SVG…</object>
           <div class="core-diagram" id="coreDiagram" hidden>
             <section class="core-chart-card"><div class="core-chart-head"><h2>Distribution axiale</h2><output id="coreLinearReadout">—</output></div>
               <canvas id="coreProfileChart" aria-label="P(z) en premier plan, 32 barres PLIN sur un second axe fixe de 0 à 435 W/cm à droite ; xénon et iode à gauche, du bas vers le haut du cœur"></canvas>
@@ -241,12 +241,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261007-bilan-masses" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261007-bilan-masses-phase" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261007-bilan-masses" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261007-bilan-masses-phase" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -568,8 +568,8 @@ node scripts/check-docs.mjs</code></pre>
     <img id="certificatePreview" class="certificate-preview" alt="Aperçu du certificat de fin de simulation" hidden>
   </dialog>
   <script src="vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="centurion-engine.js?v=20261007-bilan-masses"></script>
+  <script src="centurion-engine.js?v=20261007-bilan-masses-phase"></script>
   <script src="centurion-certificate.js?v=20261007-certificat-reinitialisation"></script>
-  <script src="centurion-app.js?v=20261007-bilan-masses"></script>
+  <script src="centurion-app.js?v=20261007-bilan-masses-phase"></script>
 </body>
 </html>

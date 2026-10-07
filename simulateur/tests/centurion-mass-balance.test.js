@@ -76,4 +76,9 @@ test('SVG inventaire : bilan en temps réel, variations de stocks et indicateur 
   assert.equal(svg.get('balance-net-card').getAttribute('data-balance-sign'),'loss');
   const nominal=E.instrumentSnapshot(E.make());svg.update(nominal);
   assert.equal(svg.get('balance-net-card').getAttribute('data-balance-sign'),'balanced');
+  const relief=E.make();relief.controls.manualReliefStages=[true,false,false];E.step(relief,.1);
+  const reliefSnapshot=E.instrumentSnapshot(relief);svg.update(reliefSnapshot);
+  const phase=svg.root.querySelector('[data-value="massBalance.phaseChangeKgS"]');
+  assert.ok(phase,'Le synoptique doit afficher le même transfert de phase net que le bilan');
+  close(Number(phase.getAttribute('data-current-value')),reliefSnapshot.massBalance.phaseChangeKgS);
 });

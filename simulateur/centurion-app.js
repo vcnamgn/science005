@@ -123,7 +123,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261007-bilan-masses";
+      $("diagramObject").data=svgFiles[name]+"?v=20261007-bilan-masses-phase";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
