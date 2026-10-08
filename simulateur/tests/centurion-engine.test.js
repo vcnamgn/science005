@@ -262,7 +262,7 @@ test('RIS MP puis BP suivent leur domaine de pression', () => {
   const hold=(m,p,n)=>{for(let i=0;i<n*10;i++){
     m.state.pressureBar=p;m.state.pzrThermalPressureBar=p;E.step(m,.1);
   }};
-  hold(high,100,2.2);
+  hold(high,100,4.1); // Délai IS 2 s, puis montée en vitesse 2 s.
   assert.ok(high.state.risMpKgS > 0);
   assert.equal(high.state.risBpKgS, 0);
   assert.equal(high.state.risDeliveredKgS, 0);
@@ -270,7 +270,7 @@ test('RIS MP puis BP suivent leur domaine de pression', () => {
   assert.ok(high.state.risDeliveredKgS > 0);
   const low = E.make();
   E.initiate(low, 'ris');
-  hold(low,20,2.2);
+  hold(low,20,4.1);
   assert.ok(low.state.risBpKgS > 0);
   assert.ok(low.state.accumulatorKgS > 0);
 });

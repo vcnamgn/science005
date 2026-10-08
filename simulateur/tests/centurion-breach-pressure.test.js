@@ -6,7 +6,7 @@ const totalMass=s=>s.primaryMassKg+s.risTankRemainingKg+s.sumpKg
   +[...s.risPipe,...s.rcvPipe].reduce((a,p)=>a+p.massKg,0);
 function coldPlant(temp=90,full=true){
   const m=E.make(),s=m.state,u=m.controls;
-  E.initiate(m,'ris');s.tripAt=0;s.risAt=0;
+  E.initiate(m,'ris');s.tripAt=0;s.risAt=0;s.risPumpSpeedFraction=1;
   E.tripPrimaryPumps(m);
   s.powerPct=s.previousPowerPct=1e-6;s.precursors.fill(0);
   E.ROD_NAMES.forEach(n=>{s.rods[n]=0;});
@@ -77,18 +77,19 @@ test('RIS en ligne : admission bornée par la courbe courante, paquet retenu et 
 
 test('brèche 300 cm² sur 20 min : accumulateurs continus, régime froid stable et stocks conservés',()=>{
   const m=E.make();E.initiate(m,'break',{areaCm2:300});
-  let coldSteps=0,maxRate=0,accumulatorSteps=0,lastAccumulator=0,maxAccumulatorJump=0;
+  let coldSteps=0,maxRate=0,accumulatorSteps=0,lastAccumulator=0,maxAccumulatorJump=0,peakAccumulator=0;
   for(let i=0;i<12000;i++){
     const s=m.state,p=s.pressureBar,mass=totalMass(s);E.step(m,.1);
     near(totalMass(s)-mass,(s.rcvChargeKgS-s.rcvLetdownKgS)*.1,1e-7);
     maxAccumulatorJump=Math.max(maxAccumulatorJump,Math.abs(s.accumulatorKgS-lastAccumulator));
     lastAccumulator=s.accumulatorKgS;if(s.risDeliveredAccumulatorKgS>1)accumulatorSteps++;
+    peakAccumulator=Math.max(peakAccumulator,s.accumulatorKgS);
     if(s.time>900&&s.tavgC<100){coldSteps++;maxRate=Math.max(maxRate,Math.abs(s.pressureBar-p)/.1);}
     assert.ok(s.pressureBar>=1&&s.pressureBar<=220);
     assert.ok(s.tavgC<=E.saturationTemperatureC(s.pressureBar)+1e-8);
     assert.equal(s.endState,null);
   }
-  assert.ok(accumulatorSteps>100&&maxAccumulatorJump<100);
+  assert.ok(accumulatorSteps>100&&maxAccumulatorJump<=peakAccumulator*.1/E.C.accumulatorEndDrainTauS+.01);
   assert.ok(coldSteps>1000&&maxRate<.01,`oscillations froides : ${maxRate} bar/s`);
   assert.ok(m.state.pressureBar>30&&m.state.pressureBar<32);
   assert.ok(m.state.risPipe.length<500,'les reliquats arrivés ne créent pas des milliers de parcelles');

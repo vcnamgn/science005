@@ -178,6 +178,12 @@
       add(`cc.${id}`,`CC · ${signalNames[id]||id.replace(/gv(\d)(Level|Steam)Signal/,(_,g,k)=>`${k==='Level'?'Niveau':'Débit vapeur'} GV${g}`)}`,
         id,unit||'—','Sources CC',p=>p.detailVersion===1?p.cc?.[i]:undefined,range,unit==='TOR'?'fixed':'adaptive');
     });
+    extra('risPumpSpeedFraction','Vitesse relative des pompes RIS','N RIS','× nominal','RIS',[0,1],'fixed',true);
+    for(let i=0;i<4;i++){
+      extra(`accumulatorsKg.${i}`,`Masse d’eau · accumulateur ${i+1}`,`M ACCU${i+1}`,'kg','RIS',[0,27000],'fixed',true);
+      extra(`accumulatorNitrogenBar.${i}`,`Pression azote · accumulateur ${i+1}`,`P ACCU${i+1}`,'bar','RIS',[0,42],'fixed',true);
+      extra(`accumulatorFlowsKgS.${i}`,`Débit · accumulateur ${i+1}`,`Q ACCU${i+1}`,'kg/s','RIS',[0,1000]);
+    }
     return defs;
   }
   function presets(gv=1){const i=gv-1;return {

@@ -6,9 +6,9 @@
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-gv-breches-v5";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-ris-inertie-v6";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
@@ -49,6 +49,7 @@
     };
     range(s.time,0,1e9,"Horloge");range(s.primaryMassKg,1,1e8,"Masse primaire");
     range(s.pressureBar,1,E.C.primaryPressureMaxBar,"Pression primaire");
+    range(s.risPumpSpeedFraction,0,1,"Vitesse des pompes RIS");
     range(u.breakAreaCm2,0,2000,"Section de brèche");
     if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
       throw new Error("La brèche physique et sa commande sont incohérentes.");
@@ -151,6 +152,14 @@
     const oldRevision=raw.engineRevision!==REVISION;
     if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
     if(oldRevision){
+      // Une partie ancienne conserve ses stocks et ses débits en cours.
+      // Les pompes déjà sollicitées sont reprises à leur régime précédent.
+      const s=raw.model.state,u=raw.model.controls;
+      if(s.risPumpSpeedFraction===undefined)s.risPumpSpeedFraction=
+        s.risEnabled&&u.risPumpMode!=="off"&&(s.risAt!==null||u.risPumpMode==="on")?1:0;
+      for(const r of raw.certificateArchive?.records??[])
+        if(r.snapshot.risPumpSpeedFraction===undefined)r.snapshot.risPumpSpeedFraction=
+          r.snapshot.risMpKgS+r.snapshot.risBpKgS>0?1:0;
       // Ajouter seulement les nouvelles mesures secondaires. Stocks, tuyaux
       // et arrêt GMPP déjà mémorisé restent ceux de la partie enregistrée.
       const migrateGv=g=>{

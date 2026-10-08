@@ -40,7 +40,7 @@ const notes={
   latentHeatJkg:'Chaleur latente primaire, J/kg ; interpolation tabulée selon pression absolue en bar.',
   gvThermalCapacityJk:'Capacité thermique secondaire, J/°C : eau en kg plus contribution métallique constante.',
   gvLatentHeatJkg:'Chaleur latente secondaire effective en J/kg, dépendant de la pression absolue en bar et calée au nominal.',
-  accumulatorFlowKgS:'Calcule pression d’azote (bar) et débit d’équilibre (kg/s) à partir de P primaire (bar) et du stock d’eau (kg).',
+  accumulatorFlowKgS:'Calcule pression d’azote (bar) et débit massique (kg/s) depuis P primaire (bar) et stock d’eau (kg). Avec previousFlowKgS et dt, résout implicitement l’inertie de ligne ; sinon renvoie le débit d’équilibre.',
   saturationPressureBar:'Pression de saturation en bar absolus à partir de la température en °C ; région 4 IF97.',
   saturationTemperatureC:'Température de saturation en °C à partir de P absolue en bar : inverse analytique IF97 région 4, équation 31.',
   ptLimits:'Retourne limites basse/haute en bar et disponibilité du domaine schématique à la température donnée en °C.',

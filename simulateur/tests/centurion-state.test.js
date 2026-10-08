@@ -6,6 +6,25 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('état RIS v6 : montée en vitesse reprise, v5 migré sans perte de stocks ni parcelles',()=>{
+  const m=E.make();m.controls.protectionGraphMode=true;E.setRisOperation(m,'on');E.advance(m,.6);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,m,editors,ui,null),loaded=State.read(E,raw);
+  assert.equal(loaded.model.state.risPumpSpeedFraction,.3);
+  E.step(m,.1);E.step(loaded.model,.1);assert.deepEqual(loaded.model,m);
+  const old=structuredClone(raw);old.engineRevision='20261008-gv-breches-v5';
+  delete old.model.state.risPumpSpeedFraction;
+  const migrated=State.read(E,old);
+  assert.equal(migrated.model.state.risPumpSpeedFraction,1);
+  assert.deepEqual(migrated.model.state.accumulatorsKg,raw.model.state.accumulatorsKg);
+  assert.deepEqual(migrated.model.state.risPipe,raw.model.state.risPipe);
+  assert.equal(migrated.model.state.primaryMassKg,raw.model.state.primaryMassKg);
+  const missing=structuredClone(raw);delete missing.model.state.risPumpSpeedFraction;
+  assert.throws(()=>State.read(E,missing),/risPumpSpeedFraction/);
+  const invalid=structuredClone(raw);invalid.model.state.risPumpSpeedFraction=1.1;
+  assert.throws(()=>State.read(E,invalid),/Vitesse des pompes RIS/);
+});
+
 test('état PZR v3 : stocks et parcelles conservés à la reprise du couplage de pression',()=>{
   const m=E.make();E.initiate(m,'break',{areaCm2:300});E.advance(m,5);
   const raw=State.write(E,m,{regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))},ui,null);

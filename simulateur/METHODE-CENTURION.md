@@ -256,13 +256,21 @@ Tsat utilise [IAPWS-IF97](https://iapws.org/relguide/IF97-Rev.html). Lv est une 
 
 ### Accumulateurs RIS à azote
 
-La note REF-01 §4.11, **page PDF 45**, fournit les plages. On retient les valeurs médianes par accumulateur : volume total 47,6 m³, eau initiale 28,2 m³, pression 41,25 bar abs., exposant polytropique 1,35, résistance K/A² = 4 100 m⁻⁴. Le volume d’azote initial vaut 19,4 m³.
+La note REF-01 §4.11, **page PDF 45**, fournit les plages (26,9–29,5 m³ d'eau, 40–42,5 bar abs., K/A² entre 3 050 et 5 150 m⁻⁴). Le réglage demandé retient **27 m³ d'eau et 20 m³ d'azote à 42 bar abs.** par accumulateur, soit 47 m³ au total, et **K/A² = 3 050 m⁻⁴**. Le total arrondi demandé diffère des 47,6 m³ du tableau. L'exposant polytropique reste 1,35.
 
-`Pgaz = 41,25 × (19,4 / (47,6 − V_eau))^1,35`.
+`Pgaz = 42 × (20 / (47 − V_eau))^1,35`.
 
 `Q_massique = √(2 × ρ × max(0, Pgaz − P_CPP) / (K/A²))`, pressions en Pa, eau à 1 000 kg/m³.
 
-Une inertie hydraulique d’étude de 1 s adoucit le débit et le transit vaut 1 s. Le débit débité retire la même masse de l’accumulateur et l’ajoute à sa conduite avant livraison. La pression d’azote diminue pendant la vidange ; aucun basculement à 45 bar ni débit imposé de 400 kg/s ne subsiste. Les accumulateurs restent passifs après l’ordre IS ; arrêter les pompes ne les isole pas. Ils injectent l’eau à 20 °C et la CB RIS choisie dans ce modèle simplifié.
+À 40 bar CPP avec l'accumulateur encore plein, cette loi donne **362 kg/s, soit 1 304 m³/h par accumulateur**, et 5 215 m³/h pour les quatre. K/A² inclut déjà la section : on ne divise pas encore par A². Pour un diamètre intérieur simplifié de 10 pouces (0,254 m), la vitesse correspondante est 7,15 m/s.
+
+L'inertie remplace le filtre arbitraire de 1 s : `(L/A) × dq/dt = ΔP − (K/A²) × q|q|/(2ρ)`. Avec le volume de ligne 1,19 m³ indiqué dans REF-01, on déduit une longueur équivalente `L = V_ligne/A ≈ 23,5 m`. C'est une équivalence hydraulique, pas une longueur géométrique relevée. Le pas implicite résout une équation quadratique ; le clapet interdit le débit inverse. Le transit thermique/composition reste 1 s ; le volume de ligne sert ici à l'inertie, sans ajouter un nouveau stock d'eau au bilan. La limitation de fin de vidange `M_restante / 3 s` reste une hypothèse d'étude pour une extinction progressive.
+
+Le débit débité retire la même masse de l'accumulateur et l'ajoute à sa conduite avant livraison. La pression d'azote est recalculée avec le stock après chaque pas. Les accumulateurs restent passifs après l'ordre IS ; arrêter les pompes ne les isole pas. Ils injectent l'eau à 20 °C et la CB RIS choisie. Le graphique permet de tracer réserve, pression d'azote et débit de chacun des quatre accumulateurs.
+
+Les pompes RIS montent à leur vitesse nominale en **2 s**, hypothèse d'étude explicitement distincte des données du tableau. Les lois d'affinité donnent `H ∝ N²` et `Q(P,N) = N × Q_nominal(P/N²)`. Les courbes simplifiées MP/BP à pleine vitesse restent identiques, continues aux seuils de 120 et 40 bar. Une pompe BP peut tourner sans débit tant que sa HMT ne dépasse pas la contre-pression. L'arrêt manuel ferme l'admission et remet la vitesse à zéro ; le redémarrage répète la rampe. Les paquets déjà engagés restent conservés. La vitesse relative est traçable et sauvegardée ; une ancienne sauvegarde reprend les pompes déjà sollicitées à leur régime antérieur.
+
+Sur la brèche de 300 cm², la dépressurisation initiale intervient avant l'arrivée des accumulateurs. Leur eau froide provoque ensuite de la condensation : la baisse de pression augmente ΔP et le débit, tandis que l'expansion de l'azote le diminue. Le maximum tardif n'est donc pas le débit à l'ouverture sous 42 bar. Le mélange homogène instantané peut amplifier cette rétroaction ; ce calcul ne prédit pas la cinétique réelle des fronts froids. Aucune limitation arbitraire en bar/s ne masque cet effet.
 
 ### Recirculation et RRA
 

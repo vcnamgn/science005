@@ -109,7 +109,8 @@ test('RIS : le bilan affiche les MP/BP/accumulateurs arrivés après leurs trans
   const m=E.make();m.controls.protectionGraphMode=true;E.setRisOperation(m,'on');
   m.state.pressureBar=30;
   E.step(m,.1);
-  assert.ok(m.state.risMpKgS>0&&m.state.risBpKgS>0&&m.state.accumulatorKgS>0);
+  assert.equal(m.state.risMpKgS,0);assert.equal(m.state.risBpKgS,0);
+  assert.ok(m.state.accumulatorKgS>0,'les accumulateurs n’attendent pas la montée en vitesse des pompes');
   close(E.primaryMassBalance(m.state).risKgS,0);
   const hold=seconds=>{for(let i=0;i<seconds*10;i++){
     m.state.pressureBar=30;m.state.pzrThermalPressureBar=30;E.step(m,.1);
@@ -117,7 +118,7 @@ test('RIS : le bilan affiche les MP/BP/accumulateurs arrivés après leurs trans
   hold(2);
   const early=E.primaryMassBalance(m.state);
   assert.ok(early.accumulatorKgS>0);close(early.risMpKgS,0);close(early.risBpKgS,0);
-  hold(3);
+  hold(4);
   const delivered=E.primaryMassBalance(m.state);
   assert.ok(delivered.risMpKgS>0&&delivered.risBpKgS>0&&delivered.accumulatorKgS>0);
   close(delivered.risKgS,delivered.risMpKgS+delivered.risBpKgS+delivered.accumulatorKgS);

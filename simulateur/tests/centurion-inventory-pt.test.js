@@ -14,9 +14,51 @@ test('azote RIS : détente polytropique, racine de ΔP et continuité au démarr
   close(E.accumulatorFlowKgS(p-1,m).flowKgS/tiny,Math.sqrt(1000),1e-7);
   assert.ok(tiny<30,'pas de marche de 400 kg/s au seuil');
   const half=E.accumulatorFlowKgS(1,m/2);
-  close(half.nitrogenBar,p*((47.6-28.2)/(47.6-14.1))**1.35);
+  close(half.nitrogenBar,p*(20/(47-13.5))**1.35);
   assert.ok(half.nitrogenBar<p);
   close(E.accumulatorFlowKgS(1,0).flowKgS,0);
+});
+
+test('accumulateur 10 pouces : 27 m³/20 m³ à 42 bar, inertie et pertes K/A² sans double section',()=>{
+  const c=E.C,m=c.accumulatorKgPerLoop;
+  close(m,27000);close(c.accumulatorVolumeM3-m/1000,20);
+  close(c.accumulatorPressureBar,42);close(c.accumulatorResistanceM4,3050);
+  const equilibrium=E.accumulatorFlowKgS(40,m).flowKgS;
+  close(equilibrium,Math.sqrt(2*1000*200000/3050));
+  assert.ok(equilibrium*3.6>1300&&equilibrium*3.6<1310,'débit volumique par accumulateur à 2 bar de ΔP');
+  let q=0;
+  for(let i=0;i<1000;i++){
+    const next=E.accumulatorFlowKgS(40,m,q,.01).flowKgS;
+    assert.ok(next>q&&next<=equilibrium);q=next;
+  }
+  close(q,equilibrium,.001);
+  const area=Math.PI*.254**2/4,inertia=1.19/area**2;
+  const decelerated=E.accumulatorFlowKgS(43,m,q,.01).flowKgS;
+  close(inertia*(decelerated-q)/.01,
+    -100000-3050*decelerated**2/(2*1000),1e-5);
+  assert.ok(decelerated<q&&decelerated>0,'le clapet arrête le débit après décélération');
+  close(E.accumulatorFlowKgS(43,m,q,2).flowKgS,0);
+});
+
+test('pompes RIS : montée en vitesse, HMT quadratique et redémarrage progressif',()=>{
+  const m=E.make(),s=m.state,u=m.controls;
+  u.protectionGraphMode=true;E.setRisOperation(m,'on');
+  const hold=()=>{s.pressureBar=s.pzrThermalPressureBar=30;E.step(m,.1);};
+  hold();close(s.risPumpSpeedFraction,.05);close(s.risMpKgS,0);close(s.risBpKgS,0);
+  let lastMp=0,lastBp=0;
+  for(let i=1;i<20;i++){
+    hold();const r=s.risPumpSpeedFraction;
+    close(s.risMpKgS,2*r*Math.max(0,120-30/r**2));
+    close(s.risBpKgS,18*r*Math.max(0,40-30/r**2));
+    assert.ok(s.risMpKgS>=lastMp&&s.risBpKgS>=lastBp);
+    lastMp=s.risMpKgS;lastBp=s.risBpKgS;
+  }
+  close(s.risPumpSpeedFraction,1);close(s.risMpKgS,180);close(s.risBpKgS,180);
+  s.pressureBar=s.pzrThermalPressureBar=40;E.step(m,.1);
+  close(s.risMpKgS,160);close(s.risBpKgS,0);
+  E.setRisOperation(m,'off');hold();close(s.risPumpSpeedFraction,0);
+  close(s.risMpKgS,0);close(s.risBpKgS,0);
+  E.setRisOperation(m,'on');hold();close(s.risPumpSpeedFraction,.05);close(s.risMpKgS,0);
 });
 
 test('inventaire CPP : conservation, vidange des capacités hautes et désamorçage progressif',()=>{
@@ -47,7 +89,7 @@ test('inventaire CPP : conservation, vidange des capacités hautes et désamorç
 
 test('brèche 300 cm² : températures bornées à Tsat, bilan massique global et RIS traversant le cœur',()=>{
   const m=E.make();E.initiate(m,'break',{areaCm2:300});
-  let phase=false,risCore=false,unprimed=false,largestAccumulatorStep=0,last=0;
+  let phase=false,risCore=false,unprimed=false,largestAccumulatorStep=0,peakAccumulator=0,last=0;
   for(let i=0;i<6000&&!m.state.endState;i++){
     const before=totalMass(m.state);E.step(m,.1);const s=m.state;
     close(totalMass(s)-before,(s.rcvChargeKgS-s.rcvLetdownKgS)*.1,1e-7);
@@ -61,16 +103,20 @@ test('brèche 300 cm² : températures bornées à Tsat, bilan massique global e
       unprimed=true;s.loops.forEach((l,i)=>{if(s.inventory.loopPriming[i]===0)close(l.naturalFlowKgS,0);});
     }
     largestAccumulatorStep=Math.max(largestAccumulatorStep,Math.abs(s.accumulatorKgS-last));last=s.accumulatorKgS;
+    peakAccumulator=Math.max(peakAccumulator,s.accumulatorKgS);
   }
   assert.ok(phase,'la détente atteint effectivement le domaine diphasique');
-  assert.ok(risCore&&unprimed);assert.ok(largestAccumulatorStep<100,'pas de créneau de 1 600 kg/s');
+  assert.ok(risCore&&unprimed);
+  assert.ok(largestAccumulatorStep<=peakAccumulator*.1/E.C.accumulatorEndDrainTauS+.01,
+    'variation par pas bornée par la vidange progressive, sans créneau');
   assert.ok(m.state.accumulatorsKg.every(m=>m>=0));
 });
 
 test('bilan d’enthalpie primaire : injections froides, sensible, latent et rejets sans énergie perdue au plafonnement',()=>{
   const m=E.make();E.initiate(m,'break',{areaCm2:300});
   let phaseSteps=0;
-  for(let i=0;i<2500&&!m.state.endState;i++){
+  let accumulatorCoolingSteps=0;
+  for(let i=0;i<6000&&!m.state.endState;i++){
     const s=m.state,dt=.1,oldT=s.tavgC,p=s.pressureBar;
     const before=s.primaryMassKg*E.C.primaryCpJkgK*oldT+s.vaporEnergyJ;
     E.step(m,dt);
@@ -81,8 +127,10 @@ test('bilan d’enthalpie primaire : injections froides, sensible, latent et rej
     const expected=before+(s.coreTransferMW+s.pumpHeatMW-s.totalGvMW)*1e6*dt+inflow-out;
     close(s.primaryEnergyJ,expected,.01);
     if(s.vaporMassKg>0)phaseSteps++;
+    if(s.risDeliveredAccumulatorKgS>1&&s.phaseChangeKgS<0)accumulatorCoolingSteps++;
   }
   assert.ok(phaseSteps>100,'bilan vérifié pendant l’ébullition et la détente');
+  assert.ok(accumulatorCoolingSteps>100,'bilan vérifié pendant la condensation avec les accumulateurs');
 });
 
 test('ASG : hystérésis 90/10, quatre commandes indépendantes et diesels malgré manque de tension',()=>{

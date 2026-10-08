@@ -159,11 +159,15 @@
     rcvPumpReferenceBar: 177, rcvPumpReferenceM3h: 44,
     rcvTransitS: 8, risTransitS: 4,
     rcvOrificeM3h: 18, reaBoronPpm: 7000,
-    // REF-01, §4.11, p. PDF 45 : valeurs médianes des plages d'étude.
-    accumulatorTransitS: 1, accumulatorKgPerLoop: 28200,
-    accumulatorVolumeM3: 47.6, accumulatorPressureBar: 41.25,
-    accumulatorPolytropicExponent: 1.35, accumulatorResistanceM4: 4100,
+    // Réglage utilisateur dans les plages REF-01, §4.11 : 27 m³ d'eau,
+    // 20 m³ d'azote à 42 bar. K/A² est déjà rapporté à la section.
+    accumulatorTransitS: 1, accumulatorKgPerLoop: 27000,
+    accumulatorVolumeM3: 47, accumulatorPressureBar: 42,
+    accumulatorPolytropicExponent: 1.35, accumulatorResistanceM4: 3050,
+    accumulatorPipeDiameterM: .254, accumulatorLineWaterM3: 1.19,
     accumulatorEndDrainTauS: 3,
+    // Montée en vitesse d'étude, faute de courbe de démarrage constructeur.
+    risPumpStartS: 2,
     tripLowPressureBar: 130, risLowPressureBar: 120,
     tripHighFluxPct: 109, fluxPrealarmPct: 102,
     tripFluxRatePctS: 5, tripActuationS: 0.35,
@@ -363,12 +367,23 @@
   function gvLatentHeatJkg(pressureBar) {
     return C.gvLatentHeatNominalJkg*latentHeatJkg(pressureBar)/latentHeatJkg(C.steamPressureBar);
   }
-  function accumulatorFlowKgS(pressureBar,waterKg) {
+  function accumulatorFlowKgS(pressureBar,waterKg,previousFlowKgS=null,dt=0) {
     const gas0=C.accumulatorVolumeM3-C.accumulatorKgPerLoop/C.risWaterDensityKgM3;
     const gas=Math.max(gas0,C.accumulatorVolumeM3-Math.max(0,waterKg)/C.risWaterDensityKgM3);
     const nitrogenBar=C.accumulatorPressureBar*(gas0/gas)**C.accumulatorPolytropicExponent;
-    const flow=waterKg>0?Math.sqrt(2*Math.max(0,nitrogenBar-pressureBar)*1e5
+    const deltaPa=(nitrogenBar-pressureBar)*1e5;
+    let flow=waterKg>0?Math.sqrt(2*Math.max(0,deltaPa)
       *C.risWaterDensityKgM3/C.accumulatorResistanceM4):0;
+    if(waterKg>0&&previousFlowKgS!==null&&dt>0){
+      // (L/A) dq/dt = ΔP − (K/A²) q|q|/(2ρ), q massique en kg/s.
+      // Longueur équivalente déduite du volume de ligne et du diamètre.
+      // Pas implicite : stable même lorsque la contre-pression augmente.
+      const area=Math.PI*C.accumulatorPipeDiameterM**2/4;
+      const inertia=C.accumulatorLineWaterM3/(area*area);
+      const a=dt*C.accumulatorResistanceM4/(2*C.risWaterDensityKgM3);
+      const rhs=Math.max(0,inertia*Math.max(0,previousFlowKgS)+dt*deltaPa);
+      flow=2*rhs/(inertia+Math.sqrt(inertia*inertia+4*a*rhs));
+    }
     return {nitrogenBar,flowKgS:flow};
   }
   function ptLimits(tempC) {
@@ -741,7 +756,7 @@
       reliefKgS: 0, reliefStages: [false,false,false],reliefStageKgS:[0,0,0],
       reliefAutoArmed:[false,false,false],reliefAutoDemandAt:[null,null,null],
       reliefAutoOpeningPct:[0,0,0],reliefOpeningPct:[0,0,0],
-      risMpKgS: 0, risBpKgS: 0, accumulatorKgS: 0,
+      risMpKgS: 0, risBpKgS: 0, risPumpSpeedFraction: 0, accumulatorKgS: 0,
       risDeliveredKgS: 0,risDeliveredMpKgS:0,risDeliveredBpKgS:0,risDeliveredAccumulatorKgS:0,
       risCoolingMW: 0, risTankRemainingKg: C.risTankVolumeM3*C.risWaterDensityKgM3,
       accumulatorsKg: Array(4).fill(C.accumulatorKgPerLoop),
@@ -1265,15 +1280,22 @@
     }
   }
 
-  function risPumpCapacity(s,u,p=s.pressureBar) {
+  function risPumpsReady(s,u) {
     const sourceReady = (u.risSourceMode==="recirculation"?s.sumpKg:s.risTankRemainingKg) > 0;
     const voltageReady = !s.lossOfVoltage || s.time-s.voltageLostAt >= C.dieselStartS;
-    const enabled = s.risEnabled && u.risPumpMode!=="off"
+    return s.risEnabled && u.risPumpMode!=="off"
       && (u.risPumpMode==="on"||s.risAt !== null) && sourceReady && voltageReady;
-    const mpOne = p >= 120 ? 0 : p >= 40 ? (120-p) : 80+Math.max(0,40-p);
-    const bpOne = p >= 40 ? 0 : 9*(40-p);
-    let mp=enabled ? mpOne*u.mpTrainEnabled.filter(Boolean).length*u.risMpScale : 0;
-    let bp=enabled ? bpOne*u.bpTrainEnabled.filter(Boolean).length*u.risBpScale : 0;
+  }
+  function risPumpCapacity(s,u,p=s.pressureBar) {
+    // Lois d'affinité Q∝N, H∝N² appliquées aux courbes d'étude existantes.
+    // À pleine vitesse les courbes MP/BP ne changent pas. Une pompe BP
+    // peut tourner vanne de non-retour fermée au-dessus de sa HMT.
+    const speed=risPumpsReady(s,u)?s.risPumpSpeedFraction:0;
+    const equivalentPressure=speed>0?p/(speed*speed):Infinity;
+    const mpOne=speed*Math.max(0,120-equivalentPressure);
+    const bpOne=speed*9*Math.max(0,40-equivalentPressure);
+    let mp=mpOne*u.mpTrainEnabled.filter(Boolean).length*u.risMpScale;
+    let bp=bpOne*u.bpTrainEnabled.filter(Boolean).length*u.risBpScale;
     const pumped = Math.min(mp+bp,
       (u.risSourceMode==="recirculation"?s.sumpKg:s.risTankRemainingKg)/0.1);
     if (pumped < mp+bp) {
@@ -1584,7 +1606,9 @@
     ...Array.from({length:6},(_,i)=>`fluxDetectors6.${i}`),
     ...Array.from({length:4},(_,i)=>['secondaryBreakAreaCm2','secondaryBreakKgS',
       'secondaryBreakReleasedKg','secondaryBreakEnergyJ','waterMassRateKgS']
-      .map(k=>`gv.${i}.${k}`)).flat()
+      .map(k=>`gv.${i}.${k}`)).flat(),
+    'risPumpSpeedFraction',
+    ...Array.from({length:4},(_,i)=>[`accumulatorsKg.${i}`,`accumulatorNitrogenBar.${i}`,`accumulatorFlowsKgS.${i}`]).flat()
   ];
   function historyPoint(model) {
     const s=model.state;
@@ -1727,6 +1751,8 @@
     s.fuelC=clamp(s.fuelC+fuelDelta,20,3000);
 
     // Brèche primaire, RIS à pression variable et transit des volumes injectés.
+    s.risPumpSpeedFraction=risPumpsReady(s,u)
+      ? Math.min(1,s.risPumpSpeedFraction+dt/C.risPumpStartS):0;
     const hydraulicPressureBar=primaryHydraulicPressure(model,dt,coreTransferMW);
     s.breakDensityKgM3=liquidWaterDensityKgM3(s.tavgC,hydraulicPressureBar);
     s.breakKgS=breakFlowKgS(s,hydraulicPressureBar);
@@ -1735,16 +1761,14 @@
     s.easCoolingMW=0;coolRisSump(s,dt);
     let accumPump=0;
     for(let i=0;i<4;i++) {
-      const gas=accumulatorFlowKgS(hydraulicPressureBar,s.accumulatorsKg[i]);
-      s.accumulatorNitrogenBar[i]=gas.nitrogenBar;
+      const gas=accumulatorFlowKgS(hydraulicPressureBar,s.accumulatorsKg[i],s.accumulatorFlowsKgS[i],dt);
       const target=s.risEnabled&&s.risDemandAt!==null?gas.flowKgS:0;
-      // Inertie hydraulique d'étude (1 s) : pas de commutation tout ou rien.
-      s.accumulatorFlowsKgS[i]+=(target-s.accumulatorFlowsKgS[i])*clamp(dt,0,1);
       // Réduction progressive en fin de réserve (sortie qui se découvre),
       // plutôt que délivrer le dernier paquet à plein débit puis couper net.
-      const q=Math.min(s.accumulatorFlowsKgS[i],s.accumulatorsKg[i]
+      const q=Math.min(target,s.accumulatorsKg[i]
         /Math.max(dt,C.accumulatorEndDrainTauS));
       s.accumulatorFlowsKgS[i]=q;accumPump+=q;s.accumulatorsKg[i]-=q*dt;
+      s.accumulatorNitrogenBar[i]=accumulatorFlowKgS(hydraulicPressureBar,s.accumulatorsKg[i]).nitrogenBar;
     }
     s.accumulatorKgS=accumPump;
     const recirculation=u.risSourceMode==="recirculation";
@@ -2121,7 +2145,7 @@
       saturationC:saturationTemperatureC(s.pressureBar),risCoreKgS:s.risCoreKgS,
       accumulatorsKg:[...s.accumulatorsKg],accumulatorNitrogenBar:[...s.accumulatorNitrogenBar],
       accumulatorFlowsKgS:[...s.accumulatorFlowsKgS],accumulatorKgS:s.accumulatorKgS,
-      risMpKgS:s.risMpKgS,risBpKgS:s.risBpKgS,risSourceMode:u.risSourceMode,
+      risMpKgS:s.risMpKgS,risBpKgS:s.risBpKgS,risPumpSpeedFraction:s.risPumpSpeedFraction,risSourceMode:u.risSourceMode,
       risTankRemainingKg:s.risTankRemainingKg,sumpKg:s.sumpKg,sumpTempC:s.sumpTempC,
       sumpBoronPpm:s.sumpBoronPpm,easCoolingMW:s.easCoolingMW,risPumpMode:u.risPumpMode,
       rra:rraConditions(s),rraConnected:s.rraConnected,endState:s.endState,endReason:s.endReason,
