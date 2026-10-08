@@ -290,9 +290,30 @@ V_liquide(P, énergie) + V_vapeur_de_détente(P, énergie)
 
 La poche équivalente représente l'effet piston : une insurge ou une dilatation la comprime, une outsurge la détend. `n = 1,2` est une hypothèse polytropique d'étude. Une fois le volume libre nul, le terme de poche disparaît ; la dépendance de `rho` à P gouverne la pression du circuit plein d'eau. L'algorithme utilise une recherche encadrée avec Newton, sans changer le sous-pas de 0,1 s à ×200.
 
-La pression thermique de référence évolue avec le déplacement d'eau, le travail de compression, les chaufferettes, l'aspersion et l'échange passif. La compliance d'équilibre comprend celle de l'eau, celle de la poche et une contribution de flash/condensation : `C_phase = C_thermique × (dTsat/dP) / Lv × (1/rho_vapeur − 1/rho_liquide_saturé)`. La capacité thermique participante vaut **120 MJ/°C au niveau nominal**, varie avec le niveau PZR et s'annule quand la poche disparaît. La relaxation entre compression rapide et pression thermique a une constante de **2 s**. Ces deux nombres sont des hypothèses du modèle réduit, pas des caractéristiques qualifiées d'un pressuriseur.
+La réponse rapide comprime ou détend la poche suivant la loi polytropique. La réponse plus lente tient compte de la vapeur saturée, de l'eau chaude et des parois qui peuvent fournir ou absorber la chaleur d'un changement de phase. Une insurge comprime la vapeur ; une outsurge la détend, puis une partie de l'eau chaude se vaporise pour amortir la chute de pression. L'eau d'insurge ne refroidit pas instantanément toute la réserve chaude : la stratification reste représentée par une capacité participante effective. Ces mécanismes sont décrits et comparés à des essais dans la [référence publique sur les transitoires de pressuriseur, chap. 2](https://publications.vtt.fi/pdf/tiedotteet/2006/T2339.pdf).
+
+La pression thermique de référence utilise **la même compliance** pour le déplacement et pour les chaufferettes/aspersions :
+
+```text
+L = 1/rho_vapeur − 1/rho_liquide_saturé
+C_phase = C_thermique × (dTsat/dP) / Lv × L
+C_eq = C_liquide_CPP + C_vapeur_saturée + C_expansion_eau_chaude + C_phase
+ΔP_thermique = ΔV / C_eq + (Q_net / Lv) × L × Δt / C_eq
+```
+
+`C_eq` est en m³/bar ; `Q_net` est ici en W et `Lv` en J/kg. `C_vapeur_saturée = V_libre / rho_vapeur × d(rho_vapeur)/dP` utilise la variation réelle de densité saturée, et non `V/(nP)`, réservé à la compression rapide. Le terme d'expansion de l'eau chaude est négatif : l'élévation de Tsat augmente son volume. La capacité participante vaut **156 MJ/°C au niveau nominal**, varie avec le niveau PZR et disparaît avec la poche. Ce calage correspond au gradient de pleine aspersion documenté, environ −0,15 bar/s. Au nominal, `C_eq ≈ 0,988 m³/bar` et le gain thermique vaut **0,00851 bar/(MW·s)**. Quand le CPP est plein, ces termes de phase s'annulent : la pression est alors déterminée par la compressibilité du liquide.
+
+La relaxation entre compression rapide et réponse saturée garde une constante de **2 s**. La capacité participante et cette constante sont des hypothèses du modèle réduit, pas des caractéristiques qualifiées d'un pressuriseur. Le travail de compression n'est plus ajouté une seconde fois comme une source externe de chaleur ; chaufferettes et aspersion entrent dans le bilan thermique seulement, sans correction thermique supplémentaire de la poche rapide.
 
 Le bilan thermique conserve son calage nominal (288 kW, deux aspersions continues de 0,230 m³/h) et le gradient de pleine aspersion voisin de −0,15 bar/s une fois la réponse établie. Cette modélisation ne résout pas séparément les masses et enthalpies des couches chaude/froide du PZR : la poche de pilotage reste un volume compressible équivalent, sa masse propre n'est pas ajoutée au stock suivi. La masse « vapeur de détente » affichée correspond à celle du bilan sensible/latent du CPP. Ce modèle reste pédagogique.
+
+##### Vérification des rampes rapides
+
+Une rampe **50 points de % PN par minute**, entre 100 et 15 %, dure **102 s**. Le programme thermique correspondant passe de 306,5 à **298,595 °C**. À masse constante et 155 bar, le volume liquide passe de 377,56 à 368,89 m³ : environ **8,67 m³** quittent le PZR. Le phénomène s'inverse au réchauffement.
+
+Le banc de la boucle pression impose cette trajectoire de température et exécute les blocs réels de la solution CC-RÉGUL, avec les limites et vitesses des organes. Les deux rampes sont récupérées : pression voisine de **146–159 bar**, puis retour à moins de **1 bar de 155** après 600 s de palier, sans recours aux soupapes. Ce banc isole le PZR ; il ne démontre pas que la température du cœur suit instantanément ce programme.
+
+L'essai global avec les solutions complètes montre le réchauffement initial lors de la baisse turbine, puis la contraction pendant le rattrapage neutronique. La descente rapide depuis le nominal atteint environ **160,2 bar**, puis **143,5 bar**, et la pression est récupérée. Le comportement de remontée dépend de l'état de départ : avec la G3 conservée et la vitesse GCP de 72 pas/min, passer de 302,5 à 780 pas demande au minimum **398 s**, contre 102 s pour la rampe turbine. Depuis un état bas préparé à température de référence et pression nominale, R peut buter à 260 pas et une PLIN >435 W/cm déclenche l'AAR alors que la pression remonte déjà vers 145 bar. Après un long palier avec xénon conservé, un autre essai récupère 155,7 bar sans AAR, mais R reste en butée et la température n'a pas retrouvé sa référence. **La récupération de pression ne vaut donc pas validation de l'ensemble de la manœuvre à 50 %/min.** G3, efficacités de groupes, coefficients modérateur/Doppler et protections PLIN restent inchangés.
 
 #### Soupapes et aspersion
 

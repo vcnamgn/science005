@@ -210,7 +210,10 @@ test('aspersion ouverte : le débit et le refroidissement abaissent la pression'
   assert.ok(Math.abs(m.state.sprayPct-100)<0.1);
   const pressureAtFullOpening=m.state.pressureBar;
   E.advance(m, 1);
-  assert.ok(m.state.pressureBar-pressureAtFullOpening<-.08,'réponse thermique progressive');
+  // La réponse saturée relaxe sur 2 s : à la première seconde après
+  // pleine ouverture, elle n'a pas encore atteint le gradient établi.
+  const firstDrop=pressureAtFullOpening-m.state.pressureBar;
+  assert.ok(firstDrop>.02&&firstDrop<.15,'baisse progressive avant le régime établi');
   E.advance(m,12);
   const settled=m.state.pressureBar;E.advance(m,1);
   assert.ok(Math.abs(m.state.pressureBar-settled+.15)<.02,'gradient établi proche de −0,15 bar/s');

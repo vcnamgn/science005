@@ -30,6 +30,8 @@ const notes={
   saturatedWaterDensities:'Densités liquide/vapeur saturées en kg/m³ à partir de T en °C : IAPWS SR1-86(1992).',
   rcvPumpCapacityM3h:'Capacité de charge à la pression primaire en bar : 44 m³/h à 177 bar, zéro à 180 bar ; parabole et plafond 60 m³/h d’étude.',
   solvePrimaryPressure:'Recherche P (bar) à volume CPP fini : eau compressible, vapeur de détente, poche polytropique et relaxation vers la pression thermique optionnelle ; lecture seule.',
+  pzrEquilibriumResponse:'Retourne la compliance d’équilibre en m³/bar et le gain thermique en bar/(MW·s), depuis l’état précédent, le volume libre en m³ et le niveau PZR en %. Vapeur saturée, liquide compressible et flash ; lecture seule.',
+  advancePrimaryPressure:'Avance le bilan de pression PZR sur dt en secondes, depuis masse kg, énergie J, chaleur MW et rejet vapeur kg/s. Retourne pression réalisée et référence thermique en bar, déplacement m³ et coefficients, sans modifier les entrées.',
   primaryMassBalance:'Expose les apports arrivés et sorties réalisés en kg/s, leurs équivalents liquides en m³/h, le solde et les variations des stocks liquide/vapeur ; lecture seule.',
   latentHeatJkg:'Chaleur latente primaire, J/kg ; interpolation tabulée selon pression absolue en bar.',
   gvThermalCapacityJk:'Capacité thermique secondaire, J/°C : eau en kg plus contribution métallique constante.',
@@ -180,8 +182,9 @@ function renderMarkdown(markdown){
 const body=renderMarkdown(fs.readFileSync(path.join(root,'docs/CONCEPTION.md'),'utf8'));
 // La note demeure la source unique des explications dans l'onglet Modèle.
 const chapterLabels=['Présentation','Architecture','Données et unités','Horloge','Lois physiques',
-  'Contrôle-commande','Liaisons et mesures','États et incidents','Sauvegardes','Maintenance','Références'];
+  'Contrôle-commande','Liaisons et mesures','États et incidents','Sauvegardes','Maintenance','Certificats','Références'];
 const chapters=[...body.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>([\s\S]*?)(?=<h2 |$)/g)];
+if(chapters.length!==chapterLabels.length)throw new Error('Libellés des chapitres Modèle à synchroniser.');
 const tiers=JSON.parse(fs.readFileSync(path.join(root,'scripts/cc-solution-tiers.json'),'utf8'));
 const codes=mode=>Object.values(tiers[mode]).map(t=>`<tr><td>${htmlEscape(t.label)}</td><td><code dir="ltr">${t.reverseCode}</code></td></tr>`).join('');
 const detailBody=chapters.map(([,id,title,content],i)=>{

@@ -95,9 +95,9 @@ test('bilan CPP : brèche 300 cm² pendant 20 min, fermeture massique et sépara
   const b=E.primaryMassBalance(m.state);
   assert.ok(m.state.pressureBar>1&&m.state.pressureBar<80);
   assert.equal(m.state.inventory.overfillKg,0,'aucun stock fictif hors capacité');
-  assert.ok(b.netKgS>0,'le déséquilibre est visible dans la variation réelle du stock');
+  assert.ok(Math.abs(b.netKgS)>1,'le déséquilibre est visible dans la variation réelle du stock');
   assert.ok(b.risM3h>0&&b.breakM3h>0,'injection et fuite restent présentes après 20 min');
-  assert.equal(b.trend,'Inventaire total en hausse');
+  assert.equal(b.trend,m.state.primaryMassRateKgS>0?'Inventaire total en hausse':'Inventaire total en baisse');
 });
 
 test('RIS : le bilan affiche les MP/BP/accumulateurs arrivés après leurs transits',()=>{

@@ -5,7 +5,8 @@
   else root.CenturionState=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-pzr-v2";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-pzr-v3";
+  const COMPATIBLE_REVISION="20261008-pzr-v2";
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
@@ -126,10 +127,13 @@
       raw=JSON.parse(raw);
     }
     checkJson(raw);
-    if(raw.format!==FORMAT||raw.version!==VERSION||![REVISION,LEGACY_REVISION].includes(raw.engineRevision))
+    if(raw.format!==FORMAT||raw.version!==VERSION||![REVISION,COMPATIBLE_REVISION,LEGACY_REVISION].includes(raw.engineRevision))
       throw new Error("Ce fichier n'est pas une sauvegarde d'état Centurion compatible.");
     raw=clone(raw);
     if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
+    // Même schéma physique que v2 : préserver tous les stocks et mémoires,
+    // la nouvelle réponse saturée s'appliquera à la reprise de l'horloge.
+    if(raw.engineRevision===COMPATIBLE_REVISION)raw.engineRevision=REVISION;
     validateModel(E,raw.model);
     for(const mode of ["regul","protect"])validateEditor(raw.editors?.[mode],mode);
     if(!raw.ui||![1,5,20,50,200].includes(raw.ui.speed)

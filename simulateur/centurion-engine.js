@@ -101,7 +101,10 @@
     pzrPolytropicExponent: 1.2, pzrCondensationTauS: 2, primaryPressureMaxBar: 220,
     // Capacité thermique effective d'étude du liquide chaud et des parois
     // participant au flash/à la condensation, au niveau nominal de 42 %.
-    pzrPhaseHeatCapacityJk: 120e6,
+    // Recalage du modèle réduit sur -0,15 bar/s à pleine aspersion :
+    // eau chaude participante + parois, sans assimiler cette capacité
+    // effective à la seule masse liquide géométrique du PZR.
+    pzrPhaseHeatCapacityJk: 156e6,
     breakCriticalFluxKgM2S: 25000,
     primaryDensityKgM3: 720, risWaterDensityKgM3: 1000,
     risInjectionTempC: 20, risBoronPpm: 2500, risTankVolumeM3: 2315,
@@ -259,8 +262,11 @@
     const nominalFree=.58*CPP_PZR_VOLUME;
     // Conversion thermique effective conservée au nominal (-0,15 bar/s
     // à pleine aspersion). La réponse se raidit lorsque la poche disparaît.
-    const heatVolume=nominalFree/(C.pzrPolytropicExponent*C.primaryPressureBar)
-      *C.pressureHeatGainBarPerMWs*pzrHeatMW*dt;
+    // Avec une pression thermique fournie, chaufferettes et aspersion sont
+    // déjà dans ce bilan ; la poche rapide reçoit seulement le déplacement.
+    const heatVolume=thermalPressureBar===null
+      ? nominalFree/(C.pzrPolytropicExponent*C.primaryPressureBar)
+        *C.pressureHeatGainBarPerMWs*pzrHeatMW*dt : 0;
     const pocket=Math.max(0,free+heatVolume);
     // Relaxation vers la pression thermique de la poche : représentation
     // réduite de la condensation/évaporation, seulement si une poche subsiste.
@@ -284,6 +290,45 @@
       p=Number.isFinite(next)&&next>lo&&next<hi?next:(lo+hi)/2;
     }
     return (lo+hi)/2;
+  }
+  function pzrEquilibriumResponse(oldState,freeM3,levelPct) {
+    // Réponse lente saturée, distincte de la compression rapide polytropique.
+    // Même compliance pour le déplacement d'eau et les apports de chaleur.
+    const p=oldState.pressureBar,probe=Math.min(C.primaryPressureMaxBar,p+.01);
+    const dp=probe-p||.01;
+    const sat=saturationTemperatureC(p),nextSat=saturationTemperatureC(p+dp);
+    const density=saturatedWaterDensities(sat),nextDensity=saturatedWaterDensities(nextSat);
+    const phaseAvailability=clamp(freeM3/.4,0,1);
+    const liquidCompliance=(oldState.massKg-oldState.vaporKg)
+      *(1/liquidWaterDensityKgM3(oldState.tempC,p)
+        -1/liquidWaterDensityKgM3(oldState.tempC,p+dp))/dp;
+    // À saturation, la masse volumique de vapeur change avec P et Tsat.
+    // V/(nP) décrit la compression rapide ; il ne convient pas à cette
+    // réponse d'équilibre et sous-estimait sa souplesse.
+    const steamCompliance=Math.max(0,freeM3)*(nextDensity.vapor-density.vapor)/(dp*density.vapor);
+    const hotWaterExpansion=-CPP_PZR_VOLUME*clamp(levelPct,0,100)/100*density.liquid
+      *(1/nextDensity.liquid-1/density.liquid)/dp*phaseAvailability;
+    const phaseCapacity=C.pzrPhaseHeatCapacityJk*clamp(levelPct/42,.1,2.38)*phaseAvailability;
+    const latentVolume=1/density.vapor-1/density.liquid;
+    const phaseCompliance=phaseCapacity*(nextSat-sat)/dp/latentHeatJkg(p)*latentVolume;
+    const complianceM3Bar=Math.max(.001,liquidCompliance+steamCompliance+hotWaterExpansion+phaseCompliance);
+    return {complianceM3Bar,
+      heatGainBarPerMWs:phaseAvailability*latentVolume*1e6/latentHeatJkg(p)/complianceM3Bar,
+      liquidCompliance,steamCompliance,hotWaterExpansion,phaseCompliance,phaseCapacityJk:phaseCapacity};
+  }
+  function advancePrimaryPressure(before,massKg,energyJ,pzrHeatMW,reliefSteamKgS,thermalPressureBar,levelPct,dt) {
+    const oldVolume=(before.massKg-before.vaporKg)/liquidWaterDensityKgM3(before.tempC,before.pressureBar)
+      +before.vaporKg/saturatedWaterDensities(saturationTemperatureC(before.pressureBar)).vapor;
+    const displacementM3=primaryPhaseAt(massKg,energyJ,before.pressureBar).volumeM3-oldVolume;
+    const response=pzrEquilibriumResponse(before,Math.max(0,CPP_TOTAL_VOLUME-oldVolume),levelPct);
+    // Le travail de compression est déjà présent dans le déplacement et
+    // la loi polytropique. Ne pas l'ajouter encore comme chauffage externe.
+    const nextThermalPressureBar=clamp(thermalPressureBar
+      +displacementM3/response.complianceM3Bar
+      +response.heatGainBarPerMWs*(pzrHeatMW
+        -reliefSteamKgS*latentHeatJkg(before.pressureBar)/1e6)*dt,1,C.primaryPressureMaxBar);
+    return {pressureBar:solvePrimaryPressure(before,massKg,energyJ,pzrHeatMW,dt,nextThermalPressureBar),
+      thermalPressureBar:nextThermalPressureBar,displacementM3,response};
   }
   // Chaleur latente : interpolation de valeurs vapeur saturée (kJ/kg).
   // Cp effectif reste celui du modèle nominal ; ce n'est pas une EOS diphasique.
@@ -1679,27 +1724,10 @@
     // une hypothèse, distincte du débit d'aspersion documenté.
     const pzrNetHeatMW=(s.heaterKW-C.pzrPassiveTransferKW-sprayCoolingKW-s.auxiliarySprayCoolingKW)/1000;
     const before={massKg:oldMass,vaporKg:oldVaporMass,tempC:oldTemp,pressureBar:pBefore};
-    const oldVolume=(oldMass-oldVaporMass)/liquidWaterDensityKgM3(oldTemp,pBefore)
-      +oldVaporMass/saturatedWaterDensities(saturationTemperatureC(pBefore)).vapor;
-    const displacement=primaryPhaseAt(s.primaryMassKg,netEnergy,pBefore).volumeM3-oldVolume;
-    const compressionWorkMW=pBefore*1e5*displacement/dt/1e6;
-    const free=Math.max(0,CPP_TOTAL_VOLUME-oldVolume);
-    const liquidRho=liquidWaterDensityKgM3(oldTemp,pBefore);
-    const liquidCompliance=(oldMass-oldVaporMass)*(1/liquidRho
-      -1/liquidWaterDensityKgM3(oldTemp,pBefore+.01))/.01;
-    const densities=saturatedWaterDensities(saturationTemperatureC(pBefore));
-    const phaseCapacity=C.pzrPhaseHeatCapacityJk
-      *clamp(s.pzrLevelPct/42,.1,2.38)*clamp(free/.4,0,1);
-    const phaseCompliance=phaseCapacity*(saturationTemperatureC(pBefore+.01)
-      -saturationTemperatureC(pBefore))/.01/latentHeatJkg(pBefore)
-      *(1/densities.vapor-1/densities.liquid);
-    const equilibriumCompliance=Math.max(.001,liquidCompliance
-      +free/(C.pzrPolytropicExponent*pBefore)+phaseCompliance);
-    s.pzrThermalPressureBar=clamp(s.pzrThermalPressureBar
-      +displacement/equilibriumCompliance
-      +C.pressureHeatGainBarPerMWs*(pzrNetHeatMW+compressionWorkMW
-        -s.reliefSteamKgS*latentHeatJkg(pBefore)/1e6)*dt,1,C.primaryPressureMaxBar);
-    s.pressureBar=solvePrimaryPressure(before,s.primaryMassKg,netEnergy,pzrNetHeatMW,dt,s.pzrThermalPressureBar);
+    const pressure=advancePrimaryPressure(before,s.primaryMassKg,netEnergy,pzrNetHeatMW,
+      s.reliefSteamKgS,s.pzrThermalPressureBar,s.pzrLevelPct,dt);
+    s.pzrThermalPressureBar=pressure.thermalPressureBar;
+    s.pressureBar=pressure.pressureBar;
     s.pzrPistonBarS=(s.pressureBar-pBefore)/dt;
     s.saturationC=saturationTemperatureC(s.pressureBar);
     // Détente : l'énergie excédant le liquide saturé produit de la vapeur.
@@ -1952,7 +1980,7 @@
   }
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
     CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,
-    cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,
+    cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,pzrEquilibriumResponse,advancePrimaryPressure,
     latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
     instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,
     evolveAxialPoisons,

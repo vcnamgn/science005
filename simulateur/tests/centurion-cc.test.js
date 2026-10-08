@@ -170,6 +170,41 @@ function editor(mode='protect',fullGraph=false) {
   return {cc,model};
 }
 
+test('PZR : les lois CC rattrapent les rampes thermiques 100↔15 à 50 points PN/min',()=>{
+  const m=E.make(),{cc}=editor('regul',true),s=m.state;
+  const mass=s.primaryMassKg,dt=.1;
+  const stats={};
+  function tick(tempC,label){
+    const before={massKg:mass,vaporKg:0,tempC:s.tavgC,pressureBar:s.pressureBar};
+    cc.setSignals(E.controlSignals(m));
+    const outputs=cc.evaluate(dt,true).outputs;
+    s.heaterKW=outputs.pchauffOut.value;
+    s.sprayPct+=Math.max(-5,Math.min(5,outputs.qaspOut.value-s.sprayPct));
+    // Banc de la boucle pression : TMOY est imposée selon le programme
+    // thermique. Ne remplace pas un essai global neutronique/turbine.
+    const load=(tempC-297.2)/9.3,coreMW=E.C.nominalThermalMW*load;
+    const coldC=tempC-coreMW*1e6/(2*E.C.nominalPrimaryFlowKgS*E.C.primaryCpJkgK);
+    const sprayKgS=(250*s.sprayPct/100+.46)*E.liquidWaterDensityKgM3(coldC,s.pressureBar)/3600;
+    const netHeat=(s.heaterKW-E.C.pzrPassiveTransferKW)/1000
+      -sprayKgS*E.C.primaryCpJkgK*(E.saturationTemperatureC(s.pressureBar)-coldC)/1e6;
+    const result=E.advancePrimaryPressure(before,mass,mass*E.C.primaryCpJkgK*tempC,
+      netHeat,0,s.pzrThermalPressureBar,s.pzrLevelPct,dt);
+    s.pressureBar=result.pressureBar;s.pzrThermalPressureBar=result.thermalPressureBar;s.tavgC=tempC;
+    s.inventory=E.cppInventory(mass,tempC,s.pressureBar);s.pzrLevelPct=s.inventory.components.pzr.fillPct;
+    const a=stats[label]??={min:Infinity,max:-Infinity};
+    a.min=Math.min(a.min,s.pressureBar);a.max=Math.max(a.max,s.pressureBar);a.final=s.pressureBar;
+    assert.ok(s.inventory.overfillKg<.001,'aucune masse effacée ou excès géométrique');
+  }
+  for(let i=0;i<102/dt;i++)tick(306.5-7.905*(i+1)*dt/102,'down');
+  for(let i=0;i<600/dt;i++)tick(298.595,'hold15');
+  for(let i=0;i<102/dt;i++)tick(298.595+7.905*(i+1)*dt/102,'up');
+  for(let i=0;i<600/dt;i++)tick(306.5,'hold100');
+  assert.ok(stats.down.min>145&&stats.down.max<161,'contraction rattrapable sans seuil bas pression');
+  assert.ok(stats.up.max<161,'dilatation contrôlée avant les soupapes à 166 bar');
+  assert.ok(Math.abs(stats.hold15.final-155)<1,'pression récupérée par les chaufferettes');
+  assert.ok(Math.abs(stats.hold100.final-155)<1,'pression récupérée par l’aspersion');
+});
+
 test('température : compensation REF-01 à gain statique unitaire, réponse dynamique et pause',()=>{
   const {cc}=editor('regul');
   const source={id:'E',type:'constant',params:{value:3,unit:'°C'}};

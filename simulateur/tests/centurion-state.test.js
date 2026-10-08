@@ -43,6 +43,17 @@ test('état JSON : reprise identique de la brèche, des tuyaux, poisons et inven
   assert.equal(loaded.model.controls.risPumpMode,'off');
 });
 
+test('état PZR v2 : stocks et pression thermique conservés avec le nouveau gain de phase',()=>{
+  const model=E.make();E.advance(model,10);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,model,editors,ui,null);raw.engineRevision='20261008-pzr-v2';
+  const restored=State.read(E,raw);
+  assert.equal(restored.engineRevision,State.REVISION);
+  assert.deepEqual(restored.model,model);
+  assert.equal(raw.engineRevision,'20261008-pzr-v2','la sauvegarde source reste intacte');
+  E.step(model,.1);E.step(restored.model,.1);assert.deepEqual(restored.model,model);
+});
+
 test('état JSON : graphe et mémoires des filtres, intégrateurs et dérivés restaurés',()=>{
   const graph={format:'SimuREP-Regulation',version:1,name:'Test dynamique',nodes:[
     {id:'N1',type:'constant',x:0,y:0,params:{value:2,unit:'pas/min'}},

@@ -28,6 +28,23 @@ test('pompe RCV : 44 m³/h à 177 bar, diminution continue, aucun débit forcé 
   near(blocked.state.rcvPipe.reduce((n,p)=>n+p.massKg,0),pending);
 });
 
+test('équilibre PZR : gain thermique lié au flash, calage de pleine aspersion et aucune phase fictive à CPP plein',()=>{
+  const s=E.make().state;
+  const before={massKg:s.primaryMassKg,vaporKg:0,tempC:s.tavgC,pressureBar:s.pressureBar};
+  const response=E.pzrEquilibriumResponse(before,s.inventory.steamSpaceM3,42);
+  const sprayMW=250*E.liquidWaterDensityKgM3(288.4,155)/3600*6000
+    *(E.saturationTemperatureC(155)-288.4)/1e6;
+  near(response.heatGainBarPerMWs*sprayMW,.15,.001);
+  assert.ok(response.complianceM3Bar>response.liquidCompliance+response.steamCompliance,
+    'le flash ajoute une réserve de volume à la seule compressibilité');
+  const low=E.pzrEquilibriumResponse(before,s.inventory.steamSpaceM3+10,20);
+  assert.ok(low.heatGainBarPerMWs>response.heatGainBarPerMWs,
+    'à volume libre plus grand et réserve chaude réduite, le chauffage adapte son gain');
+  const full=E.pzrEquilibriumResponse(before,0,100);
+  near(full.phaseCompliance,0);near(full.steamCompliance,0);near(full.heatGainBarPerMWs,0);
+  near(full.complianceM3Bar,full.liquidCompliance);
+});
+
 test('piston : ajout de masse et réchauffement compriment la poche, puis la compressibilité de l’eau gouverne',()=>{
   const temp=235,pressure=155,rho=E.liquidWaterDensityKgM3(temp,pressure);
   const capacity=E.cppInventory(1,temp,pressure).capacityM3;
