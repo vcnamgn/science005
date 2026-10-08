@@ -678,6 +678,9 @@
       steamValvePct: 100, gctAValvePct: 0,
       turbineSteamKgS: C.nominalSteamKgSPerGV,
       steamKgS: C.nominalSteamKgSPerGV, dumpKgS: 0,
+      secondaryBreakAreaCm2: 0, secondaryBreakKgS: 0,
+      secondaryBreakReleasedKg: 0, secondaryBreakEnergyJ: 0,
+      waterMassRateKgS: 0,
       heatMW: C.nominalPrimaryHeatMW / 4,
       thermalCapacityJk: C.gvHeatCapacityJk,
       thermalEnergyJ: C.gvHeatCapacityJk*C.steamTempC,
@@ -802,6 +805,7 @@
         g3GraphTarget: null, gcpCalibrationPct: 0, gvGraphFeedPct: [null,null,null,null],
         gvManualFeedPct: Array(4).fill(100*C.nominalSteamKgSPerGV/950), gvLevelSetpointPct: 55,
         gvSteamValvePct: Array(4).fill(100),
+        gvSecondaryBreakAreaCm2: Array(4).fill(0),
         asgAvailable: true, asgManual:false,asgTrainEnabled:[false,false,false,false],
         gctAOpeningPressureBar: C.gctAPressureBar,
         manualHeaterKW: C.nominalHeaterKW, manualSprayPct: C.nominalSprayPct,
@@ -965,6 +969,20 @@
       s.breakLoop = u.breakLoop;
       s.breakBranch = u.breakBranch;
       addEvent(s, "incident", `Brèche ${u.breakAreaCm2} cm² sur boucle ${u.breakLoop}, branche ${u.breakBranch}`);
+    } else if (name === "secondaryBreak") {
+      const index=clamp(Math.round(Number(details.gv)||1),1,4)-1;
+      const area=clamp(Number(details.areaCm2)||0,0,2000);
+      u.gvSecondaryBreakAreaCm2[index]=area;
+      s.gv[index].secondaryBreakAreaCm2=area;
+      if(area===0){
+        const gv=s.gv[index];gv.secondaryBreakKgS=0;
+        gv.steamKgS=gv.turbineSteamKgS+gv.dumpKgS;
+        gv.waterMassRateKgS=gv.feedKgS+gv.asgKgS-gv.steamKgS;
+        s.totalSteamKgS=s.gv.reduce((total,g)=>total+g.steamKgS,0);
+      }
+      addEvent(s,"incident",area>0
+        ? `Brèche vapeur secondaire ${area} cm² sur GV ${index+1}`
+        : `Brèche vapeur secondaire du GV ${index+1} isolée`);
     } else if (name === "ejection") {
       s.ejectWorthPcm = clamp(Number(details.worthPcm) || 300, 0, 800);
       addEvent(s, "incident", `Éjection d'une grappe : +${s.ejectWorthPcm} pcm (hypothèse)`);
@@ -1015,19 +1033,23 @@
     s.turbineTrip = true;
     addEvent(s, "protection", text);
   }
-  function stopPrimaryPumps(s,text) {
-    if(s.primaryPumpsStopped)return;
+  function stopPrimaryPumps(s,text,eventType="protection") {
+    if(s.primaryPumpsStopped)return false;
     s.primaryPumpsStopped=true;
     s.primaryPumpStopAt=s.time;s.primaryPumpStopReason=text;
     s.pumpHeatMW=0;s.loops.forEach(loop=>{loop.pumpHeatMW=0;});
-    addEvent(s,"protection",text);
+    addEvent(s,eventType,text);
+    return true;
+  }
+  function tripPrimaryPumps(model) {
+    if(model.state.endState)return false;
+    return stopPrimaryPumps(model.state,"Déclenchement manuel des 4 GMPP","action");
   }
   function requestRis(s, text) {
     if (s.risDemandAt !== null) return;
     s.risDemandAt = s.time;
     addEvent(s, "protection", text);
     requestTrip(s,"AAR : demande d'injection de sécurité");
-    stopPrimaryPumps(s,"Arrêt des GMPP sur IS");
   }
 
   function commandAllRods(model,targetPas) {
@@ -1404,6 +1426,21 @@
     s.reliefKgS=s.reliefStageKgS.reduce((sum,q)=>sum+q,0);
   }
 
+  // Orifice vapeur vers l'atmosphère : approximation gaz parfait isentropique,
+  // débit étranglé ou sous-critique. Cd et gamma sont des paramètres d'étude,
+  // sans prétendre représenter une conduite réelle ou sa détente diphasique.
+  function secondaryBreakFlowKgS(areaCm2,pressureBar,tempC) {
+    if(!(areaCm2>0)||!(pressureBar>1))return 0;
+    const cd=0.7,gamma=1.3,rSteam=461.5;
+    const ratio=1/pressureBar,critical=Math.pow(2/(gamma+1),gamma/(gamma-1));
+    const fluxFactor=ratio<=critical
+      ? Math.sqrt(gamma)*Math.pow(2/(gamma+1),(gamma+1)/(2*(gamma-1)))
+      : Math.sqrt(Math.max(0,2*gamma/(gamma-1)
+        *(Math.pow(ratio,2/gamma)-Math.pow(ratio,(gamma+1)/gamma))));
+    return cd*areaCm2*1e-4*pressureBar*1e5
+      /Math.sqrt(rSteam*(Math.max(20,tempC)+273.15))*fluxFactor;
+  }
+
   function updateGv(s, u, dt) {
     const nominal = C.nominalSteamKgSPerGV;
     if(u.asgAvailable && s.asgAt===null && s.asgDemandAt!==null
@@ -1473,30 +1510,43 @@
       if(asgTarget===0&&gv.asgKgS<0.01)gv.asgKgS=0;
       // La sortie vapeur est limitée par l'eau réellement disponible durant
       // ce pas, y compris les alimentations arrivées ; pas de vapeur fictive à sec.
-      const requestedSteam=gv.turbineSteamKgS+gv.dumpKgS;
+      gv.secondaryBreakAreaCm2=clamp(u.gvSecondaryBreakAreaCm2[gv.index-1],0,2000);
+      gv.secondaryBreakKgS=secondaryBreakFlowKgS(gv.secondaryBreakAreaCm2,gv.pressureBar,oldTempC);
+      const requestedSteam=gv.turbineSteamKgS+gv.dumpKgS+gv.secondaryBreakKgS;
       const availableWaterKg=oldWaterKg+(gv.feedKgS+gv.asgKgS)*dt;
-      const steamScale=requestedSteam>0?Math.min(1,availableWaterKg/(requestedSteam*dt)):1;
-      gv.turbineSteamKgS*=steamScale;gv.dumpKgS*=steamScale;
+      gv.steamLatentJkg=gvLatentHeatJkg(gv.pressureBar);
+      const oldEnergyJ=gvThermalCapacityJk(oldWaterKg)*oldTempC;
+      const incomingJ=(gv.feedKgS*C.secondaryCpJkgK*C.areFeedTempC
+        +gv.asgKgS*C.secondaryCpJkgK*C.asgFeedTempC)*dt;
+      // Ne pas évaporer davantage que l'inventaire et l'énergie disponibles.
+      // La borne à 20 °C n'ajoute ainsi aucune chaleur pour alimenter une fuite.
+      const evaporationBudgetJ=Math.max(0,oldEnergyJ+gv.heatMW*1e6*dt+incomingJ
+        -gvThermalCapacityJk(availableWaterKg)*20);
+      const maxSteamEnergyKg=evaporationBudgetJ
+        /(C.secondaryCpJkgK*Math.max(0,oldTempC-20)+gv.steamLatentJkg);
+      const steamScale=requestedSteam>0
+        ? Math.min(1,availableWaterKg/(requestedSteam*dt),maxSteamEnergyKg/(requestedSteam*dt)) : 1;
+      gv.turbineSteamKgS*=steamScale;gv.dumpKgS*=steamScale;gv.secondaryBreakKgS*=steamScale;
       // Mesure vapeur du GV, également utilisée par l'anticipation ARE.
-      gv.steamKgS=gv.turbineSteamKgS+gv.dumpKgS;
+      gv.steamKgS=gv.turbineSteamKgS+gv.dumpKgS+gv.secondaryBreakKgS;
+      gv.secondaryBreakReleasedKg+=gv.secondaryBreakKgS*dt;
+      gv.secondaryBreakEnergyJ+=gv.secondaryBreakKgS
+        *(C.secondaryCpJkgK*oldTempC+gv.steamLatentJkg)*dt;
       gv.asgCoolingMW=gv.asgKgS*C.secondaryCpJkgK
         *(oldTempC-C.asgFeedTempC)/1e6;
       gv.areCoolingMW=gv.feedKgS*C.secondaryCpJkgK*(oldTempC-C.areFeedTempC)/1e6;
       gv.waterKg = Math.max(0,availableWaterKg-gv.steamKgS*dt);
+      gv.waterMassRateKgS=gv.feedKgS+gv.asgKgS-gv.steamKgS;
       Object.assign(gv, gvLevels(gv.waterKg));
-      gv.steamLatentJkg=gvLatentHeatJkg(gv.pressureBar);
       gv.thermalCapacityJk=gvThermalCapacityJk(gv.waterKg);
       // U = (M_eau*Cp + C_métal)*T. La vapeur emporte Cp*T + Lv,
       // ARE et ASG apportent Cp*T_alimentation. La même chaleur primaire–GV
       // est retirée au primaire et ajoutée ici, une seule fois.
-      const oldEnergyJ=gvThermalCapacityJk(oldWaterKg)*oldTempC;
-      const incomingJ=(gv.feedKgS*C.secondaryCpJkgK*C.areFeedTempC
-        +gv.asgKgS*C.secondaryCpJkgK*C.asgFeedTempC)*dt;
       const outgoingJ=gv.steamKgS*(C.secondaryCpJkgK*oldTempC+gv.steamLatentJkg)*dt;
       const energyJ=oldEnergyJ+gv.heatMW*1e6*dt+incomingJ-outgoingJ;
       gv.tempC = clamp(energyJ/gv.thermalCapacityJk,20,330);
       gv.thermalEnergyJ=gv.thermalCapacityJk*gv.tempC;
-      gv.pressureBar = saturationPressureBar(gv.tempC);
+      gv.pressureBar = Math.max(gv.secondaryBreakAreaCm2>0?1:0,saturationPressureBar(gv.tempC));
       sumHeat += gv.heatMW;
       sumSteam += gv.steamKgS;
       sumTurbineSteam += gv.turbineSteamKgS;
@@ -1531,7 +1581,10 @@
     ...Array.from({length:4},(_,i)=>['waterKg','levelWidePct','levelMetres','feedKgS','feedValvePct',
       'steamKgS','dumpKgS','turbineSteamKgS','steamValvePct','gctAValvePct','heatMW','asgRunning']
       .map(k=>`gv.${i}.${k}`)).flat(),
-    ...Array.from({length:6},(_,i)=>`fluxDetectors6.${i}`)
+    ...Array.from({length:6},(_,i)=>`fluxDetectors6.${i}`),
+    ...Array.from({length:4},(_,i)=>['secondaryBreakAreaCm2','secondaryBreakKgS',
+      'secondaryBreakReleasedKg','secondaryBreakEnergyJ','waterMassRateKgS']
+      .map(k=>`gv.${i}.${k}`)).flat()
   ];
   function historyPoint(model) {
     const s=model.state;
@@ -2126,7 +2179,7 @@
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
     CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,HISTORY_PATHS,historyPoint,
     cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,pzrEquilibriumResponse,advancePrimaryPressure,
-    latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
+    latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,secondaryBreakFlowKgS,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,tripPrimaryPumps,
     instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,TURBINE_MANUAL_RATES,setManualTurbineDemand,
     evolveAxialPoisons,
     g3Target,gcpPositions,rInsertionLimit,rodIntegral,rodsReactivityPcm,

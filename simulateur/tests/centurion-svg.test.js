@@ -62,7 +62,9 @@ test('ensemble des mesures : initialisation, commande manuelle, évolution, AAR/
   const displayed=Number(getBound(rcp,'ris-1-debit').getAttribute('data-current-value'));
   assert.ok(Math.abs(displayed-s.risDeliveredKgS*3.6/4)<1e-9,'RIS : conversion eau à 20 °C, pas eau primaire à chaud');
   assert.equal(rcp.get('texte-20').textContent,'—');
-  assert.equal(rcp.get('gmpp-1').getAttribute('data-pump-state'),'stopped');
+  assert.equal(rcp.get('gmpp-1').getAttribute('data-pump-state'),'running','IS laisse les GMPP en service');
+  E.tripPrimaryPumps(model);verify();
+  assert.equal(rcp.get('gmpp-1').getAttribute('data-pump-state'),'coasting','le déclenchement manuel avec inertie est animé');
   assert.ok(s.coreFlowKgS>0&&s.risCoreKgS>0,'le RIS contribue au débit cœur après désamorçage');
   for(let i=0;i<4;i++)if(s.inventory.loopPriming[i]===0)
     assert.equal(s.loops[i].naturalFlowKgS,0,'la boucle dénoyée ne conserve pas un thermosiphon fictif');

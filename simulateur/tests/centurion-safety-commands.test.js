@@ -2,11 +2,11 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const E=require('../centurion-engine');
 const close=(a,b,t=1e-7)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 
-test('GMPP : AAR seul sans arrêt, IS/perte de tension mémorisées et inertie puis thermosiphon',()=>{
+test('GMPP : AAR et IS sans arrêt, perte de tension mémorisée et inertie puis thermosiphon',()=>{
   const aar=E.make();aar.controls.protectionGraphMode=true;E.initiate(aar,'trip');E.advance(aar,20);
   assert.equal(aar.state.primaryPumpsStopped,false);
   assert.ok(aar.state.loops.every(l=>l.forcedFlowKgS===E.C.nominalPrimaryFlowKgS/4));
-  for(const [order,reason] of [['ris','IS'],['voltage','tension']]){
+  for(const [order,reason] of [['voltage','tension']]){
     const m=E.make();m.controls.protectionGraphMode=true;E.initiate(m,order);
     assert.equal(m.state.primaryPumpStopAt,0);assert.match(m.state.primaryPumpStopReason,new RegExp(reason));
     E.advance(m,10);assert.ok(m.state.loops[0].forcedFlowKgS>0);
@@ -15,7 +15,8 @@ test('GMPP : AAR seul sans arrêt, IS/perte de tension mémorisées et inertie p
     const v=E.instrumentSnapshot(m);assert.equal(v.primaryPumpStopReason,m.state.primaryPumpStopReason);
   }
   const low=E.make();low.state.pressureBar=119;E.step(low,.1);
-  assert.match(low.state.primaryPumpStopReason,/IS/,'le seuil IS, pas un seuil de débit, arrête les GMPP');
+  assert.notEqual(low.state.risDemandAt,null);
+  assert.equal(low.state.primaryPumpsStopped,false,'le seuil IS ne déclenche plus les GMPP');
 });
 
 test('aspersion auxiliaire : 8 m³/h sans HMT, partage RCV, même masse et bore, effet sur pression',()=>{

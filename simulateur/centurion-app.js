@@ -90,7 +90,7 @@
       const remaining=String(Math.max(1,Math.ceil((pendingInitiator.deadline-now)/1000)));
       if(seconds.textContent!==remaining)seconds.textContent=remaining;
     }
-    for(const id of ["startBreak","startEjection","startWithdrawal","startVoltage"])
+    for(const id of ["startBreak","startSecondaryBreak","startEjection","startWithdrawal","startVoltage"])
       $(id).disabled=Boolean(pendingInitiator||model.state.endState);
   }
   function cancelInitiator() {
@@ -273,6 +273,7 @@
     show("boardSteam",`${fmt(g.steamKgS)} kg/s`);
     show("boardGcta",`${fmt(g.dumpKgS,1)} kg/s`);
     show("boardVpu",`${fmt(g.turbineSteamKgS)} kg/s`);
+    show("boardSecondaryBreak",`${fmt(g.secondaryBreakKgS,1)} kg/s`);
     $("boardGcta").classList.toggle("alarm-blink",g.dumpKgS>0.01);
     show("boardElectric",`${fmt(s.electricMW)} MWe`);
     show("boardGvTemp",`${fmt(g.tempC,1)} °C`);
@@ -656,7 +657,8 @@
     $("auxiliarySprayActual").textContent=`${fmt(s.auxiliarySprayM3h,1)} m³/h`;
     $("primaryPumpStatus").textContent=s.primaryPumpsStopped
       ?`${s.primaryPumpStopReason} à ${tLabel(s.primaryPumpStopAt)} · ralentissement ≈ 1 minute, puis thermosiphon`
-      :"GMPP en marche · aucun arrêt sur AAR seul ou baisse de charge";
+      :"GMPP en marche · aucun arrêt sur AAR, IS ou baisse de charge";
+    $("tripPrimaryPumps").disabled=Boolean(s.primaryPumpsStopped||s.endState);
     $("boardPrimaryFlow").title=$("primaryPumpStatus").textContent;
     const grouped=u.allRodsTargetPas!==null;
     if(grouped){$("rManualInput").value=s.rods.R;$("rManualValue").textContent=`${fmt(s.rods.R)} pas extraits`;}
@@ -765,8 +767,20 @@
       `Éjection : ${s.ejectWorthPcm?`+${fmt(s.ejectWorthPcm)} pcm`:"aucune"}`,
       `Retrait R : ${s.withdrawalActive?"actif":"non"}`,
       `Tension : ${s.lossOfVoltage?"perdue":"présente"}`,
+      `GMPP : ${s.primaryPumpsStopped?s.primaryPumpStopReason:"en marche"}`,
+      ...s.gv.filter(g=>g.secondaryBreakAreaCm2>0).map(g=>
+        `Brèche vapeur GV ${g.index} : ${fmt(g.secondaryBreakAreaCm2)} cm² · ${fmt(g.secondaryBreakKgS,1)} kg/s`),
       `Couverture cœur : ${fmt(s.coveragePct,1)} % (indicateur)`
     ].map(x=>`<span>${x}</span>`).join("");
+    const leakingGvs=s.gv.filter(g=>g.secondaryBreakAreaCm2>0);
+    $("secondaryBreakBanner").hidden=leakingGvs.length===0;
+    $("secondaryBreakBanner").textContent=leakingGvs.map(g=>
+      `Brèche vapeur GV ${g.index} · ${fmt(g.secondaryBreakAreaCm2)} cm² · ${fmt(g.secondaryBreakKgS,1)} kg/s`).join(" · ");
+    $("secondaryBreakStatus").innerHTML=s.gv.map(g=>`<div><strong>GV ${g.index}</strong> · ${fmt(g.pressureBar,1)} bar · GE ${fmt(g.levelPct,1)} %<br>`
+      +`${g.secondaryBreakAreaCm2>0?`${fmt(g.secondaryBreakAreaCm2)} cm² · ${fmt(g.secondaryBreakKgS,1)} kg/s`:"Brèche fermée"}`
+      +` · cumul ${fmt(g.secondaryBreakReleasedKg/1000,2)} t<br>`
+      +`Bilan eau : ARE ${fmt(g.feedKgS,1)} + ASG ${fmt(g.asgKgS,1)} − vapeur ${fmt(g.steamKgS,1)}`
+      +` = ${fmt(g.waterMassRateKgS,1)} kg/s</div>`).join("");
     renderBoard();renderInventoryBalance();renderSignals();renderAxial();updateSvg();drawCoreCharts();drawHistory();drawLoadProgramChart();
   }
 
@@ -1282,6 +1296,13 @@
       ["bpA","bpTrainEnabled",0],["bpB","bpTrainEnabled",1]])
       $(id).addEventListener("change",e=>{model.controls[key][i]=e.target.checked;render();});
     $("cancelInitiator").addEventListener("click",cancelInitiator);
+    $("tripPrimaryPumps").addEventListener("click",()=>{E.tripPrimaryPumps(model);render();});
+    $("startSecondaryBreak").addEventListener("click",()=>scheduleInitiator("secondaryBreak",{
+      gv:$("secondaryBreakGv").value,areaCm2:$("secondaryBreakArea").value},"Brèche vapeur secondaire"));
+    $("isolateSecondaryBreak").addEventListener("click",()=>{
+      if(pendingInitiator?.name==="secondaryBreak"
+        &&Number(pendingInitiator.details.gv)===Number($("secondaryBreakGv").value))cancelInitiator();
+      E.initiate(model,"secondaryBreak",{gv:$("secondaryBreakGv").value,areaCm2:0});render();});
     $("startBreak").addEventListener("click",()=>scheduleInitiator("break",{areaCm2:$("breakArea").value,
       loop:$("breakLoop").value,branch:$("breakBranch").value},"Brèche primaire"));
     $("isolateBreak").addEventListener("click",()=>{if(pendingInitiator?.name==="break")cancelInitiator();

@@ -6,9 +6,9 @@
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-breche-v4";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-gv-breches-v5";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
@@ -52,6 +52,13 @@
     range(u.breakAreaCm2,0,2000,"Section de brèche");
     if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
       throw new Error("La brèche physique et sa commande sont incohérentes.");
+    s.gv.forEach((g,i)=>{
+      range(u.gvSecondaryBreakAreaCm2[i],0,2000,`Section de brèche GV ${i+1}`);
+      if(g.secondaryBreakAreaCm2!==u.gvSecondaryBreakAreaCm2[i])
+        throw new Error(`La brèche vapeur du GV ${i+1} et sa commande sont incohérentes.`);
+      for(const key of ["secondaryBreakKgS","secondaryBreakReleasedKg","secondaryBreakEnergyJ"])
+        range(g[key],0,1e15,`GV ${i+1}.${key}`);
+    });
     for(const name of E.ROD_NAMES)range(s.rods[name],0,260,`Position ${name}`);
     if(!E.TURBINE_MANUAL_RATES.includes(u.manualTurbineRatePctMin))throw new Error("Pente PTUR invalide.");
     if(u.manualTurbineTargetPct!==null)range(u.manualTurbineTargetPct,0,110,"Cible PTUR manuelle");
@@ -141,10 +148,25 @@
       if(raw.model.controls.manualTurbineTargetPct===undefined)raw.model.controls.manualTurbineTargetPct=null;
       if(raw.model.controls.manualTurbineRatePctMin===undefined)raw.model.controls.manualTurbineRatePctMin=5;
     }
+    const oldRevision=raw.engineRevision!==REVISION;
     if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
-    // Schéma physique inchangé : préserver les stocks et tuyaux. Le nouveau
-    // couplage hydraulique/phase s'applique à la reprise, sans réinitialisation.
-    if(COMPATIBLE_REVISIONS.includes(raw.engineRevision))raw.engineRevision=REVISION;
+    if(oldRevision){
+      // Ajouter seulement les nouvelles mesures secondaires. Stocks, tuyaux
+      // et arrêt GMPP déjà mémorisé restent ceux de la partie enregistrée.
+      const migrateGv=g=>{
+        for(const key of ["secondaryBreakAreaCm2","secondaryBreakKgS",
+          "secondaryBreakReleasedKg","secondaryBreakEnergyJ"])
+          if(g[key]===undefined)g[key]=0;
+        if(g.waterMassRateKgS===undefined)g.waterMassRateKgS=g.feedKgS+g.asgKgS-g.steamKgS;
+      };
+      if(raw.model.controls.gvSecondaryBreakAreaCm2===undefined)
+        raw.model.controls.gvSecondaryBreakAreaCm2=Array(4).fill(0);
+      raw.model.state.gv.forEach(migrateGv);
+      for(const r of raw.certificateArchive?.records??[]){
+        r.snapshot.gvAll.forEach(migrateGv);migrateGv(r.snapshot.gvState);
+      }
+      raw.engineRevision=REVISION;
+    }
     validateModel(E,raw.model);
     for(const mode of ["regul","protect"])validateEditor(raw.editors?.[mode],mode);
     if(!raw.ui||![1,5,20,50,200].includes(raw.ui.speed)

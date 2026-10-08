@@ -20,6 +20,8 @@ const modules=[
 ];
 const notes={
   make:'Crée {state, controls}, initialise le régime nominal et recalcule la forme axiale. Aucun DOM requis.',
+  tripPrimaryPumps:'Déclenche les quatre GMPP sur commande manuelle, sans demander AAR/IS. Coupe la chaleur moteur, mémorise le motif et conserve l’inertie hydraulique.',
+  secondaryBreakFlowKgS:'Débit vapeur vers 1 bar : orifice gaz parfait isentropique, étranglé ou sous-critique. Section cm², pression bar absolus, température °C ; résultat kg/s avant limitations du bilan GV.',
   step:'Fait évoluer le modèle sur place ; dt en secondes, borné à 0–0,1. Renvoie state ; reste inactif après une fin de partie.',
   advance:'Répète les pas physiques pendant seconds (s), avec sous-pas au plus 0,1 s. Ne fait pas tourner les graphes CC.',
   instrumentSnapshot:'Construit la projection instrumentale commune ; selectedGv va de 1 à 4. Grandeurs réalisées et conversions pour les vues.',

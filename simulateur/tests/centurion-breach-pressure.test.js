@@ -7,6 +7,7 @@ const totalMass=s=>s.primaryMassKg+s.risTankRemainingKg+s.sumpKg
 function coldPlant(temp=90,full=true){
   const m=E.make(),s=m.state,u=m.controls;
   E.initiate(m,'ris');s.tripAt=0;s.risAt=0;
+  E.tripPrimaryPumps(m);
   s.powerPct=s.previousPowerPct=1e-6;s.precursors.fill(0);
   E.ROD_NAMES.forEach(n=>{s.rods[n]=0;});
   s.tavgC=s.hotC=s.coldC=s.tRicC=temp;

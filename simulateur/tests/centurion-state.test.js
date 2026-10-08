@@ -190,6 +190,20 @@ test('état JSON : fichiers incompatibles ou corrompus rejetés avant remplaceme
   assert.equal(raw.model.state.time,0);
 });
 
+test('état v4 avec certificat : nouvelles mesures GV ajoutées sans tronquer les archives',()=>{
+  const m=E.make(),archive=Cert.createArchive(E);archive.observe(m);
+  const raw=State.write(E,m,{regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))},ui,archive.save());
+  raw.engineRevision='20261008-breche-v4';delete raw.model.controls.gvSecondaryBreakAreaCm2;
+  const trim=g=>{for(const key of ['secondaryBreakAreaCm2','secondaryBreakKgS','secondaryBreakReleasedKg',
+    'secondaryBreakEnergyJ','waterMassRateKgS'])delete g[key];};
+  raw.model.state.gv.forEach(trim);
+  raw.certificateArchive.records.forEach(r=>{r.snapshot.gvAll.forEach(trim);trim(r.snapshot.gvState);});
+  const loaded=State.read(E,raw);assert.deepEqual(loaded.model,m);
+  assert.deepEqual(loaded.certificateArchive,archive.save());
+  const restored=Cert.createArchive(E);restored.restore(loaded.model,loaded.certificateArchive);
+  assert.deepEqual(restored.getRecords(),archive.getRecords());
+});
+
 test('certificat : archive reprise avec ses événements et diagramme P–T autonome',()=>{
   const m=E.make(),archive=Cert.createArchive(E);archive.observe(m);E.initiate(m,'trip');E.advance(m,4);archive.observe(m);
   const other=Cert.createArchive(E);other.restore(m,archive.save());

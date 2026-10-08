@@ -9,6 +9,7 @@ function stoppedPlant(naturalFlow=250) {
   model.controls.gctAOpeningPressureBar=65; // Maintenir une source froide par rejet vapeur.
   model.controls.naturalCirculationKgSPerLoop=naturalFlow;
   E.initiate(model,'ris');
+  E.tripPrimaryPumps(model);
   return model;
 }
 
@@ -182,7 +183,7 @@ test('GCT-A à 10 bar depuis le nominal : coup de froid primaire avant vidange d
   assert.ok(s.totalGvMW>1000,'évacuation primaire–secondaire maintenue');
   assert.ok(s.tripAt!==null,'la hausse de réactivité due au refroidissement reste protégée');
   assert.notEqual(s.risAt,null,'la baisse de pression finit par solliciter l’IS');
-  assert.equal(s.primaryPumpsStopped,true,'les GMPP s’arrêtent sur IS, pas sur l’AAR seul');
+  assert.equal(s.primaryPumpsStopped,false,'les GMPP continuent à fonctionner sur IS');
 });
 
 test('GV : conservation masse/énergie à 10, 65 et 88,6 bar, alimentations et vapeur distinctes',()=>{

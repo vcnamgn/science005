@@ -148,7 +148,7 @@ Les couplages utilisent ainsi des états successifs à l'intérieur du pas. Il n
 
 Un échantillon est enregistré environ chaque seconde simulée ; la mémoire conserve au plus 28 800 échantillons, soit environ 8 h. Les fenêtres de 5 min à 4 h filtrent cette mémoire sans changer le pas physique. Le journal conserve les 240 derniers événements.
 
-L'onglet **Graphique** propose 259 variables : mesures physiques, températures/débits des quatre boucles et GV, actionneurs, stocks d'eau, poisons, composantes de réactivité et les 48 sources transmises aux ateliers CC. Les huit listes historiques sont des présélections modifiables. La recherche accepte nom, repère, nom interne, famille et unité. Une courbe peut être masquée sans être retirée ; couleur, échelle adaptative ou bornes fixes se règlent dans sa ligne. Chaque courbe visible dispose d'un axe de sa couleur, à gauche. Au-delà de la largeur disponible, les axes et courbes se parcourent horizontalement. La limite de 32 courbes simultanées évite une image Canvas excessivement large.
+L'onglet **Graphique** propose 279 variables : mesures physiques, températures/débits des quatre boucles et GV, actionneurs, stocks d'eau, poisons, composantes de réactivité et les 48 sources transmises aux ateliers CC. Les huit listes historiques sont des présélections modifiables. La recherche accepte nom, repère, nom interne, famille et unité. Une courbe peut être masquée sans être retirée ; couleur, échelle adaptative ou bornes fixes se règlent dans sa ligne. Chaque courbe visible dispose d'un axe de sa couleur, à gauche. Au-delà de la largeur disponible, les axes et courbes se parcourent horizontalement. La limite de 32 courbes simultanées évite une image Canvas excessivement large.
 
 L'aperçu montre tout l'historique conservé et une fenêtre de sélection. Glisser les bords règle début/fin ; glisser le centre déplace la fenêtre ; tracer une nouvelle sélection hors de la fenêtre choisit une période. Les champs HH:MM:SS, deux glissières et boutons précédent/suivant offrent aussi une navigation clavier. **Revenir au direct** fait avancer la fenêtre avec la simulation. Une période choisie reste fixe, indépendamment du curseur de lecture.
 
@@ -240,7 +240,7 @@ L'apport de chaque pompe vaut 6 MW tant que son entraînement reste alimenté, i
 
 ### 5.6 Débits primaire, thermosiphon et inventaire
 
-En marche, une GMPP vise le débit nominal de sa boucle. Une baisse turbine ne doit pas diminuer ce débit. Un arrêt mémorisé des GMPP résulte d'une perte de tension ou d'une demande IS ; l'AAR seul ne les arrête pas. Le débit forcé décroît avec une constante de 15 s et est mis à zéro sous 2 % du nominal, soit environ une minute de décélération.
+En marche, une GMPP vise le débit nominal de sa boucle. Une baisse turbine ne doit pas diminuer ce débit. Un arrêt mémorisé des GMPP résulte d'une perte de tension ou du bouton manuel **Déclencher les 4 GMPP**. Ni l'AAR ni l'IS ne les arrêtent. L'IS conserve sa demande d'AAR, les délais RIS et le passage en CIA ; le bouton GMPP ne produit aucun de ces ordres. Il reste accessible avec les régulations actives. La chaleur des quatre moteurs est coupée dès le déclenchement ; le débit forcé décroît avec une constante de 15 s et est mis à zéro sous 2 % du nominal, soit environ une minute de décélération. Le thermosiphon prend ensuite le relais si ses conditions physiques sont réunies.
 
 La circulation naturelle dépend de l'écart thermique primaire–GV, du niveau secondaire, de la couverture cœur et de l'amorçage de la boucle. Elle prend progressivement le relais du débit forcé, autour de 250 kg/s par boucle, au maximum 300 kg/s. Le RIS livré participe au débit cœur ; sur une brèche BF, l'exercice suppose un court-circuit de 50 % de l'injection de la boucle rompue, soit 12,5 % du débit total.
 
@@ -276,7 +276,13 @@ L'échange primaire–GV dépend de l'écart TMOY–température secondaire, du 
 
 Le permanent initial évacue **3 841 MW par les quatre GV**, soit 3 817 MW du cœur et 24 MW des GMPP (960,25 MW par GV). La conductance est recalée sur ces 3 841 MW à TMOY = 306,5 °C et P_GV = 65 bar. Le débit nominal de 530,14 kg/s par GV et le plafond réseau de 1 300 MWe sont conservés ; l'enthalpie effective d'évacuation secondaire est ajustée de 1,8 à **1,81132 MJ/kg**, d'où Lv effectif à 65 bar ≈ 1,66071 MJ/kg. Ce calage ferme les deux bilans au démarrage ; il reste une approximation et ne remplace pas une équation d'état secondaire complète. Le signal PGV, rapporté aux 3 817 MW du cœur, affiche donc 100,63 % PN au nominal.
 
-Le débit vapeur total d'un GV est la somme VPU + GCT-A. Le limiteur turbine plafonne le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.
+Le débit vapeur total d'un GV est la somme VPU + GCT-A + brèche vapeur secondaire éventuelle. Cette somme alimente le capteur et le signal vapeur du GV transmis au CC-RÉGUL, ainsi que les graphiques ; le débit à la brèche est aussi affiché séparément. Le limiteur turbine plafonne uniquement le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.
+
+**Brèches secondaires.** L'initiateur « Brèche vapeur secondaire » sélectionne un GV de 1 à 4 et une section de 0 à 2 000 cm². Le départ conserve le compte à rebours de cinq secondes réelles. La fuite est située côté vapeur du GV vers l'atmosphère ; elle est indépendante de VVP et GCT-A. Plusieurs GV peuvent fuir simultanément, et l'isolation agit seulement sur le GV choisi. Elle ne crée aucun AAR/IS caché : ces ordres restent ceux de CC-PROTECT. Aucun transfert direct de masse primaire n'est ajouté.
+
+`secondaryBreakFlowKgS(A,P,T)` emploie l'approximation d'un orifice isentropique de gaz parfait, étranglé ou sous-critique, avec P absolue, T en kelvins, pression aval de 1 bar, R = 461,5 J/(kg·K), γ = 1,3 et Cd = 0,7. Ces deux derniers coefficients sont des hypothèses d'étude. La transition se fait à `Paval/P = (2/(γ+1))^(γ/(γ−1))` ; au régime étranglé, `q = Cd·A·P/sqrt(R·T)·sqrt(γ)·(2/(γ+1))^((γ+1)/(2·(γ−1)))`. La formulation compressible est décrite par [NASA Glenn, Mass Flow Rate Equations](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/mass-flow-rate-equations/). À 65 bar et environ 281 °C, une section de 300 cm² donne environ 180 kg/s avant limitation par l'inventaire et l'énergie. Il ne s'agit pas d'un débit validé de centrale ; le modèle ne résout ni la tuyauterie ni une détente diphasique.
+
+La vapeur à la brèche emporte `Cp·T + Lv` comme les autres sorties vapeur. Le bilan du GV est `dM/dt = ARE + ASG − VPU − GCT-A − brèche`. Toutes les sorties sont réduites dans la même proportion si l'eau ou l'énergie disponible ne suffit pas ; le plancher thermique de 20 °C ne peut donc pas alimenter artificiellement une fuite. Pour un GV ouvert à l'atmosphère, la pression ne descend pas sous 1 bar ; sous 100 °C, ce plancher représente la communication avec l'air, sans résoudre sa composition. La perte d'enthalpie refroidit le GV, puis le primaire via l'échange commun. Section, débit, masse et énergie cumulées perdues, et solde massique sont tracés par GV et conservés dans la sauvegarde JSON.
 
 La sortie facultative **LIM. TURB.** (`turbineLimitOut`) reçoit un plafond en %, borné à 0–100. Quand le CC-RÉGUL est actif, la consigne turbine admise vaut `min(demande PTUR, plafond)`, pour la conduite manuelle comme pour les programmes de charge. La demande d'origine est conservée ; une remontée du plafond autorise donc la reprise de charge jusqu'à cette demande. Le mouvement turbine garde sa limite de 4 %/s, sauf le mode manuel Instantanée décrit ci-dessous ; l'arrêt turbine prioritaire impose toujours zéro. Le programme thermique et la puissance vue par les GCP suivent la consigne admise ; PTUR reste la mesure de puissance turbine réalisée. Déconnecter la sortie ou désactiver CC-RÉGUL rétablit le plafond de 100 %.
 
@@ -431,7 +437,7 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 | `qchargeOut` | `rcvChargeGraphM3h` | Demande totale de charge 0–60 m³/h, limitée par la courbe Q(P) de la pompe |
 | `turbineLimitOut` | `turbineLimitGraphPct` | Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée |
 | `aarOut` | demande AAR mémorisée | CC-PROTECT actif ; signal ≥0,5 |
-| `risOut` | demande IS mémorisée | CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR et arrêt GMPP |
+| `risOut` | demande IS mémorisée | CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR, sans arrêt GMPP |
 | `asgOut` | demande ASG mémorisée | CC-PROTECT actif ; signal ≥0,5 |
 
 Au retour manuel, le pupitre reprend les positions et débits réalisés. Les glissières désactivées continuent à suivre les valeurs appliquées. PTUR, le décalibrage GCP et la CB restent manuels. La case R en manuel neutralise seulement la sortie R ; son intégrateur est suivi sur la position réelle pour limiter le saut à la reprise.
@@ -439,7 +445,7 @@ Au retour manuel, le pupitre reprend les positions et débits réalisés. Les gl
 ### Arbitrage
 
 1. AAR réalisé : chute de tous les groupes et arrêt turbine ; aucune régulation ni commande de levée normale ne peut relever les grappes.
-2. IS et perte de tension : effets mémorisés, disponibilités et arrêt GMPP ; les manœuvres RIS/ASG prévues restent accessibles.
+2. IS : demande AAR et injection mémorisées, sans arrêt GMPP. Perte de tension ou déclenchement manuel : arrêt GMPP mémorisé ; les manœuvres RIS/ASG prévues restent accessibles.
 3. Commande manuelle de tous les groupes : priorité de manœuvre sur les sorties de position, sans créer d'AAR ni de CIA par elle-même.
 4. Surcharge R manuelle : priorité sur R uniquement.
 5. Sorties CC actives et finies ; puis commandes manuelles de repli.
@@ -505,6 +511,8 @@ La sauvegarde conserve `state` et `controls` intégralement : précurseurs, iode
 L'application fige le temps et attend la fin du pas CC en cours pour obtenir un état cohérent. Le dialogue `centurion-editor-save` / `validate` / `restore` utilise le même raccordement direct ou par messages que les pas physiques. Les deux graphes sont validés avant restauration ; une ancienne réponse de calcul ne peut pas commander la partie rechargée. Un fichier incompatible conserve la partie courante. Un fichier valide est **toujours chargé en pause**, même si les régulations et protections enregistrées étaient actives ; Démarrer poursuit la simulation. Les graphes restaurés remplacent les graphes des ateliers et leur autosauvegarde. Un initiateur dont le compte à rebours réel est en cours doit être lancé ou annulé avant l'enregistrement.
 
 Le fichier reste local et peut être joint pour déboguer une situation. Il n'est pas un certificat infalsifiable : les données JSON sont modifiables. Une évolution incompatible du moteur doit changer la révision et être accompagnée d'une migration explicite.
+
+La révision `20261008-gv-breches-v5` ajoute les brèches vapeur des GV. Les sauvegardes v1, v2, v3 et v4 reçoivent des brèches secondaires fermées et leurs nouvelles mesures ; leurs stocks, tuyaux, historiques et instantanés de certificat sont conservés. Un arrêt GMPP déjà enregistré dans une ancienne partie reste mémorisé : le chargement ne redémarre pas les pompes. La nouvelle règle IS s'applique aux demandes futures. Les nouveaux chemins d'historique sont ajoutés à la fin du tableau stable, sans déplacer les mesures anciennes.
 
 Les documents sources et les archives de propositions ne sont pas publiés. Le catalogue public emploie des identifiants REF ; leur correspondance avec les fichiers locaux reste privée. Les exclusions d'anciens prototypes figurent dans `scripts/publication-exclusions.json`. Les ressources actives, les tests actuels et cette documentation restent dans le dépôt public.
 

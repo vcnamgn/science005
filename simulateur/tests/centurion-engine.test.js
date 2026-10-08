@@ -49,6 +49,7 @@ test('échange des crayons à K fixe : bilan identique sans débit ou avec déno
 test('après AAR et arrêt des GMPP, un cœur noyé conserve son échange thermique', () => {
   const m=E.make();
   E.initiate(m,'ris');
+  E.tripPrimaryPumps(m);
   E.advance(m,180);
   assert.ok(m.state.coreFlowFraction>0&&m.state.coreFlowFraction<.1);
   assert.equal(m.state.coveragePct,100);
@@ -283,17 +284,18 @@ test('au démarrage R répond en manuel sans activer la régulation', () => {
   assert.ok(m.state.powerPct > 100);
 });
 
-test('la demande IS entraîne AAR et arrêt des GMPP, puis le thermosiphon prend le relais', () => {
+test('la demande IS entraîne AAR, sans déclencher les GMPP', () => {
   const m = E.make();
   E.initiate(m, 'ris');
   assert.notEqual(m.state.risDemandAt, null);
   assert.notEqual(m.state.tripDemandAt, null);
-  assert.equal(m.state.primaryPumpsStopped, true);
+  assert.equal(m.state.primaryPumpsStopped, false);
   E.advance(m, 60);
   assert.notEqual(m.state.tripAt, null);
-  assert.ok(m.state.coreFlowFraction>0&&m.state.coreFlowFraction<.1);
-  assert.equal(m.state.sprayFlowPct, 0);
-  assert.ok(m.state.loops.every(loop => loop.forcedFlowKgS===0&&loop.naturalFlowKgS>0));
+  assert.equal(m.state.coreFlowFraction,1);
+  assert.ok(m.state.sprayFlowPct>0);
+  assert.equal(m.state.pumpHeatMW,24);
+  assert.ok(m.state.loops.every(loop => loop.forcedFlowKgS===E.C.nominalPrimaryFlowKgS/4));
 });
 
 test('un défaut ARE sur GV1 baisse son niveau sans vider les trois autres', () => {

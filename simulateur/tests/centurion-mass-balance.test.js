@@ -64,7 +64,7 @@ test('recirculation RIS : EAS garde le puisard sous 90 °C, sans perdre de bore,
 });
 
 test('thermosiphon : diagnostic distingue désamorçage, GV sec et absence de source froide',()=>{
-  const m=E.make(),s=m.state;m.controls.risEnabled=false;E.initiate(m,'ris');E.advance(m,70);
+  const m=E.make(),s=m.state;m.controls.risEnabled=false;E.initiate(m,'ris');E.tripPrimaryPumps(m);E.advance(m,70);
   s.gv[0].tempC=s.tavgC+1;s.gv[1].waterKg=0;
   E.step(m,.1);
   let d=E.primaryFlowDiagnostics(m);

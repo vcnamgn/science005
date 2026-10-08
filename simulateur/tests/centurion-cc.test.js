@@ -82,7 +82,9 @@ test('liaisons complètes CC → actionneurs → moteur → synoptiques et signa
   assert.notEqual(m.state.tripAt,null);assert.notEqual(m.state.risAt,null);
   assert.equal(m.state.rods.R,0);assert.ok(m.state.risDeliveredKgS>0);
   assert.equal(rcp.get('texte-20').textContent,'—');
-  assert.equal(rcp.get('gmpp-2').getAttribute('data-pump-state'),'stopped');
+  assert.equal(rcp.get('gmpp-2').getAttribute('data-pump-state'),'running','IS du CC sans arrêt GMPP');
+  E.tripPrimaryPumps(m);check();
+  assert.equal(rcp.get('gmpp-2').getAttribute('data-pump-state'),'coasting','commande manuelle et décélération reflétées dans le SVG');
 });
 
 test('baisse 100 → 80 % avec les vrais CC : débit nominal malgré la baisse régulée du niveau PZR',()=>{

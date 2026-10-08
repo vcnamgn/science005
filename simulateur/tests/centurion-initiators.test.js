@@ -8,7 +8,8 @@ function countdownHarness() {
   let now=0,nextTimer=0;const timers=new Map();
   const elements={};
   for(const id of ['initiatorCountdown','initiatorCountdownLabel','initiatorCountdownSeconds',
-    'cancelInitiator','startBreak','isolateBreak','startEjection','startWithdrawal','startVoltage',
+    'cancelInitiator','startBreak','isolateBreak','startSecondaryBreak','isolateSecondaryBreak','tripPrimaryPumps',
+    'secondaryBreakGv','secondaryBreakArea','startEjection','startWithdrawal','startVoltage',
     'breakArea','breakLoop','breakBranch','ejectionWorth','resetButton']) {
     elements[id]={value:'',textContent:'',disabled:false,hidden:true,events:{},
       addEventListener(event,handler){this.events[event]=handler;}};
@@ -16,6 +17,7 @@ function countdownHarness() {
   }
   Object.assign(elements.breakArea,{value:'300'});elements.breakLoop.value='2';
   elements.breakBranch.value='chaude';elements.ejectionWorth.value='500';
+  elements.secondaryBreakGv.value='3';elements.secondaryBreakArea.value='200';
   const ctx=vm.createContext({E,$:id=>elements[id],performance:{now:()=>now},
     setInterval(fn){const id=++nextTimer;timers.set(id,fn);return id;},
     clearInterval(id){timers.delete(id);},render:()=>{},syncInputs:()=>{},
@@ -37,6 +39,7 @@ function countdownHarness() {
 test('initiateurs : 5, 4, 3, 2, 1 secondes réelles, paramètres mémorisés et départ unique',()=>{
   for(const [button,check] of [
     ['startBreak',m=>assert.equal(m.state.breakAreaCm2,300)],
+    ['startSecondaryBreak',m=>assert.equal(m.state.gv[2].secondaryBreakAreaCm2,200)],
     ['startEjection',m=>assert.equal(m.state.ejectWorthPcm,500)],
     ['startWithdrawal',m=>assert.equal(m.state.withdrawalActive,true)],
     ['startVoltage',m=>assert.equal(m.state.lossOfVoltage,true)]]) {
@@ -72,4 +75,6 @@ test('initiateur programmé : annulation et réinitialisation empêchent tout d�
   }
   const h=countdownHarness();h.click('startBreak');h.click('isolateBreak');h.tick(6000);
   assert.equal(h.model().state.breakAreaCm2,0);assert.equal(h.timers.size,0);
+  const g=countdownHarness();g.click('startSecondaryBreak');g.click('isolateSecondaryBreak');g.tick(6000);
+  assert.equal(g.model().state.gv[2].secondaryBreakAreaCm2,0);assert.equal(g.timers.size,0);
 });

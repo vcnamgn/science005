@@ -149,7 +149,12 @@
         ['feedValvePct','Ouverture ARE','ARE','%',[0,100],'fixed'],['steamKgS','Débit vapeur total','VAP','kg/s',[0,1000]],
         ['dumpKgS','Débit GCT-A',`GCT-A${n}20KM`,'kg/s',[0,1000]],['turbineSteamKgS','Débit VPU','VPU','kg/s',[0,1000]],
         ['steamValvePct','Ouverture VVP',`VVP${n}20VV`,'%',[0,100],'fixed'],['gctAValvePct','Ouverture GCT-A','GCT-A','%',[0,100],'fixed'],
-        ['heatMW','Puissance échangée','PGV','MWth',[0,1100]],['asgRunning','Train ASG en service','ASG ES','TOR',[0,1],'fixed']])
+        ['heatMW','Puissance échangée','PGV','MWth',[0,1100]],['asgRunning','Train ASG en service','ASG ES','TOR',[0,1],'fixed'],
+        ['secondaryBreakAreaCm2','Section de brèche vapeur','BRÈCHE','cm²',[0,2000]],
+        ['secondaryBreakKgS','Débit brèche vapeur','Q BRÈCHE','kg/s',[0,1000]],
+        ['secondaryBreakReleasedKg','Masse vapeur perdue à la brèche','M BRÈCHE','kg',[0,100000]],
+        ['secondaryBreakEnergyJ','Énergie emportée à la brèche','E BRÈCHE','J',[0,1e11]],
+        ['waterMassRateKgS','Bilan de masse d’eau','BILAN EAU','kg/s',[-1000,1000]]])
         extra(`gv.${i}.${key}`,`${label} · GV ${n}`,`${tag} GV${n}`,unit,`GV ${n}`,range,mode);
     }
     for(let i=0;i<6;i++)extra(`fluxDetectors6.${i}`,`Flux RPN section ${i+1} · du bas vers le haut`,`RPN ${i+1}`,'× moyen','RPN',[0,2]);
