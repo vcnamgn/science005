@@ -1,176 +1,102 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const vm = require('node:vm');
-const E = require('../centurion-engine.js');
+const test=require('node:test'),assert=require('node:assert/strict');
+const E=require('../centurion-engine'),H=require('../centurion-history');
+const {surface}=require('./helpers/history-surface');
+function chartHarness(){const m=E.make();E.step(m,.1);const point=E.historyPoint(m);
+  m.state.time=7200;m.state.history=Array.from({length:73},(_,i)=>({...structuredClone(point),t:i*100}));
+  const h=surface(m.state);h.chart.draw();return h;}
 
-const app = fs.readFileSync(path.join(__dirname, '../centurion-app.js'), 'utf8');
-const html = fs.readFileSync(path.join(__dirname, '../centurion.html'), 'utf8');
-
-function canvas(height) {
-  const strokes = [];
-  const labels = [];
-  let currentPath = [];
-  const context = {
-    strokes, labels,
-    setTransform() {}, clearRect() {}, fillRect() {},
-    fillText(text) { labels.push(String(text)); },
-    beginPath() { currentPath = []; },
-    moveTo(x, y) { currentPath.push([x,y]); },
-    lineTo(x, y) { currentPath.push([x,y]); },
-    stroke() { strokes.push({color: this.strokeStyle,
-      xs: currentPath.map(([x])=>x), ys: currentPath.map(([,y])=>y)}); }
-  };
-  return {
-    strokes, labels,
-    getBoundingClientRect: () => ({width: 800, height}),
-    getContext: () => context
-  };
-}
-
-function point(t) {
-  return {t, power: 100, thermalPower:100,residualPower:0,electric: 1300, cold: 288.4,tavg: 306.5,
-    hot: 324.6,tric: 326.9,pzrTemp: 344.79,
-    reactivity: 0, pressure: 155, gvPressure: [65,65,65,65],
-    gv: [55,55,55,55],gvTemp: [280.9,280.9,280.9,280.9],
-    pzrLevel: 42,rods:{R:220,G1:260,G2:260,N1:260,N2:260,SA:260},
-    r: 220,g3:780,ris:0,break:0,breakDensity:720,
-    steamTotal:2200,steamGctA:80,steamVpu:2120};
-}
-
-function chartHarness() {
-  const main = canvas(350), reactivity = canvas(140);
-  const state = {time: 7200, history: Array.from({length: 73}, (_, i) => point(i * 100))};
-  const slider = {min: '300', max: '300', value: '300', disabled: true,
-    setAttribute(name, value) { this[name] = value; }};
-  const elements = {historyChart: main, reactivityChart: reactivity,
-    historyWindow: {value: '300'}, historyScrubber: slider,
-    historyLive: {disabled: true}, historyRangeLabel: {textContent: ''},
-    historyOldestLabel: {textContent: ''}, historyNewestLabel: {textContent: ''},
-    historyLegend: {innerHTML: ''}, traceSet: {value: 'powers'},
-    historyGv: {value: '1'}};
-  const context = vm.createContext({window: {devicePixelRatio: 1},
-    model: {state}, E, $: id => elements[id]});
-  const timeLabel = app.slice(app.indexOf('  const tLabel='), app.indexOf('  const names='));
-  const drawHistory = app.slice(app.indexOf('  function drawHistory()'),
-    app.indexOf('  function drawLoadProgramChart()'));
-  assert.ok(timeLabel && drawHistory.includes('historyScrubber'));
-  vm.runInContext(`${timeLabel}\nlet activeView='graphiques', selectedGv=1;
-    let historyFollowing=true, historyEndS=null;
-    ${drawHistory}
-    globalThis.chart={draw:drawHistory,
-      seek(end){historyEndS=end;historyFollowing=end>=Number($("historyScrubber").max);drawHistory();},
-      live(){historyFollowing=true;drawHistory();},
-      reset(){historyFollowing=true;historyEndS=null;drawHistory();}};`, context);
-  return {state, elements, main, reactivity, chart: context.chart};
-}
-
-test('quatre échelles et navigation synchronisée des mesures et de la réactivité', () => {
-  for (const seconds of [300, 1800, 3600, 14400])
-    assert.match(html, new RegExp(`<option value="${seconds}">`));
-  const {state, elements, main, reactivity, chart} = chartHarness();
-  elements.historyWindow.value = '14400';
-  chart.draw();
-  assert.equal(elements.historyRangeLabel.textContent, '00:00:00 – 04:00:00');
-  assert.equal(elements.historyScrubber.disabled, true);
-
-  elements.historyWindow.value = '300';
-  chart.draw();
-  assert.equal(elements.historyScrubber.min, '300');
-  assert.equal(elements.historyScrubber.max, '7200');
-  assert.equal(elements.historyRangeLabel.textContent, '01:55:00 – 02:00:00');
-  chart.seek(3600);
-  assert.equal(elements.historyRangeLabel.textContent, '00:55:00 – 01:00:00');
-  assert.equal(elements.historyLive.disabled, false);
-  const powerLine = main.strokes.findLast(stroke => stroke.color === '#159ec3');
-  const reactivityLine = reactivity.strokes.findLast(stroke => stroke.color === '#a466c8');
-  assert.equal(powerLine.xs.length, 4);
-  assert.deepEqual(powerLine.xs, reactivityLine.xs);
-
-  state.time = 7500;
-  state.history.push(point(7300), point(7400), point(7500));
-  chart.draw();
-  assert.equal(elements.historyRangeLabel.textContent, '00:55:00 – 01:00:00');
-  chart.live();
-  assert.equal(elements.historyRangeLabel.textContent, '02:00:00 – 02:05:00');
-  assert.equal(elements.historyLive.disabled, true);
-
-  state.time = 18000;
-  state.history = Array.from({length: 181}, (_, i) => point(i * 100));
-  elements.historyWindow.value = '14400';
-  chart.draw();
-  assert.equal(elements.historyScrubber.disabled, false);
-  chart.seek(14400);
-  assert.equal(elements.historyRangeLabel.textContent, '00:00:00 – 04:00:00');
-
-  state.time = 0;
-  state.history = [];
-  elements.historyWindow.value = '300';
-  chart.reset();
-  assert.equal(elements.historyRangeLabel.textContent, '00:00:00 – 00:05:00');
-  assert.equal(elements.historyScrubber.disabled, true);
+test('catalogue : mesures du moteur, des quatre boucles/GV et des sources CC',()=>{
+  const m=E.make();E.advance(m,2);const p=E.historyPoint(m),defs=H.catalog(E);
+  assert.ok(defs.length>200);assert.equal(new Set(defs.map(d=>d.id)).size,defs.length);
+  for(const d of defs)assert.ok(Number.isFinite(d.value(p)),d.id);
+  assert.equal(defs.find(d=>d.id==='gv.2.pressure').value(p),m.state.gv[2].pressureBar);
+  assert.equal(defs.find(d=>d.id==='rod.R').value(p),m.state.rods.R);
+  for(const [i,[name,[value]]] of Object.entries(E.controlSignals(m)).entries())
+    assert.ok(Math.abs(defs.find(d=>d.id==='cc.'+name).value(p)-value)<=Math.max(1e-7,Math.abs(value)*1e-7),name);
+  assert.ok(H.search(defs,'pression 002MP').some(d=>d.id==='pressure'));
+  assert.ok(H.search(defs,'decalibrage').some(d=>d.id==='cc.gcpCalibrationSignal'));
+  assert.ok(H.search(defs,'thermosiphon boucle 4').some(d=>d.id==='loops.3.naturalFlowKgS'));
+  assert.ok(H.search(defs,'variable inexistante').length===0);
 });
 
-test('les axes affichent les valeurs physiques et les groupes utilisent deux échelles', () => {
-  const {state, elements, main, chart} = chartHarness();
-  chart.draw();
-  assert.match(elements.historyLegend.innerHTML, /Cœur · % PN/);
-  assert.ok(main.labels.includes('% nominal'));
-  assert.ok(main.labels.includes('110'), 'la borne de puissance suit 100 % avec une marge');
-  state.history.at(-1).power = 135;
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('140'), 'la borne supérieure suit un dépassement de 130 %');
-  elements.traceSet.value = 'temperatures';
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('°C'));
-  assert.match(elements.historyLegend.innerHTML, /Branche froide.*T moyenne.*Branche chaude.*T RIC.*Pressuriseur/);
-  assert.doesNotMatch(elements.historyLegend.innerHTML, /TCRA|crayon/i);
-  elements.traceSet.value = 'pressures';
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('bar'));
-  assert.ok(main.labels.includes('160'));
-  assert.match(elements.historyLegend.innerHTML, /Circuit primaire.*GV 1/);
-  elements.traceSet.value = 'levels';
-  chart.draw();
-  assert.match(elements.historyLegend.innerHTML, /Pressuriseur.*GV 1/);
-  assert.doesNotMatch(elements.historyLegend.innerHTML, /RGL/);
-  elements.traceSet.value = 'rods';
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('pas extraits'));
-  assert.ok(main.labels.includes('pas de chevauchement extraits'));
-  assert.ok(main.labels.includes('780'));
-  assert.match(elements.historyLegend.innerHTML, /R.*G1.*G2.*N1.*N2.*SA.*GCP.*axe droit/);
-  elements.traceSet.value = 'flows';
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('m³/h'));
-  elements.traceSet.value = 'steam';
-  main.labels.length = 0;
-  chart.draw();
-  assert.ok(main.labels.includes('kg/s'));
-  assert.match(elements.historyLegend.innerHTML,/Débit vapeur total.*Débit GCT-A.*Débit VPU/);
-  for(const color of ['#159ec3','#ec684b','#55a579'])
-    assert.ok(main.strokes.findLast(stroke=>stroke.color===color).xs.length>0);
-  elements.traceSet.value = 'secondaryTemperatures';
-  elements.historyGv.value = '2';
-  chart.draw();
-  assert.match(elements.historyLegend.innerHTML, /Vapeur GV 2.*Eau alimentaire ARE/);
+test('présélections modifiables : ajouter, masquer, retirer, rechercher',async()=>{
+  const h=chartHarness();await h.set('traceSet','pressures');assert.equal(h.chart.view.traces.length,2);
+  await h.add('fuelC');assert.equal(h.get('traceSet').value,'custom');assert.equal(h.chart.view.traces.length,3);
+  assert.match(h.get('historyLegend').innerHTML,/crayon/);
+  const toggle=h.get('historyShow2');toggle.checked=false;await toggle.fire('change');
+  assert.doesNotMatch(h.get('historyLegend').innerHTML,/crayon/);assert.equal(h.chart.view.traces.length,3);
+  await h.get('historyRemove1').fire('click');assert.equal(h.chart.view.traces.length,2);
+  assert.equal(h.chart.view.traces[1].id,'fuelC');
+  await h.set('historySearch','thermosiphon boucle 4','input');assert.match(h.get('historyVariable').innerHTML,/naturalFlowKgS/);
+  await h.get('historyClear').fire('click');assert.equal(h.chart.view.traces.length,0);
 });
 
-test('quatre heures de températures primaires se tracent sans débordement de pile', () => {
-  const {state,elements,chart} = chartHarness();
-  state.time = 14400;
-  state.history = Array.from({length:14401},(_,t)=>point(t));
-  elements.historyWindow.value = '14400';
-  elements.traceSet.value = 'temperatures';
-  assert.doesNotThrow(()=>chart.draw());
+test('axes indépendants à gauche, couleurs des courbes et échelles physiques',async()=>{
+  const h=chartHarness();await h.set('traceSet','pressures');await h.add('rod.R');
+  const traces=h.chart.view.traces,strokes=h.get('historyChart').context.strokes;
+  assert.equal(new Set(traces.map(o=>o.color)).size,traces.length,'couleurs distinctes à l’ajout et en présélection');
+  for(const o of traces){const axis=strokes.find(s=>s.color===o.color&&s.path.length===2&&s.path[0][0]===s.path[1][0]);
+    assert.ok(axis,o.id+' : axe vertical');assert.ok(axis.path[0][0]<300,'tous les axes sont à gauche');}
+  await h.set('historyMode0','fixed');await h.set('historyMin0','100','input');await h.set('historyMax0','170','input');
+  assert.deepEqual(H.rangeFor(h.chart.defs.find(d=>d.id==='pressure'),h.chart.view.traces[0],h.state.history),[100,170]);
+  await h.set('historyMin0','180','input');assert.equal(h.chart.view.traces[0].min,100,'borne invalide rejetée');
+  assert.equal(h.get('historyMin0').attrs['aria-invalid'],'true');
+  const d=h.chart.defs.find(d=>d.id==='power');assert.equal(H.rangeFor(d,H.trace(d),[{power:135}])[1],140);
+  assert.ok(h.get('reactivityChart').context.labels.some(l=>l.text.includes('Réactivité')));
+  assert.ok(h.get('reactivityChart').context.strokes.filter(s=>s.color==='#cddedc').length>=7);
 });
 
+test('curseur : même instant sur les deux graphes, clic figé et copie tableur',async()=>{
+  const h=chartHarness();h.state.history.at(-2).power=80;h.chart.draw();
+  await h.get('historyChart').fire('pointermove',{clientX:650});
+  assert.match(h.get('historyCursorLabel').textContent,/Lecture/);
+  await h.get('historyChart').fire('click',{clientX:650});
+  const frozen=h.chart.save().pinned;assert.ok(frozen);assert.equal(h.get('historySnapshot').hidden,false);
+  h.state.time=7500;h.state.history.push({...h.state.history.at(-1),t:7500,power:125});h.chart.draw();
+  assert.deepEqual(h.chart.save().pinned,frozen,'la simulation ne modifie pas la lecture figée');
+  await h.get('historyCopy').fire('click');assert.match(h.copied[0],/^Instant\tVariable\tValeur\tUnité/);
+  assert.ok(h.copied[0].includes(H.timeLabel(frozen.time)));assert.ok(h.copied[0].split('\n').length===6);
+  assert.match(h.copied[0],/REAC.*Réactivité/);
+  await h.get('historyUnpin').fire('click');assert.equal(h.chart.view.pinned,null);
+  assert.equal(h.get('historyCopy').disabled,true);
+});
+
+test('période : durée, bornes saisies, glissières et déplacement dans l’aperçu',async()=>{
+  const h=chartHarness();assert.equal(h.get('historyRangeLabel').textContent,'01:55:00 – 02:00:00');
+  await h.set('historyWindow','14400');assert.equal(h.get('historyRangeLabel').textContent,'00:00:00 – 02:00:00');
+  await h.set('historyWindow','300');h.get('historyStart').value='00:55:00';h.get('historyEnd').value='01:00:00';
+  await h.get('historyEnd').fire('change');assert.equal(h.get('historyRangeLabel').textContent,'00:55:00 – 01:00:00');
+  h.state.time=7500;h.chart.draw();assert.equal(h.get('historyRangeLabel').textContent,'00:55:00 – 01:00:00');
+  await h.get('historyPrevious').fire('click');assert.equal(h.get('historyRangeLabel').textContent,'00:52:30 – 00:57:30');
+  await h.set('historyStartRange','3000','input');assert.equal(h.chart.view.start,3000);
+  await h.set('historyEndRange','4200','input');assert.equal(h.chart.view.end,4200);
+  await h.get('historyOverview').fire('pointerdown',{button:0,clientX:470,pointerId:1});
+  await h.get('historyOverview').fire('pointermove',{clientX:500,pointerId:1});
+  await h.get('historyOverview').fire('pointerup');assert.ok(h.chart.view.start>3000,'la sélection centrale se déplace');
+  await h.get('historyLive').fire('click');assert.equal(h.chart.view.following,true);
+  assert.equal(h.get('historyEnd').value,'02:05:00');
+  await h.set('historyStart','00:10:00','input');await h.set('historyEnd','00:20:00','input');
+  h.chart.draw();assert.equal(h.get('historyStart').value,'00:10:00','saisie préservée pendant le rafraîchissement');
+  await h.get('historyApplyPeriod').fire('click');
+  assert.equal(h.get('historyRangeLabel').textContent,'00:10:00 – 00:20:00');
+});
+
+test('personnalisation restaurée et anciennes mesures manquantes sans fausse valeur',async()=>{
+  const h=chartHarness();await h.add('heaterKW');await h.set('historyMode4','fixed');
+  await h.set('historyMax4','2300','input');await h.get('historyPin').fire('click');
+  const saved=h.chart.save(),other=chartHarness();other.chart.restore(saved);other.chart.draw();
+  assert.deepEqual(other.chart.save(),saved);
+  const old={t:0,power:100,pressure:155},d=h.chart.defs.find(d=>d.id==='heaterKW');
+  assert.equal(d.value(old),undefined,'pas de valeur actuelle injectée dans l’ancien historique');
+  assert.equal(H.nearest([{t:0},{t:10}],6).t,10);
+  assert.throws(()=>H.validate({...saved,traces:[{...saved.traces[0],min:8,max:2}]}),/échelle/);
+});
+
+test('huit heures de données et axes multiples : pas de débordement de pile',async()=>{
+  const h=chartHarness(),p=h.state.history[0];h.state.time=28800;
+  h.state.history=Array.from({length:28800},(_,i)=>({...p,t:i+1}));await h.set('traceSet','temperatures');
+  await h.set('historyWindow','14400');assert.doesNotThrow(()=>h.chart.draw());
+});
 test('l’échantillon conserve les mesures nécessaires aux courbes', () => {
   const model = E.make();
   E.step(model, 0.1);
@@ -190,13 +116,10 @@ test('historique après AAR : courbes de fission, thermique totale et résiduell
   const point=model.state.history.at(-1);
   assert.ok(point.residualPower>2&&point.residualPower<4);
   assert.ok(Math.abs(point.thermalPower-point.power-point.residualPower)<1e-8);
-  const h=chartHarness();h.state.time=model.state.time;h.state.history=model.state.history;
-  h.chart.draw();
-  assert.match(h.elements.historyLegend.innerHTML,/fission.*Thermique cœur.*Résiduelle/);
-  const residual=h.main.strokes.findLast(stroke=>stroke.color==='#d0a231');
-  const thermal=h.main.strokes.findLast(stroke=>stroke.color==='#a466c8');
-  assert.ok(residual&&thermal&&residual.ys.length>1);
-  assert.equal(residual.ys.length,thermal.ys.length);
+  const h=surface(model.state);h.chart.draw();
+  assert.match(h.get('historyLegend').innerHTML,/fission.*thermique.*résiduelle/i);
+  const paths=h.get('historyChart').context.strokes;
+  assert.ok(paths.some(s=>s.color===h.chart.view.traces[2].color&&s.path.length>2));
 });
 
 test('historique vapeur : un GCT-A débitant est distinct du VPU et inclus dans le total',()=>{

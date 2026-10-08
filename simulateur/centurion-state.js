@@ -5,7 +5,9 @@
   else root.CenturionState=api;
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
+  const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
   const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-pzr-v3";
+  const MAX_STATE_BYTES=160*1024*1024;
   const COMPATIBLE_REVISION="20261008-pzr-v2";
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
@@ -123,7 +125,7 @@
   }
   function read(E,raw){
     if(typeof raw==="string"){
-      if(raw.length>80*1024*1024)throw new Error("Fichier trop volumineux (80 Mo maximum).");
+      if(raw.length>MAX_STATE_BYTES)throw new Error("Fichier trop volumineux (160 Mo maximum).");
       raw=JSON.parse(raw);
     }
     checkJson(raw);
@@ -146,9 +148,13 @@
       ||raw.ui.historyEndS!==null&&typeof raw.ui.historyEndS!=="number"
       ||!raw.ui.alarmLimits||typeof raw.ui.alarmLimits!=="object")throw new Error("Vue ou alarmes invalides.");
     for(const id of ["historyWindow","coreTrailWindow","ptTrailWindow"])
-      if(!["300","1800","3600","14400"].includes(raw.ui[id]))throw new Error("Fenêtre d'historique invalide.");
-    if(!["powers","temperatures","secondaryTemperatures","pressures","levels","rods","flows","steam"].includes(raw.ui.traceSet))
+      if(!["300","1800","3600","14400",...(id==='historyWindow'?['custom']:[])].includes(raw.ui[id]))throw new Error("Fenêtre d'historique invalide.");
+    if(!["powers","temperatures","secondaryTemperatures","pressures","levels","rods","flows","steam","custom"].includes(raw.ui.traceSet))
       throw new Error("Traces invalides.");
+    if(raw.ui.chart){
+      History.validate(raw.ui.chart,new Set(History.catalog(E,raw.model).map(d=>d.id)));
+      if(raw.ui.chart.pinned?.time>raw.model.state.time+1e-6)throw new Error("Instant de lecture futur.");
+    }else if(raw.ui.traceSet==='custom'||raw.ui.historyWindow==='custom')throw new Error("Sélection personnalisée absente.");
     for(const values of Object.values(raw.ui.alarmLimits))
       if(!Array.isArray(values)||values.length!==4||values.some(v=>v!==null&&typeof v!=="number"))
         throw new Error("Seuils d'alarme invalides.");
@@ -176,5 +182,5 @@
       model,editors,ui,certificateArchive};
     return read(E,clone(save));
   }
-  return {FORMAT,VERSION,REVISION,checkJson,validateModel,validateEditor,read,write};
+  return {FORMAT,VERSION,REVISION,MAX_STATE_BYTES,checkJson,validateModel,validateEditor,read,write};
 });

@@ -12,6 +12,7 @@ const sourceBase='https://github.com/vcnamgn/science005/blob/main/';
 const modules=[
   {file:'simulateur/centurion-engine.js',title:'Moteur',description:'Physique et API indépendante du navigateur.'},
   {file:'simulateur/centurion-app.js',title:'Application',description:'Horloge, commandes, arbitrage CC et présentation.'},
+  {file:'simulateur/centurion-history.js',title:'Historiques',description:'Catalogue des mesures, courbes libres, axes, période sélectionnée et tableau figé.'},
   {file:'simulateur/centurion-svg-bridge.js',title:'Pont SVG',description:'Mesures, animations et navigation dans les SVG.'},
   {file:'simulateur/centurion-certificate.js',title:'Certificats',description:'Archives des événements, captures SVG et export PNG/PDF local.'},
   {file:'simulateur/centurion-state.js',title:'États JSON',description:'Sauvegarde complète, validation et reprise locale pour le débogage.'},
@@ -23,6 +24,7 @@ const notes={
   advance:'Répète les pas physiques pendant seconds (s), avec sous-pas au plus 0,1 s. Ne fait pas tourner les graphes CC.',
   instrumentSnapshot:'Construit la projection instrumentale commune ; selectedGv va de 1 à 4. Grandeurs réalisées et conversions pour les vues.',
   controlSignals:'Renvoie le dictionnaire des sources CC : chaque clé possède [valeur numérique, unité].',
+  historyPoint:'Construit un échantillon historique en lecture seule : mesures existantes, tableaux compacts versionnés et sources CC. Ne fait pas évoluer le moteur.',
   refreshReactivity:'Recalcule les composantes en pcm et leur somme, sans avancer le temps ; modifie state et le renvoie.',
   refreshAxial:'Recalcule forme, DPAX, Fxy, PLIN et DNBR sans faire évoluer les poisons ni l’horloge ; modifie state.',
   cppInventory:'Convertit masse liquide (kg), température (°C) et pression (bar) en volume, densité, niveau CPP (m), masses des capacités et amorçage ; T/P nominaux par défaut.',

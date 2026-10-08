@@ -1397,10 +1397,34 @@
       C.nominalElectricMW*sumTurbineSteam/(4*nominal));
   }
 
-  function sample(s) {
-    if (s.time+1e-9 < s.sampleAt) return;
-    s.sampleAt = s.time+1;
-    s.history.push({ t:s.time, power:s.powerPct, electric:s.electricMW,
+  // Ordre stable des mesures supplémentaires : ne jamais réordonner une version.
+  // Les anciens points restent lisibles ; une mesure absente n'est pas inventée.
+  const HISTORY_PATHS=[
+    'demandPct','turbinePct','trefC','nrefPct','fuelC','lidC','subcoolingC',
+    'coreFlowKgS','coreFlowFraction','risCoreKgS','totalGvMW','heaterKW','sprayPct',
+    'sprayFlowM3h','auxiliarySprayM3h','totalSprayFlowM3h','sprayDriveBar',
+    'rcvChargeM3h','rcvDeliveredM3h','rcvDemandM3h','rcvCapacityM3h','rcvTankBoronPpm',
+    'pzrPistonBarS','pzrThermalPressureBar','reliefSteamKgS','reliefLiquidKgS',
+    'xenonWorthPcm','xenonTop','xenonBottom','iodineTop','iodineBottom',
+    'reactivityParts.rod','reactivityParts.boron','reactivityParts.temp','reactivityParts.doppler',
+    'reactivityParts.xenon','reactivityParts.coreReference','g3Target','rLimitPas',
+    'risTankRemainingKg','sumpKg','sumpTempC','sumpBoronPpm','easCoolingMW','risCoolingMW',
+    'coveragePct','primaryEnergyJ','vaporEnergyJ','primaryMassRateKgS','phaseChangeKgS',
+    'rraFlowKgS','lossOfVoltage',
+    ...['SB','SC','SD'].map(n=>`rods.${n}`),
+    ...Array.from({length:4},(_,i)=>['flowKgS','forcedFlowKgS','naturalFlowKgS','hotC','coldC',
+      'pumpHeatMW','pumpHeadColdBar','vesselDeltaBar','gvDeltaBar','primingFraction']
+      .map(k=>`loops.${i}.${k}`)).flat(),
+    ...Array.from({length:4},(_,i)=>['waterKg','levelWidePct','levelMetres','feedKgS','feedValvePct',
+      'steamKgS','dumpKgS','turbineSteamKgS','steamValvePct','gctAValvePct','heatMW','asgRunning']
+      .map(k=>`gv.${i}.${k}`)).flat(),
+    ...Array.from({length:6},(_,i)=>`fluxDetectors6.${i}`)
+  ];
+  function historyPoint(model) {
+    const s=model.state;
+    const compact=value=>typeof value==='boolean'?Number(value):Number.isFinite(value)
+      ?Number(value.toPrecision(8)):null;
+    return { t:s.time, power:s.powerPct, electric:s.electricMW,
       thermalPower:100*s.thermalPowerMW/C.nominalThermalMW,
       residualPower:100*s.decayMW/C.nominalThermalMW,
       pumpHeatMW:s.pumpHeatMW,
@@ -1419,7 +1443,16 @@
       vaporMass:s.vaporMassKg,breakSteam:s.breakSteamKgS,
       breakDensity:s.breakDensityKgM3,
       massBalance:primaryMassBalance(s),relief:s.reliefKgS,
-      pline:s.peakLinearWcm,dpax:s.dpaxPctPn });
+      pline:s.peakLinearWcm,dpax:s.dpaxPctPn,
+      detailVersion:1,
+      detail:HISTORY_PATHS.map(p=>compact(p.split('.').reduce((v,k)=>v?.[k],s))),
+      cc:Object.values(controlSignals(model)).map(([value])=>compact(value)) };
+  }
+  function sample(model) {
+    const s=model.state;
+    if (s.time+1e-9 < s.sampleAt) return;
+    s.sampleAt = s.time+1;
+    s.history.push(historyPoint(model));
     if (s.history.length>8*3600) s.history.shift();
   }
 
@@ -1778,7 +1811,7 @@
     s.ptOutside=isPtOutside(s);
     updateCoreDamageWarning(s,dt);
     s.time+=dt;
-    sample(s);
+    sample(model);
     return s;
   }
   function updateCoreDamageWarning(s,dt) {
@@ -1979,7 +2012,7 @@
     return values;
   }
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
-    CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,
+    CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,HISTORY_PATHS,historyPoint,
     cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,pzrEquilibriumResponse,advancePrimaryPressure,
     latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
     instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,

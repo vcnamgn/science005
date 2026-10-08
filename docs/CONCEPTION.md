@@ -45,6 +45,7 @@ flowchart TD
 | --- | --- | --- |
 | `centurion-engine.js` | État physique, commandes, évolution, instruments, événements et historiques | JavaScript seul ; export CommonJS ou `window.CenturionEngine` |
 | `centurion-app.js` | Horloge navigateur, conduite manuelle, arbitrage des sorties CC, navigation et dessins Canvas | Moteur, DOM, Canvas, fenêtres des éditeurs et SVG |
+| `centurion-history.js` | Catalogue des mesures, courbes libres, axes, sélection temporelle et lectures figées | Moteur en lecture seule, DOM et Canvas ; fonctions pures exportées pour les tests |
 | `centurion-cc-regul.html` | Palette de blocs, graphes, évaluation, édition et sauvegarde | DOM, stockage local, messages du parent ; deux instances selon `mode` |
 | `centurion-svg-bridge.js` | Application des mesures aux objets SVG, animations et renvois | DOM SVG et messages du parent |
 | `centurion.html` / `centurion.css` | Structure des onglets, pupitre commun et présentation adaptative | Les trois scripts applicatifs et les fichiers SVG |
@@ -146,6 +147,14 @@ Les couplages utilisent ainsi des états successifs à l'intérieur du pas. Il n
 ### Historiques et temporisations
 
 Un échantillon est enregistré environ chaque seconde simulée ; la mémoire conserve au plus 28 800 échantillons, soit environ 8 h. Les fenêtres de 5 min à 4 h filtrent cette mémoire sans changer le pas physique. Le journal conserve les 240 derniers événements.
+
+L'onglet **Graphique** propose 259 variables : mesures physiques, températures/débits des quatre boucles et GV, actionneurs, stocks d'eau, poisons, composantes de réactivité et les 48 sources transmises aux ateliers CC. Les huit listes historiques sont des présélections modifiables. La recherche accepte nom, repère, nom interne, famille et unité. Une courbe peut être masquée sans être retirée ; couleur, échelle adaptative ou bornes fixes se règlent dans sa ligne. Chaque courbe visible dispose d'un axe de sa couleur, à gauche. Au-delà de la largeur disponible, les axes et courbes se parcourent horizontalement. La limite de 32 courbes simultanées évite une image Canvas excessivement large.
+
+L'aperçu montre tout l'historique conservé et une fenêtre de sélection. Glisser les bords règle début/fin ; glisser le centre déplace la fenêtre ; tracer une nouvelle sélection hors de la fenêtre choisit une période. Les champs HH:MM:SS, deux glissières et boutons précédent/suivant offrent aussi une navigation clavier. **Revenir au direct** fait avancer la fenêtre avec la simulation. Une période choisie reste fixe, indépendamment du curseur de lecture.
+
+Le curseur lit l'échantillon réel le plus proche, sans interpolation temporelle. La ligne verticale est commune aux deux graphes, et les valeurs sont affichées près des axes et dans la liste. Un clic, Entrée ou le bouton **Figer le curseur** conserve l'instant et ses valeurs ; **Défiger** reprend le suivi. Les flèches gauche/droite parcourent les échantillons. Le tableau figé contient les courbes visibles plus la réactivité du panneau inférieur. **Copier le tableau** produit du texte tabulé avec virgule décimale, prêt pour un tableur ; une zone sélectionnable prend le relais si le presse-papiers n'est pas disponible. Le graphe de réactivité possède une échelle indépendante, des graduations et des bandes visuelles ±200/±300 pcm, sans créer de protection supplémentaire.
+
+`historyPoint(model)` centralise l'échantillon sans avancer la physique. Les mesures supplémentaires sont enregistrées dans des tableaux compacts versionnés (`detailVersion = 1`, ordre `HISTORY_PATHS`, sources CC dans leur ordre déclaré), à huit chiffres significatifs. Les champs historiques existants gardent leur précision. Une ancienne sauvegarde ne contient pas ces mesures supplémentaires : leurs courbes commencent au premier nouvel échantillon et leurs anciennes valeurs restent « — ». La sélection, les bornes et la lecture figée sont incluses dans l'état JSON ; les sauvegardes anciennes restent compatibles. La limite de fichier est portée à 160 Mo pour permettre huit heures d'historique enrichi.
 
 Le décompte de lancement d'un initiateur dure 5 s **réelles**. Les délais AAR/IS/ASG, transits, décroissance résiduelle et seuil de dommage sont exprimés en **secondes simulées**. Pendant le décompte de dommage, l'application force ×1 et abandonne le reliquat de temps accéléré.
 

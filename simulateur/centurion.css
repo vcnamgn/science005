@@ -252,6 +252,44 @@ input[type=number],select{background:#fff;border:1px solid #b8d1df;border-radius
 @media(max-width:650px){.chart-page .card-head{align-items:flex-start;flex-direction:column}.chart-pickers{justify-content:flex-start}.history-navigation-head{flex-wrap:wrap}.history-navigation-head output{margin-left:0}.history-navigation-head .button{margin-left:auto}}
 #historyChart{display:block;width:100%;height:52vh;min-height:350px;border:1px solid #e0edf3;border-radius:8px}
 #reactivityChart{display:block;width:100%;height:18vh;min-height:120px;margin-top:9px;border:1px solid #e0edf3;border-radius:8px}
+.history-variable-picker{display:grid;grid-template-columns:minmax(245px,1fr) minmax(480px,2.7fr);gap:14px;margin-bottom:8px}
+.history-settings>summary{font-size:12px;font-weight:750;cursor:pointer;color:#3c6278;padding:4px 0 10px}
+.history-library,.history-selection{min-width:0;border:1px solid #dce8ef;border-radius:9px;padding:10px;background:#f7fbfd}
+.history-library label,.history-selection-head{font-size:13px;font-weight:750;color:#294e64;margin-bottom:7px}
+.history-library input[type=search]{width:100%;margin:0 0 7px;padding:8px;border:1px solid #bfd6e2;border-radius:6px}
+.history-library select{width:100%;height:145px;margin:0;font-size:11px;padding:3px}
+.history-library option{padding:4px}.history-library-foot,.history-selection-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.history-library-foot{margin-top:6px;color:#648091}.history-library-foot .button,.history-selection-head .button{padding:5px 9px;font-size:11px}
+.history-selection-scroll{overflow:auto;max-height:210px}.history-selection table{width:100%;border-collapse:collapse;font-size:11px;text-align:left}
+.history-selection th{position:sticky;top:0;background:#eaf3f8;z-index:1;padding:6px 4px;color:#456779}
+.history-selection td{padding:5px 4px;border-bottom:1px solid #e2ecf1;vertical-align:middle}
+.history-selection td:first-child{width:30px}.history-selection input[type=checkbox]{accent-color:#159ec3;cursor:pointer;width:15px;height:15px}
+.history-selection input[type=color]{width:28px;height:25px;border:0;padding:1px;cursor:pointer;background:none}
+.history-variable-name strong,.history-variable-name span{display:block}.history-variable-name strong{font-size:11px;color:#28495f}
+.history-variable-name span{font-size:10px;line-height:1.3}.history-variable-name small{font-size:10px;color:#708895}
+.history-selection select{width:88px;font-size:11px;padding:4px;margin:0}.history-selection input[type=number]{width:70px;padding:4px;font-size:11px;margin:0}
+.history-selection input[aria-invalid=true]{border-color:#c34c36}.history-selection output{white-space:nowrap;font-variant-numeric:tabular-nums}
+.history-remove{padding:3px 7px;font-size:17px;line-height:1}.history-status{min-height:0;margin:5px 0}
+.history-status:empty{display:none}.history-status.error{color:#b64935}
+.history-navigation-head strong{font-size:12px}.history-navigation-head span{font-size:11px;color:#5b7e90}
+#historyOverview{display:block;width:100%;height:70px;cursor:ew-resize;touch-action:none;margin:4px 0}
+.history-period-fields{display:grid;grid-template-columns:auto auto minmax(70px,1fr) auto minmax(70px,1fr) auto auto;align-items:center;gap:8px;margin:3px 0 7px}
+.history-period-fields label{display:flex;align-items:center;gap:6px;margin:0;font-size:11px}
+.history-period-fields input[type=text]{width:87px;padding:5px;font:12px Consolas,monospace}.history-period-fields input[type=range]{min-width:0;width:100%;margin:0}
+.history-cursor-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;font-size:11px;color:#54758a}
+.history-cursor-controls output{font-weight:750;color:#284d64;font-variant-numeric:tabular-nums}.history-cursor-controls .button{padding:5px 8px;font-size:11px}
+.history-cursor-controls span{margin-right:auto}.history-plot-scroll{width:100%;overflow-x:auto;overscroll-behavior-x:contain;border-radius:8px}
+.history-plot-scroll #historyChart{width:100%;height:430px;min-height:340px;cursor:crosshair;border-radius:6px}
+.history-plot-scroll #reactivityChart{height:190px;min-height:190px;cursor:crosshair}
+.history-plot-scroll canvas:focus-visible{outline:2px solid #159ec3;outline-offset:-3px}
+.history-reactivity-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:9px 0;font-size:11px;color:#6e5688}
+.history-reactivity-controls label{display:flex;align-items:center;gap:5px;margin:0}.history-reactivity-controls select{width:105px;font-size:11px;padding:4px;margin:0}
+.history-reactivity-controls input{width:80px;font-size:11px;padding:4px;margin:0}
+.history-snapshot{padding:12px;background:#eff7fb;border:1px solid #d1e5ef;border-radius:8px;margin-top:12px}
+.history-snapshot table{width:100%;border-collapse:collapse;font-size:12px}.history-snapshot td,.history-snapshot th{padding:6px 8px;border-bottom:1px solid #dbe8ee;text-align:left}
+.history-snapshot td:nth-child(2){font-weight:750;font-variant-numeric:tabular-nums}.history-snapshot textarea{width:100%;min-height:100px;margin-top:9px}
+@media(max-width:1000px){.history-variable-picker{grid-template-columns:1fr}.history-library select{height:100px}.history-selection-scroll{max-height:235px}}
+@media(max-width:650px){.history-period-fields{grid-template-columns:auto 1fr auto}.history-period-fields input[type=range]{grid-column:1/-1}.history-period-fields label{justify-content:center}.history-selection input[type=number]{width:62px}.history-navigation-head output{margin-left:0}}
 .manual-control-list{display:grid;gap:11px}
 .manual-card{padding:9px 11px}
 .manual-card .card-head{margin-bottom:7px;align-items:flex-start}

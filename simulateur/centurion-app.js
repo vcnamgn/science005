@@ -42,7 +42,8 @@
   const certificate=window.CenturionCertificate?.create({E,getModel:()=>model,svgFiles,ptCurves,
     prepare:()=>{$("ptTrailWindow").value="14400";setDiagram("pt");render();}});
   let diagram="rcp",selectedGv=1,activeView="synoptiques",svgDoc=null;
-  let historyFollowing=true,historyEndS=null;
+  const historyView=window.CenturionHistory.create({E,$,document,clipboard:window.navigator?.clipboard,
+    getModel:()=>model,onGv:gv=>{selectedGv=gv;$("gvSelect").value=String(gv);}});
   let pendingInitiator=null,initiatorTimer=null;
   let regulationActive=false,protectionActive=false;
   let pendingCcStep=null,ccTickId=0;
@@ -72,7 +73,12 @@
     activeView=name;
     document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===name));
     document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===`view-${name}`));
-    if(name==="graphiques") {$("historyGv").value=String(selectedGv);drawHistory();}
+    if(name==="graphiques") {
+      const changed=$("historyGv").value!==String(selectedGv);
+      $("historyGv").value=String(selectedGv);
+      if(changed&&$("traceSet").value!=="custom")historyView.applyPreset();
+      drawHistory();
+    }
     if(name==="transitoires") drawLoadProgramChart();
   }
   function renderInitiatorCountdown(now=performance.now()) {
@@ -112,7 +118,9 @@
     if(name!=="core"&&!svgFiles[name]) return;
     selectedGv=Number(gv)||1;
     $("gvSelect").value=String(selectedGv);
+    const historyGvChanged=$("historyGv").value!==String(selectedGv);
     $("historyGv").value=String(selectedGv);
+    if(historyGvChanged&&$("traceSet").value!=="custom")historyView.applyPreset();
     const changed=diagram!==name;
     diagram=name;
     document.querySelectorAll(".diagram-tab").forEach(b=>b.classList.toggle("active",b.dataset.diagram===name));
@@ -573,137 +581,7 @@
     $("coreDpaxReadout").classList.toggle("alarm-blink",E.isDpaxRightExceeded(s));
   }
   function drawHistory() {
-    if(activeView!=="graphiques")return;
-    const canvas=$("historyChart"),rect=canvas.getBoundingClientRect();
-    const dpr=window.devicePixelRatio||1,w=Math.max(300,rect.width),h=Math.max(220,rect.height);
-    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
-    const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);
-    const rodView=$("traceSet").value==="rods";
-    const left=67,right=w-(rodView?75:18),top=30,bottom=h-31;
-    ctx.fillStyle="#fbfdff";ctx.fillRect(0,0,w,h);
-    const s=model.state,points=s.history,windowS=Number($("historyWindow").value)||300;
-    const maxEnd=Math.max(windowS,Math.ceil(s.time));
-    const oldest=points.length?points[0].t:0;
-    const minEnd=Math.min(maxEnd,Math.max(windowS,Math.ceil(oldest+windowS)));
-    const end=historyFollowing?maxEnd:Math.max(minEnd,Math.min(maxEnd,historyEndS??maxEnd));
-    if(end>=maxEnd)historyFollowing=true;
-    historyEndS=end;
-    const start=end-windowS,span=windowS;
-    const scrubber=$("historyScrubber");
-    scrubber.min=String(minEnd);scrubber.max=String(maxEnd);scrubber.value=String(end);
-    scrubber.disabled=minEnd>=maxEnd;
-    scrubber.setAttribute("aria-valuetext",`De ${tLabel(start)} à ${tLabel(end)}`);
-    $("historyLive").disabled=historyFollowing||scrubber.disabled;
-    $("historyRangeLabel").textContent=`${tLabel(start)} – ${tLabel(end)}`;
-    $("historyOldestLabel").textContent=`Données depuis ${tLabel(oldest)}`;
-    $("historyNewestLabel").textContent=`Simulation : ${tLabel(s.time)}`;
-    const gv=Number($("historyGv").value||selectedGv)-1;
-    const line=(label,color,value,axis="left")=>({label,color,value,axis});
-    const traces={
-      powers:{unit:"% nominal",zero:true,fallbackPeak:100,series:[
-        line("Cœur · % PN (fission)","#159ec3",p=>p.power),
-        line("Thermique cœur · % PN","#a466c8",p=>p.thermalPower),
-        line("Résiduelle · % PN","#d0a231",p=>p.residualPower),
-        line("Réseau · % de 1 300 MWe","#f09a4b",p=>100*p.electric/E.C.nominalElectricMW)]},
-      temperatures:{unit:"°C",fallbackRange:[280,350],series:[
-        line("Branche froide","#2585c2",p=>p.cold),
-        line("T moyenne","#55a579",p=>p.tavg),
-        line("Branche chaude","#ec684b",p=>p.hot),
-        line("T RIC · sortie cœur","#a466c8",p=>p.tric),
-        line("Pressuriseur","#d0a231",p=>p.pzrTemp)]},
-      secondaryTemperatures:{unit:"°C",fallbackRange:[240,300],series:[
-        line(`Vapeur GV ${gv+1}`,"#159ec3",p=>p.gvTemp?.[gv]),
-        line("Eau alimentaire ARE · 245 °C (hypothèse)","#f09a4b",()=>245)]},
-      pressures:{unit:"bar",zero:true,fallbackPeak:155,series:[
-        line("Circuit primaire","#ec684b",p=>p.pressure),
-        line(`GV ${gv+1}`,"#2585c2",p=>p.gvPressure?.[gv])]},
-      levels:{unit:"%",fixed:[0,100],series:[
-        line("Pressuriseur","#a466c8",p=>p.pzrLevel),
-        line(`GV ${gv+1}`,"#55a579",p=>p.gv?.[gv])]},
-      rods:{unit:"pas extraits",fixed:[0,260],rightUnit:"pas de chevauchement extraits",rightFixed:[0,780],series:[
-        line("R","#ec684b",p=>p.rods?.R),
-        line("G1","#159ec3",p=>p.rods?.G1),
-        line("G2","#55a579",p=>p.rods?.G2),
-        line("N1","#d0a231",p=>p.rods?.N1),
-        line("N2","#a466c8",p=>p.rods?.N2),
-        line("SA · arrêt A","#768795",p=>p.rods?.SA),
-        line("GCP · compteur","#122e45",p=>p.g3,"right")]},
-      steam:{unit:"kg/s",zero:true,fallbackPeak:4*E.C.nominalSteamKgSPerGV,series:[
-        line("Débit vapeur total · 4 GV","#159ec3",p=>p.steamTotal),
-        line("Débit GCT-A · 4 GV","#ec684b",p=>p.steamGctA),
-        line("Débit VPU · 4 GV","#55a579",p=>p.steamVpu)]},
-      flows:{unit:"m³/h",zero:true,fallbackPeak:10,series:[
-        line("Injection RIS · eau froide ≈ 1 000 kg/m³","#55a579",p=>p.ris*3600/E.C.risWaterDensityKgM3),
-        line("Brèche · équivalent liquide chaud","#ec684b",p=>p.break*3600/(p.breakDensity||E.C.primaryDensityKgM3))]}
-    };
-    const chosen=traces[$("traceSet").value]||traces.powers;
-    const visible=points.filter(p=>p.t>=start&&p.t<=end);
-    let low=Infinity,high=-Infinity;
-    for(const trace of chosen.series){
-      if(trace.axis==="right")continue;
-      for(const p of visible){
-        const value=trace.value(p);
-        if(Number.isFinite(value)){low=Math.min(low,value);high=Math.max(high,value);}
-      }
-    }
-    let yMin,yMax;
-    if(chosen.fixed) [yMin,yMax]=chosen.fixed;
-    else if(chosen.zero){
-      yMin=0;
-      const peak=Math.max(0,Number.isFinite(high)?high:chosen.fallbackPeak||0);
-      const step=10**Math.max(-1,Math.floor(Math.log10(Math.max(peak,1)))-1);
-      yMax=Math.max(step,Math.ceil(peak*1.02/step)*step);
-    } else {
-      const minimum=Number.isFinite(low)?low:chosen.fallbackRange[0];
-      const maximum=Number.isFinite(high)?high:chosen.fallbackRange[1];
-      const padding=Math.max(2.5,(maximum-minimum)*0.08);
-      const step=maximum-minimum<20?5:10;
-      yMin=Math.floor((minimum-padding)/step)*step;
-      yMax=Math.ceil((maximum+padding)/step)*step;
-    }
-    const axisLabel=v=>Number(v).toLocaleString("fr-FR",{maximumFractionDigits:1});
-    ctx.fillStyle="#607b8b";ctx.font="11px Arial";
-    ctx.fillText(chosen.unit,left,17);
-    if(chosen.rightUnit){ctx.textAlign="right";ctx.fillText(chosen.rightUnit,right,17);ctx.textAlign="left";}
-    for(let j=0;j<=4;j++){
-      const y=top+j*(bottom-top)/4;
-      ctx.strokeStyle="#dfebf1";ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
-      ctx.fillStyle="#7890a0";ctx.textAlign="right";
-      ctx.fillText(axisLabel(yMax-j*(yMax-yMin)/4),left-8,y+4);
-      if(chosen.rightFixed)ctx.fillText(axisLabel(chosen.rightFixed[1]-j*(chosen.rightFixed[1]-chosen.rightFixed[0])/4),w-5,y+4);
-      ctx.textAlign="left";
-    }
-    $("historyLegend").innerHTML=chosen.series.map(l=>
-      `<span><i style="background:${l.color}"></i>${l.label}${l.axis==="right"?" · axe droit":""}</span>`).join("");
-    for(const trace of chosen.series){
-      const [minimum,maximum]=trace.axis==="right"?chosen.rightFixed:[yMin,yMax];
-      ctx.beginPath();let started=false;
-      for(const p of visible){
-        const value=trace.value(p);
-        if(!Number.isFinite(value)){started=false;continue;}
-        const x=left+(p.t-start)/span*(right-left);
-        const y=bottom-Math.max(0,Math.min(1,(value-minimum)/(maximum-minimum)))*(bottom-top);
-        if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
-      }
-      ctx.strokeStyle=trace.color;ctx.lineWidth=trace.axis==="right"?2.8:2.2;ctx.stroke();
-    }
-    ctx.fillStyle="#607b8b";ctx.font="11px Arial";
-    ctx.fillText(tLabel(start),left,bottom+18);
-    ctx.textAlign="right";ctx.fillText(tLabel(end),right,bottom+18);ctx.textAlign="left";
-    const reactivity=$("reactivityChart"),rh=Math.max(105,reactivity.getBoundingClientRect().height);
-    reactivity.width=Math.round(w*dpr);reactivity.height=Math.round(rh*dpr);
-    const rc=reactivity.getContext("2d");rc.setTransform(dpr,0,0,dpr,0,0);
-    rc.fillStyle="#fbfdff";rc.fillRect(0,0,w,rh);
-    rc.strokeStyle="#dce8ee";rc.beginPath();rc.moveTo(left,rh/2);rc.lineTo(right,rh/2);rc.stroke();
-    rc.fillStyle="#607b8b";rc.font="11px Arial";rc.fillText("Réactivité (pcm)",left,13);
-    rc.beginPath();let started=false;
-    for(const p of points){if(p.t<start||p.t>end)continue;
-      const x=left+(p.t-start)/span*(right-left),y=rh/2-Math.max(-600,Math.min(600,p.reactivity||0))/600*(rh/2-13);
-      if(!started){rc.moveTo(x,y);started=true;}else rc.lineTo(x,y);
-    }
-    rc.strokeStyle="#a466c8";rc.lineWidth=2;rc.stroke();
+    if(activeView==="graphiques")historyView.draw();
   }
   function drawLoadProgramChart(){
     if(activeView!=="transitoires")return;
@@ -1188,7 +1066,8 @@
     return {regul,protect};
   }
   function stateUi(){
-    return {speed,diagram,selectedGv,activeView,historyFollowing,historyEndS,
+    const chart=historyView.save();
+    return {speed,diagram,selectedGv,activeView,historyFollowing:chart.following,historyEndS:chart.end,chart,
       historyWindow:$("historyWindow").value,traceSet:$("traceSet").value,
       coreTrailWindow:$("coreTrailWindow").value,ptTrailWindow:$("ptTrailWindow").value,
       alarmLimits};
@@ -1214,7 +1093,7 @@
     stateBusy=true;const resume=running;running=false;render();
     let previous=null;
     try{
-      if(file.size>80*1024*1024)throw new Error("Fichier trop volumineux (80 Mo maximum).");
+      if(file.size>window.CenturionState.MAX_STATE_BYTES)throw new Error("Fichier trop volumineux (160 Mo maximum).");
       const save=window.CenturionState.read(E,await file.text());
       for(const mode of ["regul","protect"])
         await editorStateCommand(mode,"centurion-editor-validate",save.editors[mode]);
@@ -1246,7 +1125,7 @@
   }
   function restoreStateUi(ui){
     speed=ui.speed;$("simSpeed").value=String(speed);
-    historyFollowing=ui.historyFollowing;historyEndS=ui.historyEndS;
+    historyView.restore(ui.chart,ui);
     for(const id of ["historyWindow","traceSet","coreTrailWindow","ptTrailWindow"])
       $(id).value=ui[id];
     for(const key of Object.keys(alarmLimits))if(ui.alarmLimits[key])alarmLimits[key]=[...ui.alarmLimits[key]];
@@ -1278,13 +1157,6 @@
     document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>activateView(b.dataset.view)));
     document.querySelectorAll(".diagram-tab").forEach(b=>b.addEventListener("click",()=>setDiagram(b.dataset.diagram)));
     $("gvSelect").addEventListener("change",e=>setDiagram("gv",Number(e.target.value)));
-    $("traceSet").addEventListener("change",drawHistory);
-    $("historyGv").addEventListener("change",e=>{
-      selectedGv=Number(e.target.value)||1;
-      $("gvSelect").value=String(selectedGv);
-      drawHistory();
-    });
-    $("historyWindow").addEventListener("change",drawHistory);
     $("coreTrailWindow").addEventListener("change",drawCoreCharts);
     $("ptTrailWindow").addEventListener("change",updateSvg);
     for(const [id,target] of [["allRodsDown",0],["allRodsUp",260],["allRodsRelease",null]])
@@ -1309,12 +1181,6 @@
       $(id).addEventListener("click",()=>{E.setRisOperation(model,mode);render();});
     $("risSource").addEventListener("change",e=>{model.controls.risSourceMode=e.target.value;render();});
     $("connectRra").addEventListener("click",()=>{E.connectRra(model);render();});
-    $("historyScrubber").addEventListener("input",e=>{
-      historyEndS=Number(e.target.value);
-      historyFollowing=historyEndS>=Number(e.target.max);
-      drawHistory();
-    });
-    $("historyLive").addEventListener("click",()=>{historyFollowing=true;drawHistory();});
     $("diagramObject").addEventListener("load",()=>{
       try {svgDoc=$("diagramObject").contentDocument;} catch(_){svgDoc=null;}
       decorateSvg();updateSvg();
@@ -1338,7 +1204,7 @@
     });
     $("runButton").addEventListener("click",()=>{if(model.state.endState)return;running=!running;render();});
     $("resetButton").addEventListener("click",()=>{cancelInitiator();running=false;pendingCcStep=null;model=E.make();
-      historyFollowing=true;historyEndS=null;
+      historyView.reset();
       model.controls.protectionGraphMode=true;
       model.controls.protectionsEnabled=protectionActive;
       stateStatus("État physique, historiques et ateliers CC. Chargement en pause.");

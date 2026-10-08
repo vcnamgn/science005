@@ -2,6 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const E=require('../centurion-engine');
 const State=require('../centurion-state');
+const H=require('../centurion-history');
 const {svgSurface}=require('./helpers/svg-surface');
 const html=fs.readFileSync(path.join(__dirname,'../centurion.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
@@ -52,14 +53,14 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
   for(const [,id,body] of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>([\s\S]*?)<\/select>/g)){
     const options=[...body.matchAll(/<option\b[^>]*>/g)];
     const option=options.find(m=>/\bselected\b/.test(m[0]))||options[0];
-    ids.get(id).value=attributes(option[0]).value;
+    ids.get(id).value=option?attributes(option[0]).value:'';
   }
   Object.defineProperty(ids.get('diagramObject'),'data',{set(value){
     currentSvg=svgSurface(value.split('/').at(-1));ids.get('diagramObject').fire('load');}});
   const document={getElementById:id=>ids.get(id)||null,activeElement:null,createElement:()=>({click(){}}),
     querySelectorAll:selector=>nodes.filter(n=>matches(n,selector)),
     querySelector(selector){return this.querySelectorAll(selector)[0]||null;}};
-  const context=vm.createContext({window:{CenturionEngine:engine,CenturionState:State,devicePixelRatio:1,
+  const context=vm.createContext({window:{CenturionEngine:engine,CenturionHistory:H,CenturionState:State,devicePixelRatio:1,
     addEventListener:(name,fn)=>(windowEvents[name]??=[]).push(fn)},document,
     performance:{now:()=>now},requestAnimationFrame:fn=>frames.push(fn),
     setInterval:()=>1,clearInterval(){},setTimeout:()=>1,clearTimeout(){},Blob,

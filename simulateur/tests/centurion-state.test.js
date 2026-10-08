@@ -6,6 +6,45 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('état JSON : sélection de courbes, échelles, période et lecture figée conservées',async()=>{
+  const {surface}=require('./helpers/history-surface');
+  const model=E.make();E.advance(model,3);
+  const h=surface(model.state);h.chart.draw();
+  await h.set('traceSet','pressures');await h.add('rod.R');
+  await h.set('historyMode0','fixed');await h.set('historyMin0','120','input');
+  await h.set('historyMax0','175','input');
+  h.get('historyShow1').checked=false;await h.get('historyShow1').fire('change');
+  await h.get('historyPin').fire('click');
+  const chart=h.chart.save(),editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const savedUi={...ui,traceSet:'custom',historyWindow:'custom',chart};
+  const loaded=State.read(E,JSON.stringify(State.write(E,model,editors,savedUi,null)));
+  assert.deepEqual(loaded.ui.chart,chart);
+  const other=surface(loaded.model.state);other.chart.restore(loaded.ui.chart,loaded.ui);other.chart.draw();
+  assert.deepEqual(other.chart.save(),chart);
+  await other.get('historyCopy').fire('click');
+  assert.match(other.copied[0],/Pression primaire.*155/);
+  assert.doesNotMatch(other.copied[0],/Pression GV/,'la courbe masquée reste masquée');
+  assert.match(other.copied[0],/Réactivité/);
+});
+
+test('état JSON : réglages de graphique corrompus rejetés et anciens fichiers compatibles',()=>{
+  const {surface}=require('./helpers/history-surface'),model=E.make();E.advance(model,2);
+  const chart=surface(model.state).chart.save();
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,model,editors,{...ui,chart},null);
+  for(const mutate of [r=>r.ui.chart.traces[0].id='variable-inconnue',
+    r=>r.ui.chart.traces[0].max=r.ui.chart.traces[0].min,
+    r=>r.ui.chart.traces[0].color='javascript:invalid',
+    r=>r.ui.chart.traces.push({...r.ui.chart.traces[0]}),
+    r=>r.ui.chart.pinned={time:300,values:{power:100}},
+    r=>r.ui.chart.reactivity.min=700]){
+    const invalid=structuredClone(raw);mutate(invalid);assert.throws(()=>State.read(E,invalid));
+  }
+  delete raw.ui.chart;
+  const legacy=State.read(E,raw);
+  assert.equal(legacy.ui.traceSet,'flows');assert.deepEqual(legacy.model,plain(model));
+});
+
 test('migration état v1 : nouvelle densité sans perte de masse, puis reprise du piston',()=>{
   const m=E.make(),s=m.state;
   s.primaryMassKg=288919.9433620741;s.pressureBar=129.39650007044798;s.tavgC=235.44715534379134;

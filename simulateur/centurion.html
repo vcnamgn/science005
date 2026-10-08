@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261007-sauvegarde-capture-2">
+  <link rel="stylesheet" href="centurion.css?v=20261008-courbes-libres">
 </head>
 <body>
   <header class="topbar">
@@ -243,18 +243,51 @@
       <div class="panel-head"><div><h1>Graphique</h1><p>Historique commun de la simulation</p></div></div>
       <section class="card chart-page"><div class="card-head"><h2>Historique des mesures</h2>
         <div class="chart-pickers">
-          <label>Traces <select id="traceSet"><option value="powers">Puissances</option><option value="temperatures">Temp. primaires</option><option value="secondaryTemperatures">Temp. secondaires</option><option value="pressures">Pressions</option><option value="levels">Niveaux</option><option value="rods">Grappes</option><option value="flows">Débits d'eau</option><option value="steam">Débits vapeur · 4 GV</option></select></label>
+          <label>Présélection <select id="traceSet"><option value="powers">Puissances</option><option value="temperatures">Temp. primaires</option><option value="secondaryTemperatures">Temp. secondaires</option><option value="pressures">Pressions</option><option value="levels">Niveaux</option><option value="rods">Grappes</option><option value="flows">Débits d'eau</option><option value="steam">Débits vapeur · 4 GV</option><option value="custom">Personnalisée</option></select></label>
           <label>GV <select id="historyGv" aria-label="Générateur de vapeur des courbes"><option value="1">GV 1</option><option value="2">GV 2</option><option value="3">GV 3</option><option value="4">GV 4</option></select></label>
-          <label>Échelle <select id="historyWindow"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option></select></label>
+          <label>Durée <select id="historyWindow"><option value="300">5 minutes</option><option value="1800">30 minutes</option><option value="3600">1 heure</option><option value="14400">4 heures</option><option value="custom">Personnalisée</option></select></label>
         </div></div>
+        <details class="history-settings" id="historySettings" open><summary>Variables et axes</summary><div class="history-variable-picker">
+          <section class="history-library" aria-label="Catalogue des variables">
+            <label for="historySearch">Ajouter des variables</label>
+            <input id="historySearch" type="search" placeholder="Nom, capteur, signal CC, unité…" autocomplete="off">
+            <select id="historyVariable" size="6" aria-label="Variables disponibles"></select>
+            <div class="history-library-foot"><small id="historySearchCount"></small><button class="button primary" type="button" id="historyAdd">Ajouter</button></div>
+          </section>
+          <section class="history-selection" aria-label="Courbes sélectionnées">
+            <div class="history-selection-head"><strong>Courbes sélectionnées</strong><button class="button" type="button" id="historyClear">Vider la sélection</button></div>
+            <div class="history-selection-scroll"><table><thead><tr><th>Voir</th><th>Couleur</th><th>Variable</th><th>Échelle</th><th>Min.</th><th>Max.</th><th>Lecture</th><th></th></tr></thead><tbody id="historySelectedRows"></tbody></table></div>
+            <p id="historyEmptySelection" class="hint" hidden>Ajoutez une variable ou choisissez une présélection.</p>
+          </section>
+        </div></details>
+        <p id="historyStatus" class="hint history-status" role="status"></p>
         <div class="history-legend" id="historyLegend" aria-label="Légende des courbes"></div>
         <div class="history-navigation">
-          <div class="history-navigation-head"><label for="historyScrubber">Navigation temporelle</label><output id="historyRangeLabel">00:00:00 – 00:05:00</output><button class="button" id="historyLive" type="button" disabled>Revenir au direct</button></div>
-          <input id="historyScrubber" type="range" min="300" max="300" value="300" step="1" aria-label="Déplacer la période affichée dans l’historique" disabled>
+          <div class="history-navigation-head"><strong>Sélection de la période affichée</strong><output id="historyRangeLabel">00:00:00 – 00:00:00</output><span id="historyFollowingLabel">Suivi du direct</span><button class="button" id="historyLive" type="button" disabled>Revenir au direct</button></div>
+          <canvas id="historyOverview" width="1200" height="70" aria-label="Aperçu temporel : glisser les bords pour choisir la période, glisser le centre pour la déplacer"></canvas>
+          <div class="history-period-fields">
+            <button id="historyPrevious" class="button" type="button" aria-label="Période précédente">◀</button>
+            <label for="historyStart">Début <input id="historyStart" type="text" value="00:00:00" inputmode="numeric" aria-label="Début de période HH:MM:SS"></label>
+            <input id="historyStartRange" type="range" min="0" max="1" value="0" step="1" aria-label="Déplacer le début de la période" disabled>
+            <label for="historyEnd">Fin <input id="historyEnd" type="text" value="00:00:00" inputmode="numeric" aria-label="Fin de période HH:MM:SS"></label>
+            <input id="historyEndRange" type="range" min="0" max="1" value="0" step="1" aria-label="Déplacer la fin de la période" disabled>
+            <button id="historyNext" class="button" type="button" aria-label="Période suivante">▶</button>
+            <button id="historyApplyPeriod" class="button" type="button">Afficher la période</button>
+          </div>
           <div class="history-navigation-ends"><span id="historyOldestLabel">Données depuis 00:00:00</span><span id="historyNewestLabel">Simulation : 00:00:00</span></div>
         </div>
-        <canvas id="historyChart" width="1200" height="440" aria-label="Historique des mesures"></canvas>
-        <canvas id="reactivityChart" width="1200" height="170" aria-label="Historique de la réactivité"></canvas>
+        <div class="history-cursor-controls"><output id="historyCursorLabel">Lecture : 00:00:00</output><span>Survol : lire · clic : figer · ← → : parcourir</span><button id="historyPin" class="button" type="button">Figer le curseur</button><button id="historyUnpin" class="button" type="button" disabled>Défiger</button></div>
+        <div id="historyPlotScroll" class="history-plot-scroll">
+          <canvas id="historyChart" width="1200" height="440" tabindex="0" aria-label="Historique des mesures : axes colorés à gauche, clic pour figer les valeurs"></canvas>
+          <canvas id="reactivityChart" width="1200" height="190" tabindex="0" aria-label="Historique de réactivité gradué, repères à zéro, plus ou moins 200 et 300 pcm"></canvas>
+        </div>
+        <div class="history-reactivity-controls"><strong>Réactivité · pcm</strong><label>Échelle <select id="reactivityScale"><option value="adaptive">Adaptative</option><option value="fixed">Fixe</option></select></label><label>Min. <input id="reactivityMin" type="number" value="-600" step="10" disabled></label><label>Max. <input id="reactivityMax" type="number" value="600" step="10" disabled></label><small>Bandes : repères visuels ±200 / ±300 pcm</small></div>
+        <section id="historySnapshot" class="history-snapshot" hidden>
+          <div class="card-head"><h2>Valeurs à <time id="historySnapshotTime">—</time></h2><button id="historyCopy" class="button primary" type="button" disabled>Copier le tableau</button></div>
+          <table><thead><tr><th>Variable</th><th>Valeur</th><th>Unité</th></tr></thead><tbody id="historySnapshotRows"></tbody></table>
+          <textarea id="historyCopyText" readonly hidden aria-label="Tableau à copier avec Ctrl+C"></textarea>
+        </section>
+        <p class="hint">Échantillonnage : environ une seconde simulée. Une mesure absente d’une ancienne sauvegarde reste indiquée « — ».</p>
       </section>
     </section>
 
@@ -367,7 +400,7 @@
   <div class="architecture-branches"><div>mesures ↔ sorties<br><strong>CC-RÉGUL</strong></div><div>mesures ↔ ordres<br><strong>CC-PROTECT</strong></div><div>projection → rendu<br><strong>SVG et Canvas</strong></div></div>
 </div>
 <h3 id="detail-responsabilites-des-fichiers">Responsabilités des fichiers</h3>
-<div class="table-scroll"><table><thead><tr><th>Fichier</th><th>Responsabilité</th><th>Dépendances</th></tr></thead><tbody><tr><td><code>centurion-engine.js</code></td><td>État physique, commandes, évolution, instruments, événements et historiques</td><td>JavaScript seul ; export CommonJS ou <code>window.CenturionEngine</code></td></tr><tr><td><code>centurion-app.js</code></td><td>Horloge navigateur, conduite manuelle, arbitrage des sorties CC, navigation et dessins Canvas</td><td>Moteur, DOM, Canvas, fenêtres des éditeurs et SVG</td></tr><tr><td><code>centurion-cc-regul.html</code></td><td>Palette de blocs, graphes, évaluation, édition et sauvegarde</td><td>DOM, stockage local, messages du parent ; deux instances selon <code>mode</code></td></tr><tr><td><code>centurion-svg-bridge.js</code></td><td>Application des mesures aux objets SVG, animations et renvois</td><td>DOM SVG et messages du parent</td></tr><tr><td><code>centurion.html</code> / <code>centurion.css</code></td><td>Structure des onglets, pupitre commun et présentation adaptative</td><td>Les trois scripts applicatifs et les fichiers SVG</td></tr><tr><td><code>synoptiques/liaisons.json</code></td><td>Inventaire des liaisons graphiques, utilisé pour vérification</td><td>Tests et documentation ; pas un moteur de calcul</td></tr><tr><td><code>references.html</code></td><td>Catalogue public de références sous identifiants REF-01 à REF-08</td><td>Les documents sources eux-mêmes restent locaux</td></tr><tr><td><code>tests/</code></td><td>Tests du moteur, du vrai évaluateur CC et de l&#39;intégration sur surfaces DOM/SVG simulées</td><td>Modules intégrés de Node.js</td></tr></tbody></table></div>
+<div class="table-scroll"><table><thead><tr><th>Fichier</th><th>Responsabilité</th><th>Dépendances</th></tr></thead><tbody><tr><td><code>centurion-engine.js</code></td><td>État physique, commandes, évolution, instruments, événements et historiques</td><td>JavaScript seul ; export CommonJS ou <code>window.CenturionEngine</code></td></tr><tr><td><code>centurion-app.js</code></td><td>Horloge navigateur, conduite manuelle, arbitrage des sorties CC, navigation et dessins Canvas</td><td>Moteur, DOM, Canvas, fenêtres des éditeurs et SVG</td></tr><tr><td><code>centurion-history.js</code></td><td>Catalogue des mesures, courbes libres, axes, sélection temporelle et lectures figées</td><td>Moteur en lecture seule, DOM et Canvas ; fonctions pures exportées pour les tests</td></tr><tr><td><code>centurion-cc-regul.html</code></td><td>Palette de blocs, graphes, évaluation, édition et sauvegarde</td><td>DOM, stockage local, messages du parent ; deux instances selon <code>mode</code></td></tr><tr><td><code>centurion-svg-bridge.js</code></td><td>Application des mesures aux objets SVG, animations et renvois</td><td>DOM SVG et messages du parent</td></tr><tr><td><code>centurion.html</code> / <code>centurion.css</code></td><td>Structure des onglets, pupitre commun et présentation adaptative</td><td>Les trois scripts applicatifs et les fichiers SVG</td></tr><tr><td><code>synoptiques/liaisons.json</code></td><td>Inventaire des liaisons graphiques, utilisé pour vérification</td><td>Tests et documentation ; pas un moteur de calcul</td></tr><tr><td><code>references.html</code></td><td>Catalogue public de références sous identifiants REF-01 à REF-08</td><td>Les documents sources eux-mêmes restent locaux</td></tr><tr><td><code>tests/</code></td><td>Tests du moteur, du vrai évaluateur CC et de l&#39;intégration sur surfaces DOM/SVG simulées</td><td>Modules intégrés de Node.js</td></tr></tbody></table></div>
 <p>Le RCP général, le pressuriseur, les grappes, le GV, l&#39;inventaire et le diagramme P–T sont six fichiers SVG. Les quatre GV utilisent un même fichier avec substitution du numéro de train. La vue Cœur est un dessin Canvas ; elle n&#39;a pas de SVG externe.</p>
 <h3 id="detail-chargement">Chargement</h3>
 <p><code>index.html</code> redirige vers <code>simulateur/centurion.html</code>. Le moteur est chargé avant l&#39;application. Celle-ci crée <code>model = CenturionEngine.make()</code>, raccorde les commandes, ouvre les vues et démarre sa boucle <code>requestAnimationFrame</code>.</p>
@@ -397,6 +430,10 @@
 <p>Les couplages utilisent ainsi des états successifs à l&#39;intérieur du pas. Il ne s&#39;agit pas d&#39;une résolution simultanée de toutes les équations. <code>advance(model, seconds, dt)</code> est un outil de calcul sans interface : il répète les sous-pas physiques et n&#39;exécute pas les graphes CC du navigateur.</p>
 <h3 id="detail-historiques-et-temporisations">Historiques et temporisations</h3>
 <p>Un échantillon est enregistré environ chaque seconde simulée ; la mémoire conserve au plus 28 800 échantillons, soit environ 8 h. Les fenêtres de 5 min à 4 h filtrent cette mémoire sans changer le pas physique. Le journal conserve les 240 derniers événements.</p>
+<p>L&#39;onglet <strong>Graphique</strong> propose 259 variables : mesures physiques, températures/débits des quatre boucles et GV, actionneurs, stocks d&#39;eau, poisons, composantes de réactivité et les 48 sources transmises aux ateliers CC. Les huit listes historiques sont des présélections modifiables. La recherche accepte nom, repère, nom interne, famille et unité. Une courbe peut être masquée sans être retirée ; couleur, échelle adaptative ou bornes fixes se règlent dans sa ligne. Chaque courbe visible dispose d&#39;un axe de sa couleur, à gauche. Au-delà de la largeur disponible, les axes et courbes se parcourent horizontalement. La limite de 32 courbes simultanées évite une image Canvas excessivement large.</p>
+<p>L&#39;aperçu montre tout l&#39;historique conservé et une fenêtre de sélection. Glisser les bords règle début/fin ; glisser le centre déplace la fenêtre ; tracer une nouvelle sélection hors de la fenêtre choisit une période. Les champs HH:MM:SS, deux glissières et boutons précédent/suivant offrent aussi une navigation clavier. <strong>Revenir au direct</strong> fait avancer la fenêtre avec la simulation. Une période choisie reste fixe, indépendamment du curseur de lecture.</p>
+<p>Le curseur lit l&#39;échantillon réel le plus proche, sans interpolation temporelle. La ligne verticale est commune aux deux graphes, et les valeurs sont affichées près des axes et dans la liste. Un clic, Entrée ou le bouton <strong>Figer le curseur</strong> conserve l&#39;instant et ses valeurs ; <strong>Défiger</strong> reprend le suivi. Les flèches gauche/droite parcourent les échantillons. Le tableau figé contient les courbes visibles plus la réactivité du panneau inférieur. <strong>Copier le tableau</strong> produit du texte tabulé avec virgule décimale, prêt pour un tableur ; une zone sélectionnable prend le relais si le presse-papiers n&#39;est pas disponible. Le graphe de réactivité possède une échelle indépendante, des graduations et des bandes visuelles ±200/±300 pcm, sans créer de protection supplémentaire.</p>
+<p><code>historyPoint(model)</code> centralise l&#39;échantillon sans avancer la physique. Les mesures supplémentaires sont enregistrées dans des tableaux compacts versionnés (<code>detailVersion = 1</code>, ordre <code>HISTORY_PATHS</code>, sources CC dans leur ordre déclaré), à huit chiffres significatifs. Les champs historiques existants gardent leur précision. Une ancienne sauvegarde ne contient pas ces mesures supplémentaires : leurs courbes commencent au premier nouvel échantillon et leurs anciennes valeurs restent « — ». La sélection, les bornes et la lecture figée sont incluses dans l&#39;état JSON ; les sauvegardes anciennes restent compatibles. La limite de fichier est portée à 160 Mo pour permettre huit heures d&#39;historique enrichi.</p>
 <p>Le décompte de lancement d&#39;un initiateur dure 5 s <strong>réelles</strong>. Les délais AAR/IS/ASG, transits, décroissance résiduelle et seuil de dommage sont exprimés en <strong>secondes simulées</strong>. Pendant le décompte de dommage, l&#39;application force ×1 et abandonne le reliquat de temps accéléré.</p>
 </article>
 <article class="model-detail-page" id="model-detail-5" aria-label="Lois physiques"><h2>5. Lois physiques implémentées</h2>
@@ -622,9 +659,10 @@ node scripts/check-docs.mjs</code></pre>
     <img id="certificatePreview" class="certificate-preview" alt="Aperçu du certificat de fin de simulation" hidden>
   </dialog>
   <script src="vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="centurion-engine.js?v=20261008-pzr-phase"></script>
-  <script src="centurion-state.js?v=20261008-pzr-phase"></script>
+  <script src="centurion-engine.js?v=20261008-courbes-libres"></script>
+  <script src="centurion-history.js?v=20261008-courbes-libres"></script>
+  <script src="centurion-state.js?v=20261008-courbes-libres"></script>
   <script src="centurion-certificate.js?v=20261007-sauvegarde-capture-3"></script>
-  <script src="centurion-app.js?v=20261008-pzr-piston"></script>
+  <script src="centurion-app.js?v=20261008-courbes-libres"></script>
 </body>
 </html>

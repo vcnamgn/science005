@@ -6,7 +6,7 @@ const {svgSurface}=require('./helpers/svg-surface');
 const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../centurion.html'),'utf8');
 const startup=fs.readFileSync(path.join(__dirname,'centurion-startup.test.js'),'utf8');
-const context=vm.createContext({E,State:require('../centurion-state'),app,html,vm,assert,svgSurface,Blob,URL});
+const context=vm.createContext({E,H:require('../centurion-history'),State:require('../centurion-state'),app,html,vm,assert,svgSurface,Blob,URL});
 vm.runInContext(startup.slice(startup.indexOf('function application('),startup.indexOf("test('démarrage complet"))
   +'globalThis.application=application;',context);
 
