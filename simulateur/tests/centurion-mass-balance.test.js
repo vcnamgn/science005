@@ -49,12 +49,17 @@ test('recirculation RIS : EAS garde le puisard sous 90 °C, sans perdre de bore,
   const recircParcel=s.risPipe.find(p=>p.source==='mp'&&p.boronPpm===3400);
   assert.ok(recircParcel);close(recircParcel.tempC,89.9);
   // Revenir au PTR sans changer les caractéristiques des volumes en tuyauterie.
-  m.controls.risSourceMode='direct';E.advance(m,4);
+  // Isoler le transit de composition : une contre-pression redevenue >120 bar
+  // retient désormais légitimement les parcelles MP au lieu de les injecter.
+  const holdPressure=seconds=>{for(let i=0;i<Math.round(seconds*10);i++){
+    s.pressureBar=s.pzrThermalPressureBar=30;E.step(m,.1);
+  }};
+  m.controls.risSourceMode='direct';holdPressure(4);
   const arrived=E.primaryMassBalance(s);
   assert.ok(arrived.risMpBoronPpm>2500);assert.ok(arrived.risMpTempC>20);
   assert.ok(s.sumpTempC<90);
   assert.ok(s.risPipe.filter(p=>p.source==='mp').every(p=>p.boronPpm===2500));
-  E.advance(m,5);close(E.primaryMassBalance(s).risMpBoronPpm,2500);
+  holdPressure(5);close(E.primaryMassBalance(s).risMpBoronPpm,2500);
   close(E.primaryMassBalance(s).risMpTempC,20);
 });
 

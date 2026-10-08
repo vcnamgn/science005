@@ -252,7 +252,7 @@
     return {tempC,vaporKg,latent,satC,rho,
       volumeM3:(massKg-vaporKg)/rho+vaporKg/steamDensity};
   }
-  function solvePrimaryPressure(oldState,massKg,energyJ,pzrHeatMW,dt,thermalPressureBar=null) {
+  function primaryPressureEquation(oldState,massKg,energyJ,pzrHeatMW,dt,thermalPressureBar=null) {
     // Volume fini : compression polytropique de la poche équivalente,
     // compressibilité du liquide et volume de la vapeur de détente.
     const oldRho=liquidWaterDensityKgM3(oldState.tempC,oldState.pressureBar);
@@ -267,15 +267,25 @@
     const heatVolume=thermalPressureBar===null
       ? nominalFree/(C.pzrPolytropicExponent*C.primaryPressureBar)
         *C.pressureHeatGainBarPerMWs*pzrHeatMW*dt : 0;
-    const pocket=Math.max(0,free+heatVolume);
+    // La poche de pilotage exige une réserve chaude dans le PZR. Après
+    // vidange, les volumes vapeur du CPP sont résolus par M/U/V ; conserver
+    // la poche polytropique reviendrait à emprisonner un gaz non condensable.
+    // Transition continue sur les derniers 5 % de niveau (hypothèse d'étude).
+    const pzrLiquidM3=clamp((oldState.massKg-oldState.vaporKg)/oldRho-CPP_LOOP_VOLUME,0,CPP_PZR_VOLUME);
+    const hotReserveFraction=clamp(pzrLiquidM3/(.05*CPP_PZR_VOLUME),0,1);
+    const pocketAvailability=Math.exp(-dt*(1-hotReserveFraction)/C.pzrCondensationTauS);
+    const pocket=Math.max(0,free+heatVolume)*pocketAvailability;
     // Relaxation vers la pression thermique de la poche : représentation
     // réduite de la condensation/évaporation, seulement si une poche subsiste.
     // Une poche nulle ne peut absorber aucun volume supplémentaire.
     const referencePressure=thermalPressureBar===null?oldState.pressureBar
       :thermalPressureBar+(oldState.pressureBar-thermalPressureBar)
         *Math.exp(-dt/C.pzrCondensationTauS);
-    const residual=p=>primaryPhaseAt(massKg,energyJ,p).volumeM3
+    return p=>primaryPhaseAt(massKg,energyJ,p).volumeM3
       +pocket*(referencePressure/p)**(1/C.pzrPolytropicExponent)-CPP_TOTAL_VOLUME;
+  }
+  function solvePrimaryPressure(oldState,massKg,energyJ,pzrHeatMW,dt,thermalPressureBar=null) {
+    const residual=primaryPressureEquation(oldState,massKg,energyJ,pzrHeatMW,dt,thermalPressureBar);
     let lo=1,hi=C.primaryPressureMaxBar;
     if(residual(lo)<=0)return lo;
     if(residual(hi)>=0)return hi;
@@ -316,18 +326,29 @@
       heatGainBarPerMWs:phaseAvailability*latentVolume*1e6/latentHeatJkg(p)/complianceM3Bar,
       liquidCompliance,steamCompliance,hotWaterExpansion,phaseCompliance,phaseCapacityJk:phaseCapacity};
   }
-  function advancePrimaryPressure(before,massKg,energyJ,pzrHeatMW,reliefSteamKgS,thermalPressureBar,levelPct,dt) {
+  function advancePrimaryPressure(before,massKg,energyJ,pzrHeatMW,reliefSteamKgS,thermalPressureBar,levelPct,dt,trialPressureBar=null) {
     const oldVolume=(before.massKg-before.vaporKg)/liquidWaterDensityKgM3(before.tempC,before.pressureBar)
       +before.vaporKg/saturatedWaterDensities(saturationTemperatureC(before.pressureBar)).vapor;
     const displacementM3=primaryPhaseAt(massKg,energyJ,before.pressureBar).volumeM3-oldVolume;
     const response=pzrEquilibriumResponse(before,Math.max(0,CPP_TOTAL_VOLUME-oldVolume),levelPct);
     // Le travail de compression est déjà présent dans le déplacement et
     // la loi polytropique. Ne pas l'ajouter encore comme chauffage externe.
-    const nextThermalPressureBar=clamp(thermalPressureBar
+    // La vapeur de détente est déjà dans le bilan M/U/V. Lorsque cette vapeur
+    // occupe la poche, ou lorsque le CPP est plein, une deuxième mémoire PZR
+    // indépendante ne doit pas dériver puis recréer un gaz fictif à 1 bar.
+    const free=Math.max(0,CPP_TOTAL_VOLUME-oldVolume);
+    const vaporVolume=before.vaporKg/saturatedWaterDensities(saturationTemperatureC(before.pressureBar)).vapor;
+    const resolvedShare=Math.max(1-clamp(levelPct/5,0,1),1-clamp(free/.4,0,1),
+      clamp(vaporVolume/Math.max(.4,vaporVolume+free),0,1));
+    const baseThermalPressure=lerp(thermalPressureBar,before.pressureBar,resolvedShare);
+    const nextThermalPressureBar=clamp(baseThermalPressure
       +displacementM3/response.complianceM3Bar
       +response.heatGainBarPerMWs*(pzrHeatMW
         -reliefSteamKgS*latentHeatJkg(before.pressureBar)/1e6)*dt,1,C.primaryPressureMaxBar);
-    return {pressureBar:solvePrimaryPressure(before,massKg,energyJ,pzrHeatMW,dt,nextThermalPressureBar),
+    const volumeResidualM3=trialPressureBar===null?null
+      :primaryPressureEquation(before,massKg,energyJ,pzrHeatMW,dt,nextThermalPressureBar)(trialPressureBar);
+    return {pressureBar:trialPressureBar??solvePrimaryPressure(before,massKg,energyJ,pzrHeatMW,dt,nextThermalPressureBar),
+      volumeResidualM3,
       thermalPressureBar:nextThermalPressureBar,displacementM3,response};
   }
   // Chaleur latente : interpolation de valeurs vapeur saturée (kJ/kg).
@@ -1222,22 +1243,25 @@
     }
   }
 
-  function risPumpFlows(s, u) {
-    const p = s.pressureBar;
+  function risPumpCapacity(s,u,p=s.pressureBar) {
     const sourceReady = (u.risSourceMode==="recirculation"?s.sumpKg:s.risTankRemainingKg) > 0;
     const voltageReady = !s.lossOfVoltage || s.time-s.voltageLostAt >= C.dieselStartS;
     const enabled = s.risEnabled && u.risPumpMode!=="off"
       && (u.risPumpMode==="on"||s.risAt !== null) && sourceReady && voltageReady;
     const mpOne = p >= 120 ? 0 : p >= 40 ? (120-p) : 80+Math.max(0,40-p);
     const bpOne = p >= 40 ? 0 : 9*(40-p);
-    s.risMpKgS = enabled ? mpOne*u.mpTrainEnabled.filter(Boolean).length*u.risMpScale : 0;
-    s.risBpKgS = enabled ? bpOne*u.bpTrainEnabled.filter(Boolean).length*u.risBpScale : 0;
-    const pumped = Math.min(s.risMpKgS+s.risBpKgS,
+    let mp=enabled ? mpOne*u.mpTrainEnabled.filter(Boolean).length*u.risMpScale : 0;
+    let bp=enabled ? bpOne*u.bpTrainEnabled.filter(Boolean).length*u.risBpScale : 0;
+    const pumped = Math.min(mp+bp,
       (u.risSourceMode==="recirculation"?s.sumpKg:s.risTankRemainingKg)/0.1);
-    if (pumped < s.risMpKgS+s.risBpKgS) {
-      const ratio = pumped/(s.risMpKgS+s.risBpKgS);
-      s.risMpKgS *= ratio; s.risBpKgS *= ratio;
+    if (pumped < mp+bp) {
+      const ratio = pumped/(mp+bp);mp*=ratio;bp*=ratio;
     }
+    return {mp,bp};
+  }
+  function risPumpFlows(s,u,p=s.pressureBar) {
+    const capacity=risPumpCapacity(s,u,p);
+    s.risMpKgS=capacity.mp;s.risBpKgS=capacity.bp;
   }
   function pumpToPipe(pipe, at, massKg, boronPpm, metadata = {}) {
     if (massKg > 0) {
@@ -1245,16 +1269,23 @@
       pipe.sort((a,b) => a.at-b.at);
     }
   }
-  function deliverPipe(pipe, time, injectionLitres = null, maxMassKg=Infinity) {
+  function deliverPipe(pipe, time, injectionLitres = null, maxMassKg=Infinity, sourceLimits=null, preview=false) {
     let massKg=0, boron=0,energyJ=0;
     const sources={mp:0,bp:0,accumulator:0};
     const properties=Object.fromEntries(Object.keys(sources).map(key=>[key,{massKg:0,boron:0,energyJ:0}]));
-    while (pipe.length && pipe[0].at <= time+1e-9 && massKg<maxMassKg-1e-12) {
-      const pending=pipe[0],amount=Math.min(pending.massKg,maxMassKg-massKg);
+    let index=0;
+    while (index<pipe.length && pipe[index].at <= time+1e-9 && massKg<maxMassKg-1e-12) {
+      const pending=pipe[index],limit=sourceLimits?.[pending.source]??Infinity;
+      const amount=Math.min(pending.massKg,maxMassKg-massKg,Math.max(0,limit-(sources[pending.source]??0)));
+      // Consommer aussi les reliquats positifs de la vidange d'un accumulateur.
+      // Les ignorer laisse des milliers de parcelles quasi nulles dans la ligne.
+      if(amount<=0){index++;continue;}
       const fraction=amount/pending.massKg;
       const parcel={...pending,massKg:amount,litres:(pending.litres??0)*fraction};
-      if(fraction>=1-1e-12)pipe.shift();
-      else {pending.massKg-=amount;if(pending.litres!==undefined)pending.litres-=parcel.litres;}
+      if(!preview){
+        if(fraction>=1-1e-12)pipe.splice(index,1);
+        else {pending.massKg-=amount;if(pending.litres!==undefined)pending.litres-=parcel.litres;index++;}
+      }else index++;
       massKg += parcel.massKg;
       boron += parcel.massKg*parcel.boronPpm;
       energyJ += parcel.massKg*C.primaryCpJkgK*(parcel.tempC??C.risInjectionTempC);
@@ -1264,10 +1295,76 @@
         stream.boron+=parcel.massKg*parcel.boronPpm;
         stream.energyJ+=parcel.massKg*C.primaryCpJkgK*(parcel.tempC??C.risInjectionTempC);
       }
-      if(injectionLitres && Object.hasOwn(injectionLitres,parcel.mode))
+      if(!preview && injectionLitres && Object.hasOwn(injectionLitres,parcel.mode))
         injectionLitres[parcel.mode]+=parcel.litres;
     }
+    if(!preview&&pipe.length>128){
+      // Les parcelles déjà arrivées et consécutives de même composition peuvent
+      // partager un stock en attente. Garder l'ordre des fronts T/CB et les
+      // dates futures ; conserver les reliquats, même infinitésimaux.
+      let kept=0;
+      for(const parcel of pipe){
+        const previous=pipe[kept-1];
+        if(previous&&previous.at<=time+1e-9&&parcel.at<=time+1e-9
+          &&previous.source===parcel.source&&previous.tempC===parcel.tempC
+          &&previous.boronPpm===parcel.boronPpm&&previous.mode===parcel.mode){
+          previous.massKg+=parcel.massKg;
+          if(parcel.litres!==undefined)previous.litres=(previous.litres??0)+parcel.litres;
+        }else pipe[kept++]=parcel;
+      }
+      pipe.length=kept;
+    }
     return { massKg, boron,energyJ,sources,properties };
+  }
+
+  function breakFlowKgS(s,p=s.pressureBar) {
+    const density=liquidWaterDensityKgM3(s.tavgC,p);
+    const fluxOrifice=.68*Math.sqrt(2*density*Math.max(0,p-1)*1e5);
+    const fluxLimit=C.breakCriticalFluxKgM2S*Math.sqrt(Math.max(0,p)/155);
+    return s.breakAreaCm2*1e-4*Math.min(fluxOrifice,fluxLimit);
+  }
+  function risAdmissionLimits(s,u,p,dt) {
+    const pumps=risPumpCapacity(s,u,p);
+    const accumulator=s.risEnabled&&s.risDemandAt!==null
+      ?s.accumulatorsKg.reduce((q,m)=>q+accumulatorFlowKgS(p,Math.max(1e-8,m)).flowKgS,0):0;
+    return {mp:pumps.mp*dt,bp:pumps.bp*dt,accumulator:accumulator*dt};
+  }
+  function primaryHydraulicPressure(model,dt,coreTransferMW) {
+    const s=model.state,u=model.controls;
+    // Une eau sous-refroidie dans un CPP presque plein est très raide.
+    // Résoudre la contre-pression et les admissions ensemble : le transit des
+    // parcelles conserve T/CB, mais ne retarde pas la réponse hydraulique de 4 s.
+    if(s.breakAreaCm2<=0||s.vaporMassKg>1||s.inventory.steamSpaceM3>=2
+      ||s.tavgC>=saturationTemperatureC(s.pressureBar)-1)return s.pressureBar;
+    const before={massKg:s.primaryMassKg,vaporKg:s.vaporMassKg,tempC:s.tavgC,pressureBar:s.pressureBar};
+    const oldEnergy=s.primaryMassKg*C.primaryCpJkgK*s.tavgC+s.vaporEnergyJ;
+    const letdown=rcvLetdownM3h(model)*liquidWaterDensityKgM3(s.tavgC,s.pressureBar)/3600;
+    const pzrHeatMW=(s.heaterKW-C.pzrPassiveTransferKW)/1000;
+    const residual=p=>{
+      const ris=deliverPipe(s.risPipe,s.time,null,Infinity,risAdmissionLimits(s,u,p,dt),true);
+      const charge=deliverPipe(s.rcvPipe,s.time,null,
+        rcvPumpCapacityM3h(p)*liquidWaterDensityKgM3(s.tavgC,p)/3600*dt,null,true);
+      const out=(breakFlowKgS(s,p)+letdown+s.reliefKgS)*dt;
+      const mass=s.primaryMassKg+ris.massKg+charge.massKg-out;
+      const energy=oldEnergy+(coreTransferMW+s.pumpHeatMW-s.totalGvMW)*1e6*dt
+        +ris.energyJ+charge.energyJ-out*C.primaryCpJkgK*s.tavgC;
+      return advancePrimaryPressure(before,mass,energy,pzrHeatMW,s.reliefSteamKgS,
+        s.pzrThermalPressureBar,s.pzrLevelPct,dt,p).volumeResidualM3;
+    };
+    let lo=1,hi=C.primaryPressureMaxBar,p=clamp(s.pressureBar,lo,hi);
+    if(residual(lo)<=0)return lo;
+    if(residual(hi)>=0)return hi;
+    for(let i=0;i<24;i++){
+      const value=residual(p);
+      if(Math.abs(value)<1e-8)return p;
+      if(value>0)lo=p;else hi=p;
+      if(hi-lo<1e-5)break;
+      const probe=clamp(p+(p+.01<hi?.01:-.01),lo,hi);
+      const slope=probe!==p?(residual(probe)-value)/(probe-p):0;
+      const next=slope<0?p-value/slope:NaN;
+      p=Number.isFinite(next)&&next>lo&&next<hi?next:(lo+hi)/2;
+    }
+    return (lo+hi)/2;
   }
 
   function deliveredProperties(parcel, fallback) {
@@ -1577,17 +1674,15 @@
     s.fuelC=clamp(s.fuelC+fuelDelta,20,3000);
 
     // Brèche primaire, RIS à pression variable et transit des volumes injectés.
-    const density=liquidWaterDensityKgM3(s.tavgC,s.pressureBar);
-    s.breakDensityKgM3=density;
-    const fluxOrifice=0.68*Math.sqrt(2*density*Math.max(0,s.pressureBar-1)*1e5);
-    const fluxLimit=C.breakCriticalFluxKgM2S*Math.sqrt(Math.max(0,s.pressureBar)/155);
-    s.breakKgS=s.breakAreaCm2*1e-4*Math.min(fluxOrifice,fluxLimit);
+    const hydraulicPressureBar=primaryHydraulicPressure(model,dt,coreTransferMW);
+    s.breakDensityKgM3=liquidWaterDensityKgM3(s.tavgC,hydraulicPressureBar);
+    s.breakKgS=breakFlowKgS(s,hydraulicPressureBar);
     s.breakKgS=Math.min(s.breakKgS,Math.max(0,(s.primaryMassKg-1)/dt));
-    risPumpFlows(s,u);
+    risPumpFlows(s,u,hydraulicPressureBar);
     s.easCoolingMW=0;coolRisSump(s,dt);
     let accumPump=0;
     for(let i=0;i<4;i++) {
-      const gas=accumulatorFlowKgS(s.pressureBar,s.accumulatorsKg[i]);
+      const gas=accumulatorFlowKgS(hydraulicPressureBar,s.accumulatorsKg[i]);
       s.accumulatorNitrogenBar[i]=gas.nitrogenBar;
       const target=s.risEnabled&&s.risDemandAt!==null?gas.flowKgS:0;
       // Inertie hydraulique d'étude (1 s) : pas de commutation tout ou rien.
@@ -1621,7 +1716,8 @@
       sourceBoron,{tempC:sourceTemp,source:"bp"});
     pumpToPipe(s.risPipe,s.time+C.accumulatorTransitS,accumPump*dt,
       clamp(Number(u.risBoronPpm),0,4000),{tempC:C.risInjectionTempC,source:"accumulator"});
-    const arrivedRis=deliverPipe(s.risPipe,s.time);
+    const arrivedRis=deliverPipe(s.risPipe,s.time,null,Infinity,
+      risAdmissionLimits(s,u,hydraulicPressureBar,dt));
     s.risDeliveredKgS=arrivedRis.massKg/dt;
     s.risDeliveredMpKgS=arrivedRis.sources.mp/dt;
     s.risDeliveredBpKgS=arrivedRis.sources.bp/dt;
@@ -1643,7 +1739,7 @@
     // La glissière/CC demande un débit ; la HMT de la pompe en limite
     // le débit réalisé. Les retours des joints restent dans le bilan CPP.
     s.rcvDemandM3h=clamp(Number(chargeM3h)||0,0,C.rcvMaxCommandM3h);
-    s.rcvCapacityM3h=rcvPumpCapacityM3h(s.pressureBar);
+    s.rcvCapacityM3h=rcvPumpCapacityM3h(hydraulicPressureBar);
     s.rcvChargeM3h=Math.min(s.rcvDemandM3h,s.rcvCapacityM3h);
     const chargeDensity=liquidWaterDensityKgM3(s.tavgC,s.pressureBar);
     const rcvFlow=s.rcvChargeM3h*chargeDensity/3600;

@@ -6,6 +6,15 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('état PZR v3 : stocks et parcelles conservés à la reprise du couplage de pression',()=>{
+  const m=E.make();E.initiate(m,'break',{areaCm2:300});E.advance(m,5);
+  const raw=State.write(E,m,{regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))},ui,null);
+  raw.engineRevision='20261008-pzr-v3';
+  const loaded=State.read(E,raw);
+  assert.equal(loaded.engineRevision,State.REVISION);assert.deepEqual(loaded.model,m);
+  E.step(m,.1);E.step(loaded.model,.1);assert.deepEqual(loaded.model,m);
+});
+
 test('état JSON : pente PTUR et cible en cours reprises, anciens fichiers à 5 %/min',()=>{
   const m=E.make();m.controls.manualTurbineRatePctMin=2;
   E.setManualTurbineDemand(m,80);E.advance(m,10);

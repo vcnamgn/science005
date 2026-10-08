@@ -941,13 +941,17 @@
     }
   }
   function advanceSimulationTime() {
-    let steps=0;
+    let steps=0;const started=performance.now();
     while(running&&carry>=0.1&&steps<150&&!model.state.endState){
       if(!advanceControlledStep())break;
       steps++;
       if(model.state.coreDamageWarning&&speed!==1){
         speed=1;$("simSpeed").value="1";carry=0;lastPaint=0;break;
       }
+      // La fermeture hydraulique d'un CPP plein peut coûter davantage qu'un
+      // pas nominal. Rendre la main pour Pause et les commandes, sans changer
+      // les sous-pas de 0,1 s ni l'ordre des CC ; le retard reste dans carry.
+      if(performance.now()-started>=30)break;
     }
     if(steps===150)carry=Math.min(carry,1);
   }

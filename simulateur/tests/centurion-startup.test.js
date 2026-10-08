@@ -68,7 +68,7 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
   vm.runInContext(source,context,{filename:'centurion-app.js'});
   return {get:id=>ids.get(id),query:selector=>document.querySelector(selector),messages,downloads,get pendingFrames(){return frames.length;},
     receive(data){for(const fn of windowEvents.message||[])fn({data});},
-    click:id=>ids.get(id).fire('click'),
+    click:id=>ids.get(id).fire('click'),consumeCpu:milliseconds=>{now+=milliseconds;},
     frame(milliseconds=100){now+=milliseconds;const callback=frames.shift();
       assert.ok(callback,'une trame doit être programmée');callback(now);},
     get snapshot(){return messages.findLast(m=>m.type==='centurion-state');}};
@@ -487,6 +487,22 @@ test('cadence CC : mêmes états à ×1, ×20 et ×200, y compris avec des image
   const span=j=>Math.max(...stable.map(r=>r[j]))-Math.min(...stable.map(r=>r[j]));
   assert.ok(span(0)<.3,`TMOY : étendue ${span(0)} °C dans la dernière minute`);
   assert.ok(span(1)<.5,`PN : étendue ${span(1)} % dans la dernière minute`);
+});
+
+test('calcul hydraulique coûteux : rendre la main à Pause sans changer les sous-pas physiques',()=>{
+  let page,count=0,model;
+  const engine={...E,make:()=>model=E.make(),step(m,dt){
+    count++;assert.equal(dt,.1);const state=E.step(m,dt);page.consumeCpu(12);return state;
+  }};
+  page=application(app,null,engine,{}, {svgUpdates:false});
+  page.get('simSpeed').value='200';page.get('simSpeed').fire('change');page.click('runButton');
+  page.frame(100);
+  assert.equal(count,3,'le lot cède après 36 ms, avant les 150 pas possibles');
+  assert.ok(Math.abs(model.state.time-.3)<1e-9);
+  page.click('runButton');const paused=model.state.time;
+  page.frame(100);assert.equal(model.state.time,paused,'Pause est prise en compte entre les lots');
+  page.click('runButton');page.frame(100);assert.equal(count,6);
+  assert.ok(Math.abs(model.state.time-.6)<1e-9);
 });
 
 test('CC par messages : attendre les réponses avant le pas suivant, Pause et Réinitialiser sans réponse périmée',()=>{
