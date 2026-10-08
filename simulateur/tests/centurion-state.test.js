@@ -199,3 +199,35 @@ test('certificat : archive reprise avec ses événements et diagramme P–T auto
   assert.match(svg,/width="1280" height="850"/);assert.match(svg,/id="pt-trace" d="M/);
   assert.match(svg,/id="pt-point" cx="/);assert.doesNotMatch(svg,/<script/);
 });
+
+test('sauvegarde avec certificat : conditions RRA variables de zéro à cinq, reprise exacte',()=>{
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  for(let count=0;count<=5;count++){
+    const m=E.make(),s=m.state;
+    s.tavgC=count>=1?300:150;s.pressureBar=count>=2?155:28;s.powerPct=count>=3?100:0;
+    if(count>=4){s.primaryMassKg=1000;s.inventory=E.cppInventory(1000,s.tavgC,s.pressureBar);}
+    if(count===5)s.endState='melted';
+    assert.equal(E.rraConditions(s).reasons.length,count);
+    const archive=Cert.createArchive(E);archive.observe(m);
+    const raw=State.write(E,m,editors,ui,archive.save());
+    const loaded=State.read(E,JSON.stringify(raw));
+    assert.deepEqual(loaded.model,m);
+    assert.deepEqual(loaded.certificateArchive,archive.save());
+    assert.equal(loaded.certificateArchive.records[0].snapshot.rra.reasons.length,count);
+    const restored=Cert.createArchive(E);restored.restore(loaded.model,loaded.certificateArchive);
+    assert.deepEqual(restored.getRecords(),archive.getRecords());
+    E.step(m,.1);E.step(loaded.model,.1);assert.deepEqual(loaded.model,m);
+  }
+});
+
+test('certificat sauvegardé : diagnostics RRA invalides et canaux physiques tronqués rejetés',()=>{
+  const m=E.make(),archive=Cert.createArchive(E);archive.observe(m);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,m,editors,ui,archive.save());
+  for(const mutate of [s=>s.rra.reasons=[42],s=>s.rra.reasons=[null],
+    s=>s.rra.reasons=Array(6).fill('condition'),s=>s.rra.reasons={},
+    s=>s.rra.allowed='oui',s=>s.gvAll.pop(),s=>s.loops.pop()]){
+    const invalid=structuredClone(raw);mutate(invalid.certificateArchive.records[0].snapshot);
+    assert.throws(()=>State.read(E,invalid));
+  }
+});

@@ -178,7 +178,11 @@
           ||typeof r.time!=="number"||!r.snapshot||!r.core||r.core.shape?.length!==32||r.core.linear?.length!==32)
           throw new Error("Instantané de certificat invalide.");
         const snapshotTemplate=E.instrumentSnapshot(E.make());snapshotTemplate.g3Display=null;
+        // Liste de diagnostics RRA variable, distincte des canaux physiques.
+        snapshotTemplate.rra.reasons=[];
         sameShape(r.snapshot,snapshotTemplate,"instantané de certificat");
+        if(r.snapshot.rra.reasons.length>5||r.snapshot.rra.reasons.some(reason=>typeof reason!=="string"))
+          throw new Error("Instantané de certificat : conditions RRA invalides.");
         if(r.time<0||r.time>raw.model.state.time||r.core.shape.some(v=>typeof v!=="number")
           ||r.core.linear.some(v=>typeof v!=="number"))throw new Error("Données du certificat invalides.");
         keys.add(r.key);

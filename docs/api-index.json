@@ -2,7 +2,7 @@
   "format": "Centurion-Documentation",
   "version": 1,
   "date": "2026-10-06",
-  "noteHash": "da15a7f5164281388fb55aa2b956d5fda9cf3d261c8512c4aa9c787fb76942ba",
+  "noteHash": "a62a1077c932409275319450651d14d67cc2ffaa7377db2819ca420fbda2167e",
   "modules": [
     {
       "file": "simulateur/centurion-engine.js",
@@ -1792,7 +1792,7 @@
       "file": "simulateur/centurion-state.js",
       "title": "États JSON",
       "description": "Sauvegarde complète, validation et reprise locale pour le débogage.",
-      "sha256": "f3c14a677003aefd3188469e515d54c60779cb78f3bd0271e0e1eb897ff32521",
+      "sha256": "c480d137fcf3bd94c8b486e71d99982c66bb70f7912f18f97de56423b2f46b5e",
       "functions": [
         {
           "name": "checkJson",
@@ -1844,11 +1844,11 @@
         },
         {
           "name": "write",
-          "line": 189,
+          "line": 193,
           "signature": "write(E,model,editors,ui,certificateArchive)",
           "publicApi": false,
           "description": "Fonction interne. Voir le corps et les appels dans le fichier source.",
-          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L189"
+          "url": "https://github.com/vcnamgn/science005/blob/main/simulateur/centurion-state.js#L193"
         }
       ]
     },
