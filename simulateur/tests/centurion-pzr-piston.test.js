@@ -82,3 +82,28 @@ test('CPP plein : charge, pression, rejet liquide et bilan de bore cohérents sa
   assert.ok(maximum>166&&maximum<180);assert.ok(liquidRelief>100);
   assert.equal(s.tripAt,null,'une soupape ne crée pas un AAR');
 });
+
+test('PZR bas niveau : aucune dépressurisation spontanée à 4 %, ni rupture au seuil de 5 %',()=>{
+  const rho=E.liquidWaterDensityKgM3(290,155),scale=E.make().state.inventory.capacityM3;
+  const pzr=scale*40/E.CPP_GEOMETRY.reduce((n,g)=>n+g.volume,0),loops=scale-pzr;
+  for(const level of [0,1,4,4.99,5,5.01,10]){
+    const mass=(loops+pzr*level/100)*rho;
+    let before={massKg:mass,vaporKg:0,tempC:290,pressureBar:155};
+    for(let i=0;i<100;i++){
+      const result=E.advancePrimaryPressure(before,mass,mass*6000*290,0,0,155,level,.1);
+      near(result.pressureBar,155,1e-5);
+      near(result.thermalPressureBar,result.pressureBar);
+      before={...before,pressureBar:result.pressureBar};
+    }
+  }
+});
+
+test('PZR : la pleine aspersion conserve le gradient nominal sans seconde intégration du piston',()=>{
+  const s=E.make().state,before={massKg:s.primaryMassKg,vaporKg:0,tempC:s.tavgC,pressureBar:155};
+  const sprayMW=250*E.liquidWaterDensityKgM3(288.4,155)/3600*6000
+    *(E.saturationTemperatureC(155)-288.4)/1e6;
+  const result=E.advancePrimaryPressure(before,before.massKg,before.massKg*6000*before.tempC,
+    -sprayMW,0,155,42,.1);
+  near((result.pressureBar-155)/.1,-.15,.002);
+  near(result.thermalPressureBar,result.pressureBar);
+});

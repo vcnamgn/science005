@@ -6,9 +6,9 @@
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-gmpp-niveau-v7";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261009-pzr-breche-v8";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6","20261008-gmpp-niveau-v7"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){

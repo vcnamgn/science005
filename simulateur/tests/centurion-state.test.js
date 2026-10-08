@@ -6,6 +6,16 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('pression/brèche v8 : les archives v7 gardent les masses, états CC et historiques à la reprise',()=>{
+  const m=E.make();E.initiate(m,'break',{areaCm2:300});E.advance(m,3);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,m,editors,ui,null);raw.engineRevision='20261008-gmpp-niveau-v7';
+  const loaded=State.read(E,raw);
+  assert.equal(loaded.engineRevision,State.REVISION);
+  assert.deepEqual(loaded.model,plain(m));assert.deepEqual(loaded.editors,plain(editors));
+  E.step(m,.1);E.step(loaded.model,.1);assert.deepEqual(loaded.model,m);
+});
+
 test('état GMPP v7 : ancienne v6 compatible, arrêt mémorisé et aspiration distincte du thermosiphon',()=>{
   const m=E.make();E.tripPrimaryPumps(m);E.advance(m,.5);
   const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
