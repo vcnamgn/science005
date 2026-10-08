@@ -39,6 +39,8 @@
     checkJson(model);const template=E.make();
     // Les tuyaux, événements et historiques ont une longueur variable.
     template.state.rcvPipe=[];template.state.risPipe=[];
+    // Pente numérique ou null pour la commande instantanée.
+    template.controls.manualTurbineRatePctMin=null;
     sameShape(model,template,"modèle");
     const s=model.state,u=model.controls;
     const range=(value,min,max,label)=>{
@@ -51,6 +53,8 @@
     if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
       throw new Error("La brèche physique et sa commande sont incohérentes.");
     for(const name of E.ROD_NAMES)range(s.rods[name],0,260,`Position ${name}`);
+    if(!E.TURBINE_MANUAL_RATES.includes(u.manualTurbineRatePctMin))throw new Error("Pente PTUR invalide.");
+    if(u.manualTurbineTargetPct!==null)range(u.manualTurbineTargetPct,0,110,"Cible PTUR manuelle");
     for(const [key,values] of Object.entries({risPumpMode:["auto","on","off"],risSourceMode:["direct","recirculation"],
       breakBranch:["froide","chaude"],campaign:["debut","milieu","fin"],halfCycle:["premiere","seconde"],
       rMode:["manual","graph"],rcvInjectionMode:["off","dilution","borication"]}))
@@ -132,6 +136,11 @@
     if(raw.format!==FORMAT||raw.version!==VERSION||![REVISION,COMPATIBLE_REVISION,LEGACY_REVISION].includes(raw.engineRevision))
       throw new Error("Ce fichier n'est pas une sauvegarde d'état Centurion compatible.");
     raw=clone(raw);
+    // Anciennes sauvegardes : aucune rampe en attente, pente par défaut de 5 %/min.
+    if(raw.model?.controls){
+      if(raw.model.controls.manualTurbineTargetPct===undefined)raw.model.controls.manualTurbineTargetPct=null;
+      if(raw.model.controls.manualTurbineRatePctMin===undefined)raw.model.controls.manualTurbineRatePctMin=5;
+    }
     if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
     // Même schéma physique que v2 : préserver tous les stocks et mémoires,
     // la nouvelle réponse saturée s'appliquera à la reprise de l'horloge.

@@ -85,6 +85,11 @@ main{width:100%;margin:auto;padding:10px 22px 16px}
 label{display:block;font-size:13px;font-weight:700;color:#35556b}
 .card>label{margin-bottom:14px}
 label output{float:right;font-weight:800;color:#116c90}
+.manual-turbine-row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:10px;align-items:end;margin-bottom:8px}
+.manual-turbine-row label{min-width:0;margin:0;font-size:11px}
+.manual-turbine-rate select{width:100%;padding:5px 6px;margin-top:3px;font-size:11px}
+.manual-turbine-progress{display:block;margin:0 0 8px!important;font-variant-numeric:tabular-nums}
+.manual-turbine-progress[hidden]{display:none}
 input[type=range]{display:block;width:100%;margin:10px 0 2px;accent-color:#17a4c7}
 input[type=number],select{background:#fff;border:1px solid #b8d1df;border-radius:7px;color:#17324d;padding:8px 9px;max-width:100%}
 .card label select{display:block;width:100%;margin-top:7px}

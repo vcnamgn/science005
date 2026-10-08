@@ -610,9 +610,14 @@
   }
   function renderTransientControls() {
     const s=model.state,u=model.controls,active=E.isTransientActive(model);
-    const command=active?s.demandPct:u.demandPct;
+    const command=active?s.demandPct:(u.manualTurbineTargetPct??u.demandPct);
     $("demandInput").value=command;
     $("demandInput").disabled=active;
+    $("turbineRateInput").value=u.manualTurbineRatePctMin===null?"instant":String(u.manualTurbineRatePctMin);
+    $("turbineRateInput").disabled=active;
+    const ramping=!active&&u.manualTurbineTargetPct!==null&&Math.abs(command-s.demandPct)>.01;
+    $("manualTurbineProgress").hidden=!ramping;
+    $("manualTurbineProgress").textContent=`Consigne en cours : ${fmt(s.demandPct,1)} % → ${fmt(command,1)} %`;
     const limit=Number.isFinite(u.turbineLimitGraphPct)?u.turbineLimitGraphPct:null;
     $("demandValue").textContent=`${fmt(command,1)} %${limit===null?"":` · LIM. TURB. ${fmt(limit,1)} %`}`;
     $("demandInput").title=limit===null?"Demande de puissance turbine"
@@ -1220,8 +1225,14 @@
     });
     $("demandInput").addEventListener("input",e=>{
       if(E.isTransientActive(model))return;
-      model.controls.demandPct=Number(e.target.value);
-      $("demandValue").textContent=`${e.target.value} %`;
+      E.setManualTurbineDemand(model,Number(e.target.value));
+      renderTransientControls();
+    });
+    $("turbineRateInput").addEventListener("change",e=>{
+      if(E.isTransientActive(model))return;
+      const rate=e.target.value==="instant"?null:Number(e.target.value);
+      if(E.TURBINE_MANUAL_RATES.includes(rate))model.controls.manualTurbineRatePctMin=rate;
+      renderTransientControls();
     });
     $("campaignSelect").addEventListener("change",e=>{model.controls.campaign=e.target.value;render();});
     $("gcpCalibrationInput").addEventListener("input",e=>{

@@ -74,6 +74,28 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
     get snapshot(){return messages.findLast(m=>m.type==='centurion-state');}};
 }
 
+test('pupitre PTUR : pente par défaut, cible maintenue, rampe physique et Instantanée',()=>{
+  const model=E.make();let made=false;
+  const page=application(app,null,{...E,make:()=>{if(made)return E.make();made=true;return model;}});
+  assert.equal(page.get('turbineRateInput').value,'5');
+  page.get('demandInput').value='80';page.get('demandInput').fire('input');
+  assert.equal(model.controls.manualTurbineTargetPct,80);
+  assert.equal(model.state.demandPct,100,'pause : aucune avance du temps physique');
+  page.get('simSpeed').value='1';page.get('simSpeed').fire('change');page.click('runButton');
+  for(let i=0;i<10;i++)page.frame(100);
+  assert.ok(Math.abs(model.state.demandPct-(100-5/60))<1e-8);
+  assert.equal(Number(page.get('demandInput').value),80);
+  assert.equal(page.get('manualTurbineProgress').hidden,false);
+  page.get('turbineRateInput').value='instant';page.get('turbineRateInput').fire('change');page.frame(200);
+  assert.equal(model.state.demandPct,80);assert.equal(model.state.turbinePct,80);
+  assert.equal(page.get('manualTurbineProgress').hidden,true);
+  page.get('transientSelect').value='down';page.click('startTransient');
+  assert.equal(page.get('turbineRateInput').disabled,true);
+  assert.equal(model.controls.manualTurbineTargetPct,null);
+  page.click('interruptTransient');assert.equal(page.get('turbineRateInput').disabled,false);
+  page.click('resetButton');assert.equal(page.get('turbineRateInput').value,'5');
+});
+
 test('démarrage complet : initialisation, Démarrer, horloge et publication des mesures',()=>{
   const page=application();
   assert.equal(page.pendingFrames,1,'initialisation terminée et animation programmée');

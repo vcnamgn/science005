@@ -7,7 +7,7 @@ const app=fs.readFileSync(path.join(__dirname,'../centurion-app.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'../centurion.html'),'utf8');
 const startup=fs.readFileSync(path.join(__dirname,'centurion-startup.test.js'),'utf8');
 const context=vm.createContext({E,H:require('../centurion-history'),State:require('../centurion-state'),app,html,vm,assert,svgSurface,Blob,URL});
-vm.runInContext(startup.slice(startup.indexOf('function application('),startup.indexOf("test('démarrage complet"))
+vm.runInContext(startup.slice(startup.indexOf('function application('),startup.indexOf('\ntest('))
   +'globalThis.application=application;',context);
 
 test('LIM. TURB. : graphe réel, plafond dynamique, vapeur/réseau et retour sans limite CC',()=>{

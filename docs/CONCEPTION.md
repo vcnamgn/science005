@@ -102,7 +102,7 @@ Les variables publiques du moteur ne sont pas toutes reprises dans ce tableau. L
 
 | Famille | Exemples dans `controls` |
 | --- | --- |
-| Turbine | `demandPct`, état du transitoire |
+| Turbine | `demandPct`, `manualTurbineTargetPct`, `manualTurbineRatePctMin`, état du transitoire |
 | Grappes | `rMode`, `rManualPas`, `rGraphPas`, `rManualOverride`, `allRodsTargetPas`, `g3GraphTarget`, `gcpCalibrationPct` |
 | GV | `gvManualFeedPct[4]`, `gvGraphFeedPct[4]`, `gvSteamValvePct[4]`, `gvLevelSetpointPct`, `gctAOpeningPressureBar` |
 | PZR | `manualHeaterKW`, `manualSprayPct`, `pressureGraphHeaterKW`, `pressureGraphSprayPct`, `manualReliefStages[3]`, `manualAuxiliarySprayM3h` |
@@ -278,7 +278,11 @@ Le permanent initial évacue **3 841 MW par les quatre GV**, soit 3 817 MW du c�
 
 Le débit vapeur total d'un GV est la somme VPU + GCT-A. Le limiteur turbine plafonne le débit utilisé par la turbine à sa demande et la puissance réseau à 1 300 MWe. Une hausse de puissance cœur ne relève pas cette consigne. La pression peut limiter la vapeur réellement disponible.
 
-La sortie facultative **LIM. TURB.** (`turbineLimitOut`) reçoit un plafond en %, borné à 0–100. Quand le CC-RÉGUL est actif, la consigne turbine admise vaut `min(demande PTUR, plafond)`, pour la conduite manuelle comme pour les programmes de charge. La demande d'origine est conservée ; une remontée du plafond autorise donc la reprise de charge jusqu'à cette demande. Le mouvement turbine garde sa limite de 4 %/s et l'arrêt turbine prioritaire impose toujours zéro. Le programme thermique et la puissance vue par les GCP suivent la consigne admise ; PTUR reste la mesure de puissance turbine réalisée. Déconnecter la sortie ou désactiver CC-RÉGUL rétablit le plafond de 100 %.
+La sortie facultative **LIM. TURB.** (`turbineLimitOut`) reçoit un plafond en %, borné à 0–100. Quand le CC-RÉGUL est actif, la consigne turbine admise vaut `min(demande PTUR, plafond)`, pour la conduite manuelle comme pour les programmes de charge. La demande d'origine est conservée ; une remontée du plafond autorise donc la reprise de charge jusqu'à cette demande. Le mouvement turbine garde sa limite de 4 %/s, sauf le mode manuel Instantanée décrit ci-dessous ; l'arrêt turbine prioritaire impose toujours zéro. Le programme thermique et la puissance vue par les GCP suivent la consigne admise ; PTUR reste la mesure de puissance turbine réalisée. Déconnecter la sortie ou désactiver CC-RÉGUL rétablit le plafond de 100 %.
+
+La glissière manuelle PTUR fixe une cible de puissance. Le sélecteur à sa droite impose une pente de **0,5, 1, 2, 5, 10 ou 200 points de pourcentage par minute simulée**, dans les deux sens ; **5 %/min** est le réglage initial. La demande appliquée avance de `pente × dt / 60` au maximum à chaque pas, sans dépasser la cible. Modifier la cible ou la pente pendant le mouvement reprend à la consigne courante. Le mode **Instantanée** applique la nouvelle demande et la réponse turbine au prochain pas physique, sous réserve du plafond et de l'arrêt turbine prioritaires. En pause, la cible peut être préparée mais la rampe reste immobile. Le programme de température, les entrées CC et l'historique suivent la consigne progressive appliquée. La cible reste affichée sur la glissière et la consigne en cours apparaît dessous. La pente et une rampe en cours sont conservées dans la sauvegarde JSON.
+
+Pendant un programme de charge, glissière et sélecteur de pente sont désactivés ; le programme conserve ses propres pentes. Son lancement annule la cible manuelle précédente. À sa fin ou après interruption, la commande est rendue à sa valeur courante, sans reprendre une ancienne rampe. Les anciennes sauvegardes sont chargées sans rampe en attente, avec le sélecteur réglé à 5 %/min.
 
 Les GCT-A modulent autour de leur pression d'ouverture manuelle, 88,6 bar au départ. Leur capacité maximale et leur bande sont des lois d'étude. ARE s'arrête après AAR ou perte de tension. ASG démarre sur ordre CC-PROTECT ou manuel ; l'AAR n'ajoute pas un second démarrage caché dans le moteur.
 

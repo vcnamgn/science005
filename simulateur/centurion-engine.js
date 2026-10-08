@@ -775,7 +775,8 @@
     const model={
       state: initialState(),
       controls: {
-        demandPct: 100, turbineLimitGraphPct: null, campaign: "debut", halfCycle: "premiere",
+        demandPct: 100, manualTurbineTargetPct: null, manualTurbineRatePctMin: 5,
+        turbineLimitGraphPct: null, campaign: "debut", halfCycle: "premiere",
         rMode: "manual", rManualPas: 233, rGraphPas: 233, rManualOverride: false,
         g3GraphTarget: null, gcpCalibrationPct: 0, gvGraphFeedPct: [null,null,null,null],
         gvManualFeedPct: Array(4).fill(100*C.nominalSteamKgSPerGV/950), gvLevelSetpointPct: 55,
@@ -852,9 +853,17 @@
       ? clamp(model.controls.turbineLimitGraphPct,0,100) : 100;
     return clamp(model.state.demandPct,0,limit);
   }
+  const TURBINE_MANUAL_RATES=[0.5,1,2,5,10,200,null];
+  function setManualTurbineDemand(model,targetPct) {
+    if(isTransientActive(model)||!Number.isFinite(targetPct))return false;
+    model.controls.manualTurbineTargetPct=clamp(targetPct,0,110);
+    model.controls.demandPct=model.state.demandPct;
+    return true;
+  }
   function startTransient(model, name) {
     if (!TRANSIENTS[name]) return;
     const u=model.controls,s=model.state;
+    u.manualTurbineTargetPct=null;
     u.transient=name;
     u.transientTargetDemandPct=name==="off"?100:transientDemand(name,0);
     u.transientPhase=Math.abs(s.demandPct-u.transientTargetDemandPct)>1e-9
@@ -890,7 +899,12 @@
   function updateTurbineDemand(model,dt) {
     const s=model.state,u=model.controls;
     if(!isTransientActive(model)) {
-      s.demandPct=clamp(Number(u.demandPct),0,110);
+      if(u.manualTurbineTargetPct!==null){
+        const target=clamp(u.manualTurbineTargetPct,0,110),rate=u.manualTurbineRatePctMin;
+        s.demandPct=rate===null?target:s.demandPct+clamp(target-s.demandPct,-rate*dt/60,rate*dt/60);
+        if(Math.abs(s.demandPct-target)<1e-8)s.demandPct=target;
+        u.demandPct=s.demandPct;
+      }else s.demandPct=clamp(Number(u.demandPct),0,110);
       return;
     }
     if(u.transientPaused)return;
@@ -1302,7 +1316,9 @@
       addEvent(s,"system","ASG démarrée sur ordre · arrêt au-dessus de 90 % GE, reprise sous 10 % GE en automatique");
     }
     const totalTarget = s.turbineTrip ? 0 : turbineLoadTargetPct({state:s,controls:u});
-    s.turbinePct += clamp(totalTarget-s.turbinePct,-4*dt,4*dt);
+    if(u.manualTurbineTargetPct!==null&&u.manualTurbineRatePctMin===null
+      &&!["approach","run","return"].includes(u.transientPhase))s.turbinePct=totalTarget;
+    else s.turbinePct += clamp(totalTarget-s.turbinePct,-4*dt,4*dt);
     // Le limiteur turbine répartit le débit demandé entre les quatre GV.
     // Une pression GV élevée augmente le débit disponible, pas la consigne réseau.
     const availableSteam=s.gv.map(gv=>{
@@ -2015,7 +2031,7 @@
     CPP_GEOMETRY,CPP_CORE_TOP_M,CPP_CORE_BOTTOM_M,CPP_INITIAL_LEVEL_M,HISTORY_PATHS,historyPoint,
     cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,pzrEquilibriumResponse,advancePrimaryPressure,
     latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,
-    instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,
+    instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,TURBINE_MANUAL_RATES,setManualTurbineDemand,
     evolveAxialPoisons,
     g3Target,gcpPositions,rInsertionLimit,rodIntegral,rodsReactivityPcm,
     axialInsertionFraction,solveAxialShape,smoothAxialProfile,

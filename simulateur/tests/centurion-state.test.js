@@ -6,6 +6,31 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('état JSON : pente PTUR et cible en cours reprises, anciens fichiers à 5 %/min',()=>{
+  const m=E.make();m.controls.manualTurbineRatePctMin=2;
+  E.setManualTurbineDemand(m,80);E.advance(m,10);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const raw=State.write(E,m,editors,ui,null),loaded=State.read(E,JSON.stringify(raw));
+  assert.equal(loaded.model.controls.manualTurbineRatePctMin,2);
+  assert.equal(loaded.model.controls.manualTurbineTargetPct,80);
+  E.advance(m,2);E.advance(loaded.model,2);
+  assert.equal(loaded.model.state.demandPct,m.state.demandPct);
+  const legacy=structuredClone(raw);
+  delete legacy.model.controls.manualTurbineTargetPct;delete legacy.model.controls.manualTurbineRatePctMin;
+  const migrated=State.read(E,legacy);
+  assert.equal(migrated.model.controls.manualTurbineRatePctMin,5);
+  assert.equal(migrated.model.controls.manualTurbineTargetPct,null);
+  assert.equal(migrated.model.state.demandPct,raw.model.state.demandPct);
+  for(const mutate of [r=>r.model.controls.manualTurbineRatePctMin=3,
+    r=>r.model.controls.manualTurbineTargetPct=120]){
+    const invalid=structuredClone(raw);mutate(invalid);assert.throws(()=>State.read(E,invalid));
+  }
+  const instant=structuredClone(raw);instant.model.controls.manualTurbineRatePctMin=null;
+  const instantLoaded=State.read(E,JSON.stringify(instant));
+  assert.equal(instantLoaded.model.controls.manualTurbineRatePctMin,null);
+  E.step(instantLoaded.model,.1);assert.equal(instantLoaded.model.state.turbinePct,80);
+});
+
 test('état JSON : sélection de courbes, échelles, période et lecture figée conservées',async()=>{
   const {surface}=require('./helpers/history-surface');
   const model=E.make();E.advance(model,3);
