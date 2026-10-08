@@ -137,7 +137,8 @@
         ['pumpHeadColdBar','HMT GMPP','HMT','bar',[0,10]],
         ['vesselDeltaBar','Perte de charge cuve','ΔP CUVE','bar',[0,5]],
         ['gvDeltaBar','Perte de charge GV','ΔP GV','bar',[0,5]],
-        ['primingFraction','Fraction d’amorçage','AMORÇAGE','—',[0,1],'fixed']])
+        ['primingFraction','Amorçage du thermosiphon','AMORÇAGE NAT','—',[0,1],'fixed'],
+        ['forcedPrimingFraction','Disponibilité d’aspiration GMPP','ASPIRATION GMPP','—',[0,1],'fixed']])
         extra(`loops.${i}.${key}`,`${label} · boucle ${n}`,`${tag} B${n}`,unit,`Boucle ${n}`,range,mode);
       add(`gv.${i}.pressure`,`Pression GV ${n}`,`${n}04MP`,'bar',`GV ${n}`,p=>p.gvPressure?.[i],[0,100],'adaptive',true);
       add(`gv.${i}.level`,`Niveau gamme étroite GV ${n}`,`${n}05MN`,'%',`GV ${n}`,p=>p.gv?.[i],[0,100],'fixed',true);

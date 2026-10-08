@@ -127,6 +127,9 @@
     pressureHeatGainBarPerMWs: 0.15/(250*liquidWaterDensityKgM3(288.4,155)/3600*6000
       *(saturationTemperatureC(155)-288.4)/1e6),
     pumpCoastdownTauS: 15,
+    // Seuil pédagogique de risque de cavitation, distinct de l'amorçage
+    // du thermosiphon au sommet des faisceaux. Pas de calcul NPSH local.
+    primaryPumpLowLevelM: 11, primaryPumpLowLevelBandM: 0.5,
     naturalCirculationKgSPerLoop: 250, naturalCirculationMaxKgSPerLoop: 300,
     naturalCirculationReferenceDeltaC: 10,
     boronInitialPpm: 1200, boronWorthPcmPpm: -7,
@@ -764,7 +767,7 @@
       breakAreaCm2: 0, breakLoop: 1, breakBranch: "froide",
       rods, g3Count: 780, g3Target: 780, rLimitPas: 186,
       loops: Array.from({length:4}, (_,i) => ({ index:i+1, flowKgS:nominalFlow,
-        forcedFlowKgS:nominalFlow, naturalFlowKgS:0,
+        forcedFlowKgS:nominalFlow, naturalFlowKgS:0, forcedPrimingFraction:1,
         pumpHeatMW:C.primaryPumpHeatMWPerUnit,
         hotC:324.6, coldC:288.4, pumpStopped:false,
         pumpHeadHotBar:7, pumpHeadColdBar:7+3*(324.6-288.4)/(324.6-20),
@@ -1608,7 +1611,8 @@
       'secondaryBreakReleasedKg','secondaryBreakEnergyJ','waterMassRateKgS']
       .map(k=>`gv.${i}.${k}`)).flat(),
     'risPumpSpeedFraction',
-    ...Array.from({length:4},(_,i)=>[`accumulatorsKg.${i}`,`accumulatorNitrogenBar.${i}`,`accumulatorFlowsKgS.${i}`]).flat()
+    ...Array.from({length:4},(_,i)=>[`accumulatorsKg.${i}`,`accumulatorNitrogenBar.${i}`,`accumulatorFlowsKgS.${i}`]).flat(),
+    ...Array.from({length:4},(_,i)=>`loops.${i}.forcedPrimingFraction`)
   ];
   function historyPoint(model) {
     const s=model.state;
@@ -1699,6 +1703,9 @@
     // Les quatre boucles partagent l'inventaire global, sans le multiplier par quatre.
     s.inventory=cppInventory(Math.max(0,s.primaryMassKg-s.vaporMassKg),s.tavgC,s.pressureBar);
     s.coveragePct=s.inventory.coveragePct;
+    if(s.inventory.loopLevelM<=C.primaryPumpLowLevelM)
+      stopPrimaryPumps(s,`Arrêt GMPP : niveau CPP ${s.inventory.loopLevelM.toFixed(2)} m ≤ ${C.primaryPumpLowLevelM} m · risque de cavitation (hypothèse d'étude)`);
+    const forcedPriming=clamp((s.inventory.loopLevelM-C.primaryPumpLowLevelM)/C.primaryPumpLowLevelBandM,0,1);
     for (const loop of s.loops) {
       const stopped=s.primaryPumpsStopped||loop.pumpStopped;
       // Apport thermique de l'entraînement alimenté, distinct du débit :
@@ -1712,7 +1719,12 @@
       const localFactor=s.breakAreaCm2>0 && s.breakLoop===loop.index?0.82:1;
       const tau=stopped?C.pumpCoastdownTauS:8;
       const previousForced=loop.forcedFlowKgS;
-      loop.forcedFlowKgS=previousForced+(flowTarget*localFactor*priming-previousForced)*clamp(dt/tau,0,1);
+      // Le dénoyage du sommet GV ne supprime pas le débit d'une pompe
+      // encore alimentée. La borne d'eau disponible évite en revanche
+      // une circulation inertielle fictive après vidange de l'aspiration.
+      loop.forcedPrimingFraction=forcedPriming;
+      loop.forcedFlowKgS=Math.min(nominalLoopFlow*forcedPriming,
+        previousForced+(flowTarget*localFactor*forcedPriming-previousForced)*clamp(dt/tau,0,1));
       if(stopped&&loop.forcedFlowKgS<0.02*nominalLoopFlow)loop.forcedFlowKgS=0;
       const fraction=loop.forcedFlowKgS/nominalLoopFlow;
       const gv=s.gv[loop.index-1];
@@ -1972,6 +1984,7 @@
     // ne peut conserver un débit de thermosiphon calculé avec l'ancien niveau.
     for(const loop of s.loops){
       loop.primingFraction=s.inventory.loopPriming[loop.index-1];
+      loop.forcedPrimingFraction=clamp((s.inventory.loopLevelM-C.primaryPumpLowLevelM)/C.primaryPumpLowLevelBandM,0,1);
       loop.coreCoverageFraction=s.coveragePct/100;
       if(loop.primingFraction===0)loop.naturalFlowKgS=0;
       loop.flowKgS=loop.forcedFlowKgS+loop.naturalFlowKgS;
@@ -2085,6 +2098,7 @@
     const loops=s.loops.map(loop=>{
       const gv=s.gv[loop.index-1],stopped=s.primaryPumpsStopped||loop.pumpStopped;
       const priming=loop.primingFraction??s.inventory.loopPriming[loop.index-1];
+      const forcedPriming=loop.forcedPrimingFraction??clamp((s.inventory.loopLevelM-C.primaryPumpLowLevelM)/C.primaryPumpLowLevelBandM,0,1);
       const drive=loop.thermalDriveC??Math.max(0,s.tavgC-gv.tempC);
       const water=loop.gvWaterFactor??clamp(gv.waterKg/C.gvNominalWaterKg,0,1);
       const coverage=loop.coreCoverageFraction??s.coveragePct/100;
@@ -2102,15 +2116,19 @@
       const lost=stopped&&loop.naturalFlowKgS<.1&&reasons.length>0;
       const limited=stopped&&reasons.length>0;
       const coastdown=stopped&&loop.forcedFlowKgS>0;
-      const status=!stopped?(priming<.999||loop.breakFactor<1?"Débit forcé réduit":"Circulation forcée")
+      const forcedReduced=forcedPriming<.999||loop.breakFactor<1;
+      const status=!stopped?(forcedReduced?"Débit forcé réduit":"Circulation forcée")
         :lost?"Thermosiphon perdu":limited?"Thermosiphon réduit":coastdown?"Ralentissement GMPP / relais naturel":"Thermosiphon établi";
       const detail=stopped?(reasons.length?reasons.join(" · ")
         :`boucle amorcée · écart primaire–GV ${drive.toFixed(1)} °C`)
-        :[`GMPP en marche`,...reasons.filter(r=>!r.startsWith("absence de source froide"))].join(" · ");
-      return {index:loop.index,status,detail,severity:lost?"lost":limited||priming<.999?"reduced":"normal",
+        :[`GMPP en marche`,
+          ...(forcedPriming<.999?[`aspiration fragilisée : niveau CPP ${s.inventory.loopLevelM.toFixed(2)} m, arrêt mémorisé à ${C.primaryPumpLowLevelM} m`]:[]),
+          ...(loop.breakFactor<1?["brèche sur cette boucle"]:[]),
+          ...(priming<.999?["thermosiphon indisponible après arrêt : sommet du faisceau dénoyé"]:[])].join(" · ");
+      return {index:loop.index,status,detail,severity:lost?"lost":stopped?limited?"reduced":"normal":forcedReduced?"reduced":"normal",
         forcedKgS:loop.forcedFlowKgS,naturalKgS:loop.naturalFlowKgS,totalKgS:loop.flowKgS,
         pumpHeatMW:loop.pumpHeatMW,
-        flowPct:100*loop.flowKgS/(C.nominalPrimaryFlowKgS/4),primingFraction:priming,
+        flowPct:100*loop.flowKgS/(C.nominalPrimaryFlowKgS/4),primingFraction:priming,forcedPrimingFraction:forcedPriming,
         thermalDriveC:drive,gvWaterFactor:water,coreCoverageFraction:coverage};
     });
     return {loops,forcedKgS:loops.reduce((sum,l)=>sum+l.forcedKgS,0),

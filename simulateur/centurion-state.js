@@ -6,9 +6,9 @@
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-ris-inertie-v6";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261008-gmpp-niveau-v7";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
@@ -50,6 +50,7 @@
     range(s.time,0,1e9,"Horloge");range(s.primaryMassKg,1,1e8,"Masse primaire");
     range(s.pressureBar,1,E.C.primaryPressureMaxBar,"Pression primaire");
     range(s.risPumpSpeedFraction,0,1,"Vitesse des pompes RIS");
+    s.loops.forEach((loop,i)=>range(loop.forcedPrimingFraction,0,1,`Disponibilité d'aspiration GMPP ${i+1}`));
     range(u.breakAreaCm2,0,2000,"Section de brèche");
     if(s.breakAreaCm2!==u.breakAreaCm2||s.breakLoop!==u.breakLoop||s.breakBranch!==u.breakBranch)
       throw new Error("La brèche physique et sa commande sont incohérentes.");
@@ -155,6 +156,15 @@
       // Une partie ancienne conserve ses stocks et ses débits en cours.
       // Les pompes déjà sollicitées sont reprises à leur régime précédent.
       const s=raw.model.state,u=raw.model.controls;
+      const migrateForcedPriming=(loops,inventory)=>{
+        const fraction=Math.max(0,Math.min(1,(inventory.loopLevelM-E.C.primaryPumpLowLevelM)/E.C.primaryPumpLowLevelBandM));
+        for(const loop of loops)if(loop.forcedPrimingFraction===undefined)loop.forcedPrimingFraction=fraction;
+      };
+      migrateForcedPriming(s.loops,s.inventory);
+      for(const r of raw.certificateArchive?.records??[]){
+        migrateForcedPriming(r.snapshot.loops,r.snapshot.inventory);
+        migrateForcedPriming(r.snapshot.primaryFlow.loops,r.snapshot.inventory);
+      }
       if(s.risPumpSpeedFraction===undefined)s.risPumpSpeedFraction=
         s.risEnabled&&u.risPumpMode!=="off"&&(s.risAt!==null||u.risPumpMode==="on")?1:0;
       for(const r of raw.certificateArchive?.records??[])

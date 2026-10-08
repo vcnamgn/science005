@@ -6,6 +6,27 @@ const ui={speed:200,diagram:'inventory',selectedGv:2,activeView:'synoptiques',hi
 const snapshot=editor=>editor.bridge.receive({type:'centurion-editor-save'}).saved;
 const plain=value=>JSON.parse(JSON.stringify(value));
 
+test('état GMPP v7 : ancienne v6 compatible, arrêt mémorisé et aspiration distincte du thermosiphon',()=>{
+  const m=E.make();E.tripPrimaryPumps(m);E.advance(m,.5);
+  const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};
+  const archive=Cert.createArchive(E);archive.observe(m);
+  const raw=State.write(E,m,editors,ui,archive.save()),loaded=State.read(E,raw);
+  assert.deepEqual(loaded.model,plain(m));
+  E.step(m,.1);E.step(loaded.model,.1);assert.deepEqual(loaded.model,m);
+  const old=structuredClone(raw);old.engineRevision='20261008-ris-inertie-v6';
+  for(const loop of old.model.state.loops)delete loop.forcedPrimingFraction;
+  for(const r of old.certificateArchive?.records??[]){
+    for(const loop of r.snapshot.loops)delete loop.forcedPrimingFraction;
+    for(const loop of r.snapshot.primaryFlow.loops)delete loop.forcedPrimingFraction;
+  }
+  const migrated=State.read(E,old);
+  assert.equal(migrated.model.state.primaryPumpsStopped,true);
+  assert.deepEqual(migrated.model.state.loops,raw.model.state.loops);
+  assert.deepEqual(migrated.certificateArchive,raw.certificateArchive);
+  const invalid=structuredClone(raw);delete invalid.model.state.loops[0].forcedPrimingFraction;
+  assert.throws(()=>State.read(E,invalid),/forcedPrimingFraction/);
+});
+
 test('état RIS v6 : montée en vitesse reprise, v5 migré sans perte de stocks ni parcelles',()=>{
   const m=E.make();m.controls.protectionGraphMode=true;E.setRisOperation(m,'on');E.advance(m,.6);
   const editors={regul:snapshot(editorSurface()),protect:snapshot(editorSurface('protect'))};

@@ -2,6 +2,45 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const E=require('../centurion-engine');
 const close=(a,b,t=1e-7)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 
+function setCppLevel(m,levelM){
+  const s=m.state;let lo=0,hi=E.C.nominalPrimaryMassKg;
+  for(let i=0;i<60;i++){
+    const mid=(lo+hi)/2;
+    if(E.cppInventory(mid,s.tavgC,s.pressureBar).loopLevelM<levelM)lo=mid;else hi=mid;
+  }
+  s.primaryMassKg=(lo+hi)/2;s.vaporMassKg=0;s.vaporEnergyJ=0;
+  s.primaryEnergyJ=s.primaryMassKg*E.C.primaryCpJkgK*s.tavgC;
+  s.boronInventory=s.primaryMassKg*s.boronPpm;
+  s.inventory=E.cppInventory(s.primaryMassKg,s.tavgC,s.pressureBar);
+}
+
+test('GMPP : sommet GV dénoyé sans perte du débit forcé ; arrêt à 11 m et maintien de cet arrêt',()=>{
+  const nominal=E.C.nominalPrimaryFlowKgS/4;
+  for(const level of [21,15,12]){
+    const m=E.make();m.controls.protectionGraphMode=true;setCppLevel(m,level);E.step(m,.1);
+    assert.equal(m.state.primaryPumpsStopped,false,`niveau ${level} m`);
+    assert.ok(m.state.loops.every(l=>l.primingFraction===0&&l.forcedFlowKgS===nominal));
+    assert.equal(m.state.pumpHeatMW,24);
+    const v=E.primaryFlowDiagnostics(m);
+    assert.ok(v.loops.every(l=>l.status==='Circulation forcée'&&l.severity==='normal'));
+    assert.match(v.loops[0].detail,/thermosiphon indisponible/);
+  }
+  const m=E.make();m.controls.protectionGraphMode=true;setCppLevel(m,11.25);E.step(m,.1);
+  assert.equal(m.state.primaryPumpsStopped,false);
+  assert.ok(m.state.loops.every(l=>l.forcedFlowKgS>nominal*.49&&l.forcedFlowKgS<nominal*.51));
+  assert.equal(E.primaryFlowDiagnostics(m).loops[0].status,'Débit forcé réduit');
+  setCppLevel(m,10.99);const stopAt=m.state.time;E.step(m,.1);
+  assert.equal(m.state.primaryPumpsStopped,true);assert.match(m.state.primaryPumpStopReason,/niveau CPP.*11 m.*cavitation/);
+  assert.equal(m.state.primaryPumpStopAt,stopAt);
+  assert.ok(m.state.loops.every(l=>l.forcedFlowKgS===0&&l.naturalFlowKgS===0));
+  assert.equal(m.state.pumpHeatMW,0);
+  assert.equal(m.state.tripDemandAt,null);assert.equal(m.state.risDemandAt,null);
+  assert.notEqual(E.reactorOperatingState(m.state).code,'CIA');
+  setCppLevel(m,15);E.step(m,.1);
+  assert.equal(m.state.primaryPumpsStopped,true,'le remplissage ne redémarre pas les GMPP');
+  assert.ok(m.state.loops.every(l=>l.forcedFlowKgS===0));
+});
+
 test('GMPP : AAR et IS sans arrêt, perte de tension mémorisée et inertie puis thermosiphon',()=>{
   const aar=E.make();aar.controls.protectionGraphMode=true;E.initiate(aar,'trip');E.advance(aar,20);
   assert.equal(aar.state.primaryPumpsStopped,false);

@@ -656,8 +656,10 @@
     $("auxiliarySprayValue").textContent=`${fmt(u.manualAuxiliarySprayM3h,1)} m³/h`;
     $("auxiliarySprayActual").textContent=`${fmt(s.auxiliarySprayM3h,1)} m³/h`;
     $("primaryPumpStatus").textContent=s.primaryPumpsStopped
-      ?`${s.primaryPumpStopReason} à ${tLabel(s.primaryPumpStopAt)} · ralentissement ≈ 1 minute, puis thermosiphon`
-      :"GMPP en marche · aucun arrêt sur AAR, IS ou baisse de charge";
+      ?`${s.primaryPumpStopReason} à ${tLabel(s.primaryPumpStopAt)} · ${s.inventory.loopLevelM<=E.C.primaryPumpLowLevelM
+        ?"débit forcé nul : aspiration vidangée, thermosiphon désamorcé"
+        :"ralentissement ≈ 1 minute ; relais naturel si la boucle est amorcée"}`
+      :"GMPP en marche · aucun arrêt sur AAR, IS ou baisse de charge · arrêt sur niveau CPP ≤ 11 m";
     $("tripPrimaryPumps").disabled=Boolean(s.primaryPumpsStopped||s.endState);
     $("boardPrimaryFlow").title=$("primaryPumpStatus").textContent;
     const grouped=u.allRodsTargetPas!==null;
