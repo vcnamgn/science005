@@ -6,9 +6,10 @@
 })(typeof window!=="undefined"?window:globalThis,function(){
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261009-pzr-breche-v8";
+  const PzrCommands=typeof module==='object'&&module.exports?require('./centurion-cc-pzr.js'):window.CenturionPzrCommands;
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261009-consignes-v9";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6","20261008-gmpp-niveau-v7"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6","20261008-gmpp-niveau-v7","20261009-pzr-breche-v8"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){
@@ -41,6 +42,7 @@
     template.state.rcvPipe=[];template.state.risPipe=[];
     // Pente numérique ou null pour la commande instantanée.
     template.controls.manualTurbineRatePctMin=null;
+    for(const ramp of Object.values(template.controls.setpointRamps))ramp.rate=null;
     sameShape(model,template,"modèle");
     const s=model.state,u=model.controls;
     const range=(value,min,max,label)=>{
@@ -64,6 +66,14 @@
     for(const name of E.ROD_NAMES)range(s.rods[name],0,260,`Position ${name}`);
     if(!E.TURBINE_MANUAL_RATES.includes(u.manualTurbineRatePctMin))throw new Error("Pente PTUR invalide.");
     if(u.manualTurbineTargetPct!==null)range(u.manualTurbineTargetPct,0,110,"Cible PTUR manuelle");
+    for(const [name,config] of Object.entries(E.SETPOINT_CONTROLS)){
+      range(u[config.key],config.min,config.max,`Consigne ${name}`);
+      const ramp=u.setpointRamps[name];
+      if(!E.SETPOINT_RATES.includes(ramp.rate))throw new Error(`Pente ${name} invalide.`);
+      if(ramp.target!==null)range(ramp.target,config.min,config.max,`Cible ${name}`);
+    }
+    if(![null,true,false].includes(u.rcvLetdownCloseGraph))throw new Error("Ordre de fermeture RCV invalide.");
+    if(u.prefGraphBar!==null)range(u.prefGraphBar,1,180,"PREF du graphe");
     for(const [key,values] of Object.entries({risPumpMode:["auto","on","off"],risSourceMode:["direct","recirculation"],
       breakBranch:["froide","chaude"],campaign:["debut","milieu","fin"],halfCycle:["premiere","seconde"],
       rMode:["manual","graph"],rcvInjectionMode:["off","dilution","borication"]}))
@@ -85,7 +95,9 @@
     }
     // Vérifier les valeurs nullables avant qu'elles n'entrent dans une équation.
     for(const [key,value] of Object.entries(u))if(template.controls[key]===null){
-      if(key==="rcvInjectionGraphMode"){
+      if(key==="rcvLetdownCloseGraph"){
+        if(![null,true,false].includes(value))throw new Error(`Commande ${key} invalide.`);
+      }else if(key==="rcvInjectionGraphMode"){
         if(![null,"off","dilution","borication"].includes(value))throw new Error(`Commande ${key} invalide.`);
       }else if(value!==null&&typeof value!=="number")throw new Error(`Commande ${key} invalide.`);
     }
@@ -151,6 +163,16 @@
       if(raw.model.controls.manualTurbineRatePctMin===undefined)raw.model.controls.manualTurbineRatePctMin=5;
     }
     const oldRevision=raw.engineRevision!==REVISION;
+    if(oldRevision){
+      const u=raw.model.controls,s=raw.model.state;
+      const defaults={pressureSetpointBar:155,pressureSetpointManual:false,
+        pzrLevelSetpointPct:s.nrefPct,pzrLevelSetpointManual:false,
+        setpointRamps:{gcta:{target:null,rate:5},pressure:{target:null,rate:5},level:{target:null,rate:5}},
+        prefGraphBar:null,rcvLetdownCloseGraph:null};
+      for(const [key,value] of Object.entries(defaults))if(u[key]===undefined)u[key]=value;
+      if(s.prefBar===undefined)s.prefBar=155;
+      if(raw.editors?.regul?.graph)PzrCommands.upgrade(raw.editors.regul.graph);
+    }
     if(raw.engineRevision===LEGACY_REVISION)migrateLegacy(E,raw);
     if(oldRevision){
       // Une partie ancienne conserve ses stocks et ses débits en cours.

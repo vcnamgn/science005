@@ -179,8 +179,9 @@ test('graphe CC-RÉGUL initial : chaufferettes et aspersion suivent les seuils R
   const start=html.indexOf('    function migrateCenturionRegulation(model) {');
   const end=html.indexOf('    function applyRegState(',start);
   assert.ok(start>=0 && end>start);
-  const migrate=Function('CENTURION_EDITOR_MODE',
-    `${html.slice(start,end)};return migrateCenturionRegulation;`)('regul');
+  const migrate=Function('CENTURION_EDITOR_MODE','window',
+    `${html.slice(start,end)};return migrateCenturionRegulation;`)('regul',
+      {CenturionPzrCommands:require('../centurion-cc-pzr')});
   migrate(model);
   const pid=model.nodes.find(n=>n.type==='pid'&&n.label==='PID pression');
   const heater=model.nodes.find(n=>n.params.curveRole==='heater');

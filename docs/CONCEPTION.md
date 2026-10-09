@@ -47,6 +47,7 @@ flowchart TD
 | `centurion-app.js` | Horloge navigateur, conduite manuelle, arbitrage des sorties CC, navigation et dessins Canvas | Moteur, DOM, Canvas, fenêtres des éditeurs et SVG |
 | `centurion-history.js` | Catalogue des mesures, courbes libres, axes, sélection temporelle et lectures figées | Moteur en lecture seule, DOM et Canvas ; fonctions pures exportées pour les tests |
 | `centurion-cc-regul.html` | Palette de blocs, graphes, évaluation, édition et sauvegarde | DOM, stockage local, messages du parent ; deux instances selon `mode` |
+| `centurion-cc-pzr.js` | Relais de consigne RCI et extension des chaînes PZR reconnues | Partagé entre l'éditeur, la migration JSON et l'assemblage des corrections |
 | `centurion-svg-bridge.js` | Application des mesures aux objets SVG, animations et renvois | DOM SVG et messages du parent |
 | `centurion.html` / `centurion.css` | Structure des onglets, pupitre commun et présentation adaptative | Les trois scripts applicatifs et les fichiers SVG |
 | `synoptiques/liaisons.json` | Inventaire des liaisons graphiques, utilisé pour vérification | Tests et documentation ; pas un moteur de calcul |
@@ -415,7 +416,7 @@ Le bouton Solutions ouvre des paliers protégés par un code pédagogique. L'aid
 | CC-RÉGUL | Trois historiques : température simplifiée ; température + niveau PZR ; température + niveau + pression PZR. Deux chaînes ciblées : niveaux des quatre GV ; GCP/G3. Enfin Complet : toutes les chaînes, avec les correcteurs G1/G2 de température. |
 | CC-PROTECT | Les principaux AAR ; AAR + IS ; AAR + IS + ASG complet. |
 
-Les solutions complètes sont les deux fichiers `modele-de-regulation.simurep_complet.json` et `modele-de-protection.simurep_complet.json`. Leurs blocs, paramètres et positions sont conservés. Les chaînes ciblées et paliers de protection sont extraits de ces graphes. Le premier palier de protection exclut la branche IS et la commande ASG. Le deuxième reprend la branche IS, y compris sa demande d'AAR ; seul le troisième ajoute ASG.
+Les solutions complètes sont assemblées depuis les deux fichiers `modele-de-regulation.simurep_complet.json` et `modele-de-protection.simurep_complet.json`. Les paramètres existants sont conservés. La correction de régulation ajoute les relais RCI et la chaîne de fermeture des orifices RCV ; les colonnes nécessaires sont espacées. Les chaînes ciblées et paliers de protection sont extraits de ces graphes. Le premier palier de protection exclut la branche IS et la commande ASG. Le deuxième reprend la branche IS, y compris sa demande d'AAR ; seul le troisième ajoute ASG.
 
 Charger une solution remplace le graphe du seul atelier concerné et désactive sa commande. Une confirmation est affichée si le canevas contient déjà des blocs. Annuler retrouve le travail précédent. Les solutions ciblées remplacent le canevas : elles ne s'ajoutent pas au graphe courant. Aucun ordre de protection n'est greffé automatiquement à un nouveau schéma ou à un palier partiel.
 
@@ -445,6 +446,20 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 
 ### Correspondance sorties → commandes
 
+#### Consignes PZR et rampes de conduite
+
+Le volet Pressuriseur contient une consigne de pression primaire (1–180 bar absolus) et une consigne de niveau (0–100 %). Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.
+
+Les deux blocs **RCI** (relais de commande intermédiaire) sont placés entre la référence automatique et le sommateur : `K(155 bar) → RCI pression → écart MP1−PREF`, et `programme NREF → RCI niveau → NREF → écart NREF−MN1`. E1 porte la référence automatique ; le relais lit la consigne manuelle après rampe et son mode dans les signaux du pupitre. Les valeurs affichées par l'atelier et NREF du synoptique sont celles sélectionnées par ces blocs. Une consigne de pupitre seule ne commande aucun actionneur : il faut relier la chaîne dans CC-RÉGUL et l'activer.
+
+Les consignes de pression GCT-A, pression primaire et niveau PZR ont des rampes indépendantes : 0,5 ; 1 ; 2 ; 5 ; 10 ; 200 unités/minute, ou Instantanée. L'unité est **bar/min** pour les pressions, **% de niveau/min** pour le PZR ; le défaut est 5. La cible et la consigne appliquée sont distinguées à l'écran. La rampe utilise le temps simulé, reste figée en pause et est conservée dans la sauvegarde. Instantanée change seulement la référence ; la pression et le niveau physiques évoluent avec les actionneurs et les bilans existants.
+
+#### Fermeture de la décharge sur bas niveau
+
+Les corrections Niveau, Pression et Complet comportent la chaîne visible `MN1 → relais bas niveau (15 / 17 %) → Fermer orifices RCV`. Le relais émet 1 sous 15 % et garde cet ordre jusqu'à un niveau strictement supérieur à 17 %. La sortie TOR ferme les trois orifices, donc ramène le débit réel QDEC à zéro dans le bilan de masse. Elle ne modifie ni la demande de charge ni la sélection manuelle des orifices. Les cases montrent HS · CC et sont désactivées tant que l'ordre est appliqué ; leur sélection est restituée à la levée de l'ordre. Déconnecter cette sortie ou désactiver CC-RÉGUL libère cette commande. Aucun ordre AAR/IS n'est produit par ce relais de régulation.
+
+Ces extensions sont présentes dans les corrections fournies et ajoutées aux anciennes chaînes PZR identifiables à l'import. Les canevas vides et les schémas sans chaîne de niveau reconnue restent des exercices à construire.
+
 | Sortie CC | Cible | Conditions / unité |
 | --- | --- | --- |
 | `posg` | `rGraphPas` | CC-RÉGUL actif, pas extraits 0–260, hors surcharge R manuelle |
@@ -453,6 +468,8 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 | `pchauffOut` | `pressureGraphHeaterKW` | Puissance chauffe, kW |
 | `qaspOut` | `pressureGraphSprayPct` | Ouverture aspersion, % |
 | `nrefOut` | `nrefGraphPct` | Référence niveau PZR, % |
+| `prefOut` | `prefGraphBar` | Retour de référence sélectionnée par le RCI pression, bar absolus ; indication uniquement |
+| `rcvLetdownCloseOut` | `rcvLetdownCloseGraph` | TOR ≥0,5 : ferme tous les orifices sélectionnés ; 0 ou sortie absente : sélection manuelle |
 | `qchargeOut` | `rcvChargeGraphM3h` | Demande totale de charge 0–60 m³/h, limitée par la courbe Q(P) de la pompe |
 | `turbineLimitOut` | `turbineLimitGraphPct` | Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée |
 | `aarOut` | demande AAR mémorisée | CC-PROTECT actif ; signal ≥0,5 |
@@ -538,6 +555,8 @@ La révision `20261008-ris-inertie-v6` mémorise la vitesse de démarrage des po
 La révision `20261008-gmpp-niveau-v7` sépare l'aspiration du débit forcé de l'amorçage naturel et introduit l'arrêt bas niveau à 11 m. Les sauvegardes v1 à v6 reçoivent le facteur d'aspiration manquant à partir de leur inventaire ; débits en cours, stocks, arrêts mémorisés et instantanés sont conservés. Les quatre nouvelles mesures sont ajoutées à la fin de l'historique. Une mesure absente des anciens points reste absente ; elle n'est pas reconstruite artificiellement.
 
 La révision `20261009-pzr-breche-v8` corrige la fermeture de pression et la fuite primaire liquide. Elle conserve le format des tableaux et accepte les sauvegardes v1 à v7, sans modifier leurs graphes, historiques, stocks ni parcelles. Les anciennes valeurs restent dans l'historique ; les nouvelles lois s'appliquent à la reprise. La mémoire `pzrThermalPressureBar` suit alors la pression réalisée. Aucun état utilisateur joint pour diagnostic n'est publié avec le projet.
+
+La révision `20261009-consignes-v9` conserve les cibles, pentes, modes des trois consignes et l'ordre de fermeture RCV. Les fichiers v1 à v8 reçoivent des rampes inactives à 5 unités/minute, sans modifier leurs références historiques, stocks ou tuyaux. Les chaînes PZR reconnues du graphe repris reçoivent les RCI et le relais bas niveau, en conservant les mémoires des blocs existants. Les nouvelles sources CC sont ajoutées à la fin des mesures compactes pour conserver les indices des historiques antérieurs.
 
 Les documents sources et les archives de propositions ne sont pas publiés. Le catalogue public emploie des identifiants REF ; leur correspondance avec les fichiers locaux reste privée. Les exclusions d'anciens prototypes figurent dans `scripts/publication-exclusions.json`. Les ressources actives, les tests actuels et cette documentation restent dans le dépôt public.
 

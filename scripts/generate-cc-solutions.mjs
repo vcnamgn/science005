@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import pzrCommands from '../simulateur/centurion-cc-pzr.js';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const file=path.join(root,'simulateur/centurion-cc-regul.html');
 const catalog=JSON.parse(fs.readFileSync(path.join(root,'scripts/cc-solution-tiers.json'),'utf8'));
@@ -15,6 +16,7 @@ const read=kind=>{
   return JSON.parse(match[1]);
 };
 const regulation=read('regulation'),protection=read('protection');
+pzrCommands.upgrade(regulation);
 // Remonter les liaisons conserve les paramètres et la géométrie des chaînes finales.
 function subset(model,outputs,exclude=new Set(),name){
   const ids=new Set(model.nodes.filter(n=>outputs.includes(n.type)&&!exclude.has(n.id)).map(n=>n.id));
@@ -32,13 +34,17 @@ const models={
   solutionCatalog:catalog
 };
 let html=fs.readFileSync(file,'utf8');
+for(const id of ['solutionDataLevel','solutionDataPressure']){
+  const match=new RegExp(`<script[^>]+id="${id}"[^>]*>([\\s\\S]*?)<\\/script>`).exec(html);
+  models[id]=pzrCommands.upgrade(JSON.parse(match[1]));
+}
 for(const [id,model] of Object.entries(models)){
   const script=`<script type="application/json" id="${id}">${JSON.stringify(model).replace(/</g,'\\u003c')}</script>`;
   const expression=new RegExp(`<script type="application/json" id="${id}">[\\s\\S]*?<\\/script>`);
   if(expression.test(html))html=html.replace(expression,()=>script);
   else html=html.replace('  <script>','  '+script+'\n  <script>');
 }
-// Les trois anciens paliers restent les modèles simplifiés historiques embarqués.
+// Les paliers historiques gardent leurs lois ; Niveau et Pression incluent les extensions PZR.
 for(const tier of Object.values(catalog.regul))if(!html.includes(`id="${tier.dataId}"`))throw Error(`Palier absent : ${tier.dataId}`);
 fs.writeFileSync(file,html);
 console.log(`Solutions assemblées : 6 régulation, 3 protection ; complets = ${regulation.nodes.length} / ${protection.nodes.length} blocs.`);

@@ -133,7 +133,7 @@ function editor(mode='protect',fullGraph=false) {
   // Les essais physiques chargent explicitement la correction complète ;
   // le démarrage des ateliers étudiants est testé sur la page entière.
   const baseModelText=JSON.stringify(require('./helpers/reference-model')(mode));
-  const context=vm.createContext({console,baseModelText});
+  const context=vm.createContext({console,baseModelText,PzrCommands:require('../centurion-cc-pzr')});
   const specs=html.slice(html.indexOf('    const BLOCK_TYPES ='),html.indexOf('    const SPECIAL_CURVE_PRESETS ='));
   const functions=['regSignalDisplay','regSourceSignal','compareOperatorValue','runtimeStateFor',
     'evaluateRegulationGraph','formatRegLinkSignal','regInputKey','resetRegRuntime',
@@ -150,9 +150,9 @@ function editor(mode='protect',fullGraph=false) {
     let regNodes=[],regLinks=[],regRuntimeStates=new Map(),regLastSignals=new Map(),regLastDiagnostics=[];
     let centurionInput=null;
     const REG_MANUAL_OUTPUT_TYPES=new Set(['aarOut','risOut','asgOut','gv1Out','gv2Out','gv3Out','gv4Out',
-      'posg','g3Out','nrefOut','pchauffOut','qaspOut','qchargeOut']);
+      'posg','g3Out','nrefOut','pchauffOut','qaspOut','qchargeOut','rcvLetdownCloseOut']);
     const $=()=>({textContent:baseModelText});
-    const window={parent:{}};
+    const window={parent:{},CenturionPzrCommands:PzrCommands};
     ${specs}
     ${functions}
     globalThis.cc={

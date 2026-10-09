@@ -12,10 +12,10 @@ function choose(editor,key,code){
 }
 function surface(mode,options){const editor=editorSurface(mode,options);editor.mode=mode;return editor;}
 const targets={regul:{
-  temperature:['posg'],level:['posg','nrefOut','qchargeOut'],
-  pressure:['posg','nrefOut','qchargeOut','pchauffOut','qaspOut'],
+  temperature:['posg'],level:['posg','nrefOut','qchargeOut','rcvLetdownCloseOut'],
+  pressure:['posg','nrefOut','qchargeOut','pchauffOut','qaspOut','rcvLetdownCloseOut'],
   gv:['gv1Out','gv2Out','gv3Out','gv4Out'],gcp:['g3Out'],
-  complete:['posg','nrefOut','qchargeOut','pchauffOut','qaspOut','g3Out','gv1Out','gv2Out','gv3Out','gv4Out']
+  complete:['posg','nrefOut','qchargeOut','pchauffOut','qaspOut','g3Out','gv1Out','gv2Out','gv3Out','gv4Out','rcvLetdownCloseOut']
 },protect:{aar:['aarOut'],aarIs:['aarOut','risOut'],complete:['aarOut','risOut','asgOut']}};
 
 test('première ouverture : deux canevas vides, commandes inactives, aucun automatisme greffé',()=>{
@@ -44,7 +44,7 @@ test('neuf corrections : bon code, couverture exacte, complet identique aux JSON
       editor.receive({type:'centurion-editor-enable',enabled:true,signals:E.controlSignals(E.make())});
       editor.receive({type:'centurion-editor-tick',dt:.1,signals:E.controlSignals(E.make())});
       const output=editor.messages.findLast(m=>m.type==='centurion-editor-outputs').outputs;
-      assert.deepEqual(Object.keys(output).sort(),expected.slice().sort());
+      assert.deepEqual(Object.keys(output).sort(),[...expected,...(mode==='regul'&&['pressure','complete'].includes(key)?['prefOut']:[])].sort());
       assert.ok(Object.values(output).every(Number.isFinite));
       if(key==='complete'){
         const original=reference(mode);

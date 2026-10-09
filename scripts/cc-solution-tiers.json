@@ -1,8 +1,8 @@
 {
   "regul": {
     "temperature": {"dataId":"solutionDataTemperature","reverseCode":"0031","label":"1 · Température simplifiée","description":"Commande du groupe R en pas extraits, sans correcteur de puissance G1/G2."},
-    "level": {"dataId":"solutionDataLevel","reverseCode":"6804","label":"2 · Température + niveau PZR","description":"Ajoute le programme NREF et la commande de charge RCV QCHARGE."},
-    "pressure": {"dataId":"solutionDataPressure","reverseCode":"0661","label":"3 · Température + niveau + pression PZR","description":"Ajoute les chaufferettes PCHF et les vannes d’aspersion QASP."},
+    "level": {"dataId":"solutionDataLevel","reverseCode":"6804","label":"2 · Température + niveau PZR","description":"Programme NREF, RCI de consigne manuelle, charge QCHARGE et fermeture des orifices sous 15 %."},
+    "pressure": {"dataId":"solutionDataPressure","reverseCode":"0661","label":"3 · Température + niveau + pression PZR","description":"Ajoute le RCI de pression, les chaufferettes PCHF et les vannes d’aspersion QASP."},
     "gv": {"dataId":"solutionDataGv","reverseCode":"4044","label":"4 · Niveaux des quatre GV","description":"Solution ciblée : quatre boucles de niveau avec correction par le débit vapeur et commande ARE."},
     "gcp": {"dataId":"solutionDataGcp","reverseCode":"0087","label":"5 · GCP · programme G3","description":"Solution ciblée : puissance recalée par le décalibrage manuel → courbe G3 → pas de chevauchement."},
     "complete": {"dataId":"solutionDataComplete","reverseCode":"0057","label":"6 · Complet · R, PZR, GV et GCP","description":"Toutes les chaînes : température avec correcteurs G1/G2, niveau et pression PZR, niveaux GV et G3."}

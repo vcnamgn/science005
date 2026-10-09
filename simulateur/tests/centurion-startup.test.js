@@ -35,7 +35,7 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
           toggle:(name,on)=>on===undefined?(classes.has(name)?classes.delete(name):classes.add(name))
             :on?classes.add(name):classes.delete(name)},
         addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn),
-        fire(name){return Promise.all((listeners[name]||[]).map(fn=>fn({target:node,preventDefault(){}})));},
+        fire(name,extra={}){return Promise.all((listeners[name]||[]).map(fn=>fn({target:node,preventDefault(){},...extra})));},
         click(){return node.fire('click');},
         setAttribute:(key,value)=>{attrs[key]=String(value);},getAttribute:key=>attrs[key],
         matches:selector=>matches(node,selector),

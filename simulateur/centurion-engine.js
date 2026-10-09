@@ -619,7 +619,8 @@
     return s.dpaxPctPn>dpaxRightLimit(s.powerPct)+1e-6;
   }
   function rcvLetdownM3h(model) {
-    return C.rcvOrificeM3h*model.controls.rcvLetdownOrifices.filter(Boolean).length;
+    return model.controls.rcvLetdownCloseGraph===true?0
+      :C.rcvOrificeM3h*model.controls.rcvLetdownOrifices.filter(Boolean).length;
   }
   function rcvChargeBoronPpm(model) {
     const u=model.controls;
@@ -704,7 +705,7 @@
       fissionMW: C.nominalThermalMW, decayMW: 0, coreTransferMW: C.nominalThermalMW,
       pumpHeatMW: 4*C.primaryPumpHeatMWPerUnit,
       electricMW: C.nominalElectricMW,
-      turbinePct: 100, demandPct: 100, trefC: C.primaryMeanC, nrefPct: 41.8,
+      turbinePct: 100, demandPct: 100, trefC: C.primaryMeanC, nrefPct: 41.8, prefBar: 155,
       precursors: precursor, reactivityPcm: 0,
       reactivityParts: {rod:0,boron:0,temp:0,doppler:0,
         coreReference:C.xenonEquilibriumWorthPcm,xenon:-C.xenonEquilibriumWorthPcm},
@@ -814,6 +815,10 @@
         gvSecondaryBreakAreaCm2: Array(4).fill(0),
         asgAvailable: true, asgManual:false,asgTrainEnabled:[false,false,false,false],
         gctAOpeningPressureBar: C.gctAPressureBar,
+        pressureSetpointBar:155, pressureSetpointManual:false,
+        pzrLevelSetpointPct:41.8, pzrLevelSetpointManual:false,
+        setpointRamps:{gcta:{target:null,rate:5},pressure:{target:null,rate:5},level:{target:null,rate:5}},
+        prefGraphBar:null,
         manualHeaterKW: C.nominalHeaterKW, manualSprayPct: C.nominalSprayPct,
         manualAuxiliarySprayM3h:0,allRodsTargetPas:null,
         manualReliefStages: [false,false,false],
@@ -822,6 +827,7 @@
       rcvChargeM3h: C.rcvNominalM3h, rcvChargeGraphM3h: null,
         rcvTankBoronPpm: C.boronInitialPpm,
         rcvLetdownOrifices: [true,true,false],
+        rcvLetdownCloseGraph:null,
         rcvInjectionMode: "off",
         rcvInjectionGraphMode: null,
         risBoronPpm: C.risBoronPpm,risPumpMode:"auto",risSourceMode:"direct",
@@ -885,6 +891,29 @@
     return clamp(model.state.demandPct,0,limit);
   }
   const TURBINE_MANUAL_RATES=[0.5,1,2,5,10,200,null];
+  const SETPOINT_RATES=[0.5,1,2,5,10,200,null];
+  const SETPOINT_CONTROLS={gcta:{key:"gctAOpeningPressureBar",min:1,max:100},
+    pressure:{key:"pressureSetpointBar",min:1,max:180,manual:"pressureSetpointManual"},
+    level:{key:"pzrLevelSetpointPct",min:0,max:100,manual:"pzrLevelSetpointManual"}};
+  function setManualSetpoint(model,name,value) {
+    const config=SETPOINT_CONTROLS[name],u=model.controls;
+    if(!config||!Number.isFinite(value))return false;
+    if(config.manual&&!u[config.manual])
+      u[config.key]=name==="level"?model.state.nrefPct:model.state.prefBar;
+    if(config.manual)u[config.manual]=true;
+    const ramp=u.setpointRamps[name];ramp.target=clamp(value,config.min,config.max);
+    if(ramp.rate===null)u[config.key]=ramp.target;
+    return true;
+  }
+  function updateSetpointRamps(model,dt) {
+    const u=model.controls;
+    for(const [name,config] of Object.entries(SETPOINT_CONTROLS)){
+      const ramp=u.setpointRamps[name];
+      if(ramp.target===null||config.manual&&!u[config.manual])continue;
+      const maxDelta=ramp.rate===null?Infinity:ramp.rate*dt/60;
+      u[config.key]+=clamp(ramp.target-u[config.key],-maxDelta,maxDelta);
+    }
+  }
   function setManualTurbineDemand(model,targetPct) {
     if(isTransientActive(model)||!Number.isFinite(targetPct))return false;
     model.controls.manualTurbineTargetPct=clamp(targetPct,0,110);
@@ -1695,6 +1724,7 @@
     const s=model.state,u=model.controls;
     dt=clamp(Number(dt)||0,0,0.1);
     if (!dt||s.endState) return s;
+    updateSetpointRamps(model,dt);
     updateTurbineDemand(model,dt);
     s.trefC=297.2+9.3*turbineLoadTargetPct(model)/100;
     s.rLimitPas=rInsertionLimit(s.powerPct,u.halfCycle);
@@ -1928,6 +1958,7 @@
     s.nrefPct=Number.isFinite(u.nrefGraphPct)
       ? clamp(u.nrefGraphPct,0,100)
       : clamp(20+21.8*(s.tavgC-297.2)/9.3,20,41.8);
+    s.prefBar=Number.isFinite(u.prefGraphBar)?clamp(u.prefGraphBar,1,180):155;
     let sprayDemandPct;
     if(Number.isFinite(u.pressureGraphHeaterKW)
         || Number.isFinite(u.pressureGraphSprayPct)) {
@@ -2236,6 +2267,14 @@
       values[`gv${i+1}LevelSignal`]=[g.levelPct,"%"];
       values[`gv${i+1}SteamSignal`]=[g.steamKgS,"kg/s"];
     });
+    // Ajouter à la fin : conserver les indices des mesures CC dans les anciens historiques.
+    Object.assign(values,{
+      pressureSetpointSignal:[u.pressureSetpointBar,"bar abs."],
+      pzrLevelSetpointSignal:[u.pzrLevelSetpointPct,"%"],
+      pressureSetpointManualSignal:[u.pressureSetpointManual?1:0,"TOR"],
+      pzrLevelSetpointManualSignal:[u.pzrLevelSetpointManual?1:0,"TOR"],
+      rcvLetdownCloseSignal:[u.rcvLetdownCloseGraph===true?1:0,"TOR"]
+    });
     return values;
   }
   return { C,G3,ROD_NAMES,ROD_WORTH_PCM,AXIAL_ROD_ABSORPTION,TRANSIENTS,make,step,advance,
@@ -2243,6 +2282,7 @@
     cppInventory,liquidWaterDensityKgM3,saturatedWaterDensities,rcvPumpCapacityM3h,solvePrimaryPressure,pzrEquilibriumResponse,advancePrimaryPressure,primaryBreakHydraulics,
     latentHeatJkg,gvThermalCapacityJk,gvLatentHeatJkg,secondaryBreakFlowKgS,accumulatorFlowKgS,ptLimits,reactorOperatingState,isPtOutside,rraConditions,connectRra,setRisOperation,commandAllRods,tripPrimaryPumps,
     instrumentSnapshot,controlSignals,primaryMassBalance,primaryFlowDiagnostics,TURBINE_MANUAL_RATES,setManualTurbineDemand,
+    SETPOINT_RATES,SETPOINT_CONTROLS,setManualSetpoint,
     evolveAxialPoisons,
     g3Target,gcpPositions,rInsertionLimit,rodIntegral,rodsReactivityPcm,
     axialInsertionFraction,solveAxialShape,smoothAxialProfile,

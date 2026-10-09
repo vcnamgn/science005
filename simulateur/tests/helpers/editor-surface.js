@@ -97,6 +97,8 @@ function editorSurface(mode='regul',{saved=null}={}){
     localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)},
     Blob,URL});
   const main=root.querySelectorAll('script').find(n=>!n.hasAttribute('src')&&!n.hasAttribute('type'));
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../../centurion-cc-pzr.js'),'utf8'),context,
+    {filename:'centurion-cc-pzr.js'});
   vm.runInContext(main.textContent,context,{filename:'centurion-cc-regul.html'});
   return {messages,storage,bridge:window.CenturionCC,get:id=>document.getElementById(id),get pendingFrames(){return frames.length;},
     query:s=>document.querySelector(s),queryAll:s=>document.querySelectorAll(s),

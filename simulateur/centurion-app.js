@@ -35,8 +35,7 @@
     ["fxyUngraped","fxYUngraped"],["fxyGraped","fxYGraped"],["xenonScale","timeScaleXenon"],
     ["moderatorCoefficient","coolantWorthPcmC"],["dopplerCoefficient","dopplerWorthPcmC"],
     ["xenonWorth","xenonEquilibriumWorthPcm"],
-    ["naturalCirculationFlow","naturalCirculationKgSPerLoop"],
-    ["gctaOpeningPressure","gctAOpeningPressureBar"]
+    ["naturalCirculationFlow","naturalCirculationKgSPerLoop"]
   ];
   let model=E.make(),running=false,speed=20,last=performance.now(),carry=0;
   const certificate=window.CenturionCertificate?.create({E,getModel:()=>model,svgFiles,ptCurves,
@@ -715,6 +714,7 @@
       `${fmt(s.sprayFlowM3h,2)} m³/h (${fmt(s.sprayFlowPct,2)} %)`;
     $("sprayDriveValue").textContent=`${fmt(s.sprayDriveBar,2)} bar`;
     $("gctaSaturationTemp").textContent=`${fmt(E.saturationTemperatureC(u.gctAOpeningPressureBar),1)} °C`;
+    renderSetpointControls();
     if(regulationActive){
       if(!u.rManualOverride){
         $("rManualInput").value=s.rods.R;
@@ -839,14 +839,18 @@
   }
   function renderManualExtras() {
     const s=model.state,u=model.controls,mode=E.rcvInjectionMode(model),injecting=mode!=="off";
+    const closed=u.rcvLetdownCloseGraph===true;
     $("rManualOverride").checked=u.rManualOverride;
     $("rManualInput").disabled=u.allRodsTargetPas!==null||regulationActive&&!u.rManualOverride;
     $("manualRodPanel").classList.toggle("manual-override-active",u.rManualOverride);
     for(let i=0;i<3;i++){
       const input=document.querySelector(`[data-rcv-orifice="${i}"]`);
-      if(input)input.checked=u.rcvLetdownOrifices[i];
-      $("rcvOrificeStatus"+i).textContent=u.rcvLetdownOrifices[i]?"ES":"HS";
+      if(input){input.checked=u.rcvLetdownOrifices[i]&&!closed;input.disabled=closed;}
+      $("rcvOrificeStatus"+i).textContent=closed?"HS · CC":u.rcvLetdownOrifices[i]?"ES":"HS";
     }
+    if($("rcvOrificeAutoStatus"))$("rcvOrificeAutoStatus").textContent=closed
+      ?"Orifices fermés par CC-RÉGUL · sélection manuelle conservée"
+      :"Sélection manuelle des orifices · fermeture possible par CC-RÉGUL";
     const boron=$("rcvBoron");boron.disabled=injecting;
     if(injecting||document.activeElement!==boron)boron.value=E.rcvChargeBoronPpm(model);
     for(const [mode,button,counter] of [["dilution","rcvDilution","rcvDilutionLitres"],
@@ -989,6 +993,7 @@
       u.g3GraphTarget=null;u.gvGraphFeedPct=[null,null,null,null];
       u.pressureGraphHeaterKW=null;u.pressureGraphSprayPct=null;
       u.nrefGraphPct=null;u.turbineLimitGraphPct=null;
+      u.prefGraphBar=null;u.rcvLetdownCloseGraph=null;
       u.rcvChargeGraphM3h=null;
       E.setRcvGraphInjection(model,null,null);
       $("rManualInput").value=u.rManualPas;
@@ -1028,6 +1033,10 @@
       u.pressureGraphHeaterKW=Number.isFinite(out.pchauffOut)?out.pchauffOut:null;
       u.pressureGraphSprayPct=Number.isFinite(out.qaspOut)?Math.max(0,Math.min(100,out.qaspOut)):null;
       u.nrefGraphPct=Number.isFinite(out.nrefOut)?out.nrefOut:null;
+      u.prefGraphBar=Number.isFinite(out.prefOut)?out.prefOut:null;
+      if(u.nrefGraphPct!==null)model.state.nrefPct=Math.max(0,Math.min(100,u.nrefGraphPct));
+      if(u.prefGraphBar!==null)model.state.prefBar=Math.max(1,Math.min(180,u.prefGraphBar));
+      u.rcvLetdownCloseGraph=Number.isFinite(out.rcvLetdownCloseOut)?out.rcvLetdownCloseOut>=.5:null;
       u.rcvChargeGraphM3h=Number.isFinite(out.qchargeOut)
         ? Math.max(0,Math.min(E.C.rcvMaxCommandM3h,out.qchargeOut)) : null;
       E.setRcvGraphInjection(model,out.boricationOut,out.dilutionOut);
@@ -1156,7 +1165,46 @@
     for(const key of Object.keys(alarmLimits))if(ui.alarmLimits[key])alarmLimits[key]=[...ui.alarmLimits[key]];
     renderAlarmTable();
   }
+  const SETPOINT_INPUTS={gcta:"gctaOpeningPressure",pressure:"primaryPressureSetpoint",level:"pzrLevelSetpoint"};
+  function renderSetpointControls(){
+    const u=model.controls;
+    for(const [name,id] of Object.entries(SETPOINT_INPUTS)){
+      const config=E.SETPOINT_CONTROLS[name],ramp=u.setpointRamps[name];
+      const actual=u[config.key],target=ramp.target??actual,unit=name==="level"?"%":"bar";
+      if(document.activeElement!==$(id))$(id).value=target;
+      $(id+"Rate").value=ramp.rate===null?"instant":String(ramp.rate);
+      const automatic=config.manual&&!u[config.manual];
+      if(config.manual)$(id+"Manual").checked=u[config.manual];
+      $(id+"Progress").textContent=automatic
+        ?`Référence CC : ${fmt(name==="level"?model.state.nrefPct:model.state.prefBar,1)} ${unit}`
+        :`Consigne appliquée ${fmt(actual,1)} ${unit}${Math.abs(target-actual)>.001?` → ${fmt(target,1)} ${unit}`:""}`;
+    }
+  }
+  function bindSetpointControls(){
+    for(const [name,id] of Object.entries(SETPOINT_INPUTS)){
+      bindNumber(id,value=>{E.setManualSetpoint(model,name,value);sendEditorTick(0);});
+      $(id+"Rate").addEventListener("change",e=>{
+        const rate=e.target.value==="instant"?null:Number(e.target.value);
+        if(!E.SETPOINT_RATES.includes(rate))return;
+        model.controls.setpointRamps[name].rate=rate;
+        const target=model.controls.setpointRamps[name].target;
+        if(rate===null&&target!==null)E.setManualSetpoint(model,name,target);
+        sendEditorTick(0);render();
+      });
+      const config=E.SETPOINT_CONTROLS[name];
+      if(config.manual)$(id+"Manual").addEventListener("change",e=>{
+        if(e.target.checked){
+          // Prendre la référence courante évite un échelon lors du passage en manuel.
+          E.setManualSetpoint(model,name,name==="level"?model.state.nrefPct:model.state.prefBar);
+        }else{
+          model.controls[config.manual]=false;model.controls.setpointRamps[name].target=null;
+        }
+        sendEditorTick(0);render();
+      });
+    }
+  }
   function bindControls() {
+    bindSetpointControls();
     $("saveState").addEventListener("click",saveSimulationState);
     $("loadState").addEventListener("click",()=>{$("stateFile").value="";$("stateFile").click();});
     $("stateFile").addEventListener("change",e=>loadSimulationState(e.target.files?.[0]));
@@ -1354,6 +1402,7 @@
     $("chargeInput").value=u.rcvChargeM3h;
     $("chargeValue").textContent=`${fmt(u.rcvChargeM3h,1)} m³/h`;
     $("rcvBoron").value=u.rcvTankBoronPpm;
+    renderSetpointControls();
     $("protectionsEnabled").checked=u.protectionsEnabled;
     $("risEnabled").checked=u.risEnabled;
     for(const [id,key] of NUMBER_PARAMETERS)
