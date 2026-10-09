@@ -776,7 +776,7 @@
       "file": "simulateur/centurion-app.js",
       "title": "Application",
       "description": "Horloge, commandes, arbitrage CC et présentation.",
-      "sha256": "17da2eeabc63ee923a84b29f47d8422530ba4faaff7c181e91b4129e57779cd0",
+      "sha256": "3aa435901b1db18b904e5f83e04e19d480d1cecd5ee2d08b3c441665831b4367",
       "functions": [
         {
           "name": "activateView",

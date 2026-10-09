@@ -133,7 +133,7 @@
       releasePtProbe();
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261009-pt-probe";
+      $("diagramObject").data=svgFiles[name]+"?v="+(name==="pt"?"20261009-pt-retouches":"20261009-pt-probe");
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
