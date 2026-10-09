@@ -7,9 +7,9 @@
   "use strict";
   const History=typeof module==='object'&&module.exports?require('./centurion-history.js'):window.CenturionHistory;
   const PzrCommands=typeof module==='object'&&module.exports?require('./centurion-cc-pzr.js'):window.CenturionPzrCommands;
-  const FORMAT="Centurion-State",VERSION=1,REVISION="20261009-consignes-v9";
+  const FORMAT="Centurion-State",VERSION=1,REVISION="20261009-charge-v10";
   const MAX_STATE_BYTES=160*1024*1024;
-  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6","20261008-gmpp-niveau-v7","20261009-pzr-breche-v8"];
+  const COMPATIBLE_REVISIONS=["20261008-pzr-v2","20261008-pzr-v3","20261008-breche-v4","20261008-gv-breches-v5","20261008-ris-inertie-v6","20261008-gmpp-niveau-v7","20261009-pzr-breche-v8","20261009-consignes-v9"];
   const LEGACY_REVISION="20261007-state-v1";
   const clone=value=>JSON.parse(JSON.stringify(value));
   function checkJson(value,path="fichier",depth=0){

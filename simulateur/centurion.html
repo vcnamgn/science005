@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261009-consignes-v9">
+  <link rel="stylesheet" href="centurion.css?v=20261009-charge-v10">
 </head>
 <body>
   <header class="topbar">
@@ -329,12 +329,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261009-consignes-v9" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261009-charge-v10" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261009-consignes-v9" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261009-charge-v10" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -624,6 +624,10 @@ Q_réalisé = min(Q_demande, Q_max(P))</code></pre>
 <p>Le volet Pressuriseur contient une consigne de pression primaire (1–180 bar absolus) et une consigne de niveau (0–100 %). Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.</p>
 <p>Les deux blocs <strong>RCI</strong> (relais de commande intermédiaire) sont placés entre la référence automatique et le sommateur : <code>K(155 bar) → RCI pression → écart MP1−PREF</code>, et <code>programme NREF → RCI niveau → NREF → écart NREF−MN1</code>. E1 porte la référence automatique ; le relais lit la consigne manuelle après rampe et son mode dans les signaux du pupitre. Les valeurs affichées par l&#39;atelier et NREF du synoptique sont celles sélectionnées par ces blocs. Une consigne de pupitre seule ne commande aucun actionneur : il faut relier la chaîne dans CC-RÉGUL et l&#39;activer.</p>
 <p>Les consignes de pression GCT-A, pression primaire et niveau PZR ont des rampes indépendantes : 0,5 ; 1 ; 2 ; 5 ; 10 ; 200 unités/minute, ou Instantanée. L&#39;unité est <strong>bar/min</strong> pour les pressions, <strong>% de niveau/min</strong> pour le PZR ; le défaut est 5. La cible et la consigne appliquée sont distinguées à l&#39;écran. La rampe utilise le temps simulé, reste figée en pause et est conservée dans la sauvegarde. Instantanée change seulement la référence ; la pression et le niveau physiques évoluent avec les actionneurs et les bilans existants.</p>
+<h4 id="detail-correction-du-niveau-pzr-et-saturation-de-la-charge">Correction du niveau PZR et saturation de la charge</h4>
+<p>Le PI niveau fourni conserve Kp = 1,5 et Ki = 0,08/min ; sa correction configurée est désormais <strong>−15 à +60 m³/h</strong>. Le débit total reste plafonné à <strong>60 m³/h</strong>, puis limité par la courbe de la pompe (44 m³/h disponibles à 177 bar, débit nul à 180 bar). Aucun débit supplémentaire n&#39;est créé par le réglage du PI.</p>
+<p>La chaîne CC montre une source <code>qchargeCapacitySignal</code>, le plafond de charge, deux bornes de correction et un MIN sur le débit total. Si Qcap est la capacité plafonnée et Qdec la décharge réalisée, les bornes externes sont B = −Qdec et C = Qcap − Qdec. Le PI utilise A = erreur de niveau, B = borne basse, C = borne haute. Sa sortie respecte aussi ses propres limites. Ainsi, à capacité 60, deux orifices (36 m³/h) laissent +24 de correction ; un orifice (18) laisse +42 ; tous fermés, +60.</p>
+<p>En mode « Limites externes B/C », l&#39;intégrale cesse de croître dans le sens de la saturation. Un suivi exponentiel de 10 s ramène une intégrale déjà accumulée vers la correction réalisable lorsque la capacité diminue ou que la décharge reprend. Ce suivi peut rendre l&#39;intégrale négative pour compenser une forte contribution proportionnelle ; la sortie reste bornée. Il est figé en pause et conservé avec les mémoires CC dans le JSON. Si la capacité ne couvre même plus la décharge et qu&#39;aucune correction ne respecte toutes les bornes, le PI garde sa limite configurée et le MIN aval impose la capacité réelle. Les autres PI conservent leur fonctionnement antérieur tant que les limites externes ne sont pas sélectionnées et raccordées.</p>
 <h4 id="detail-fermeture-de-la-decharge-sur-bas-niveau">Fermeture de la décharge sur bas niveau</h4>
 <p>Les corrections Niveau, Pression et Complet comportent la chaîne visible <code>MN1 → relais bas niveau (15 / 17 %) → Fermer orifices RCV</code>. Le relais émet 1 sous 15 % et garde cet ordre jusqu&#39;à un niveau strictement supérieur à 17 %. La sortie TOR ferme les trois orifices, donc ramène le débit réel QDEC à zéro dans le bilan de masse. Elle ne modifie ni la demande de charge ni la sélection manuelle des orifices. Les cases montrent HS · CC et sont désactivées tant que l&#39;ordre est appliqué ; leur sélection est restituée à la levée de l&#39;ordre. Déconnecter cette sortie ou désactiver CC-RÉGUL libère cette commande. Aucun ordre AAR/IS n&#39;est produit par ce relais de régulation.</p>
 <p>Ces extensions sont présentes dans les corrections fournies et ajoutées aux anciennes chaînes PZR identifiables à l&#39;import. Les canevas vides et les schémas sans chaîne de niveau reconnue restent des exercices à construire.</p>
@@ -664,6 +668,7 @@ Q_réalisé = min(Q_demande, Q_max(P))</code></pre>
 <p>La révision <code>20261008-gmpp-niveau-v7</code> sépare l&#39;aspiration du débit forcé de l&#39;amorçage naturel et introduit l&#39;arrêt bas niveau à 11 m. Les sauvegardes v1 à v6 reçoivent le facteur d&#39;aspiration manquant à partir de leur inventaire ; débits en cours, stocks, arrêts mémorisés et instantanés sont conservés. Les quatre nouvelles mesures sont ajoutées à la fin de l&#39;historique. Une mesure absente des anciens points reste absente ; elle n&#39;est pas reconstruite artificiellement.</p>
 <p>La révision <code>20261009-pzr-breche-v8</code> corrige la fermeture de pression et la fuite primaire liquide. Elle conserve le format des tableaux et accepte les sauvegardes v1 à v7, sans modifier leurs graphes, historiques, stocks ni parcelles. Les anciennes valeurs restent dans l&#39;historique ; les nouvelles lois s&#39;appliquent à la reprise. La mémoire <code>pzrThermalPressureBar</code> suit alors la pression réalisée. Aucun état utilisateur joint pour diagnostic n&#39;est publié avec le projet.</p>
 <p>La révision <code>20261009-consignes-v9</code> conserve les cibles, pentes, modes des trois consignes et l&#39;ordre de fermeture RCV. Les fichiers v1 à v8 reçoivent des rampes inactives à 5 unités/minute, sans modifier leurs références historiques, stocks ou tuyaux. Les chaînes PZR reconnues du graphe repris reçoivent les RCI et le relais bas niveau, en conservant les mémoires des blocs existants. Les nouvelles sources CC sont ajoutées à la fin des mesures compactes pour conserver les indices des historiques antérieurs.</p>
+<p>La révision <code>20261009-charge-v10</code> accepte également les sauvegardes v9. Les chaînes de charge fournies et reconnues reçoivent la correction +60 et les bornes externes de saturation, en conservant les mémoires existantes. Les graphes étudiants personnalisés restent conservés. La source de capacité RCV est ajoutée à la fin des signaux ; les tableaux historiques antérieurs ne sont pas réindexés.</p>
 <p>Les documents sources et les archives de propositions ne sont pas publiés. Le catalogue public emploie des identifiants REF ; leur correspondance avec les fichiers locaux reste privée. Les exclusions d&#39;anciens prototypes figurent dans <code>scripts/publication-exclusions.json</code>. Les ressources actives, les tests actuels et cette documentation restent dans le dépôt public.</p>
 <p>Les fichiers d&#39;une application statique publique sont téléchargeables. Il n&#39;y a pas d&#39;authentification dans ce code. Un contrôle d&#39;accès réel requiert une couche d&#39;hébergement appropriée ; voir <a href="ACCES-WEB.md">l&#39;étude d&#39;accès web</a>. Les secrets de publication ne doivent figurer ni dans le JavaScript, ni dans la documentation, ni dans les URL Git enregistrées.</p>
 </article>
@@ -738,11 +743,11 @@ node scripts/check-docs.mjs</code></pre>
     <img id="certificatePreview" class="certificate-preview" alt="Aperçu du certificat de fin de simulation" hidden>
   </dialog>
   <script src="vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="centurion-engine.js?v=20261009-consignes-v9"></script>
-  <script src="centurion-history.js?v=20261009-consignes-v9"></script>
-  <script src="centurion-cc-pzr.js?v=20261009-consignes-v9"></script>
-  <script src="centurion-state.js?v=20261009-consignes-v9"></script>
+  <script src="centurion-engine.js?v=20261009-charge-v10"></script>
+  <script src="centurion-history.js?v=20261009-charge-v10"></script>
+  <script src="centurion-cc-pzr.js?v=20261009-charge-v10"></script>
+  <script src="centurion-state.js?v=20261009-charge-v10"></script>
   <script src="centurion-certificate.js?v=20261007-sauvegarde-capture-3"></script>
-<script src="centurion-app.js?v=20261009-consignes-v9"></script>
+<script src="centurion-app.js?v=20261009-charge-v10"></script>
 </body>
 </html>

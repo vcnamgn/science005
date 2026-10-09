@@ -2273,7 +2273,8 @@
       pzrLevelSetpointSignal:[u.pzrLevelSetpointPct,"%"],
       pressureSetpointManualSignal:[u.pressureSetpointManual?1:0,"TOR"],
       pzrLevelSetpointManualSignal:[u.pzrLevelSetpointManual?1:0,"TOR"],
-      rcvLetdownCloseSignal:[u.rcvLetdownCloseGraph===true?1:0,"TOR"]
+      rcvLetdownCloseSignal:[u.rcvLetdownCloseGraph===true?1:0,"TOR"],
+      qchargeCapacitySignal:[s.rcvCapacityM3h,"m³/h"]
     });
     return values;
   }

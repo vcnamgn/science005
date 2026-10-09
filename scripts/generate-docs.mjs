@@ -17,14 +17,15 @@ const modules=[
   {file:'simulateur/centurion-certificate.js',title:'Certificats',description:'Archives des événements, captures SVG et export PNG/PDF local.'},
   {file:'simulateur/centurion-state.js',title:'États JSON',description:'Sauvegarde complète, validation et reprise locale pour le débogage.'},
   {file:'simulateur/centurion-cc-regul.html',title:'Ateliers CC',description:'Édition, évaluation, stockage et code hérité inactif.'}
-  ,{file:'simulateur/centurion-cc-pzr.js',title:'Consignes PZR',description:'Sélection RCI et extension des chaînes PZR reconnues.'}
+  ,{file:'simulateur/centurion-cc-pzr.js',title:'Consignes PZR',description:'Sélection RCI, limites réalisables du PI et extension des chaînes PZR reconnues.'}
 ];
 const notes={
   make:'Crée {state, controls}, initialise le régime nominal et recalcule la forme axiale. Aucun DOM requis.',
   setManualSetpoint:'Fixe une cible de consigne gcta/pressure/level, bornée en bar ou %. Sélectionne le mode manuel du RCI PZR ; applique immédiatement seulement si la pente est Instantanée. Ne commande pas les actionneurs.',
   updateSetpointRamps:'Avance les trois références indépendantes suivant leur pente en unités/minute et dt en secondes ; les actionneurs restent pilotés par les CC.',
-  upgrade:'Ajoute RCI et fermeture bas niveau aux seules chaînes PZR reconnues ; modifie le graphe sur place, conserve les paramètres et les identifiants existants, reste idempotent.',
+  upgrade:'Ajoute RCI, fermeture bas niveau et bornes réalisables du PI aux seules chaînes PZR reconnues ; conserve gains, identifiants et mémoires, porte la limite historique +15 à +60 et reste idempotent.',
   selectReference:'Retourne le signal automatique E1 ou la référence manuelle après rampe, selon les signaux du pupitre ; valeur et unité, sans commande physique.',
+  limitedPi:'PI en unités/minute : bornes configurées et externes B/C, intégration conditionnelle et suivi exponentiel de la saturation. dt en secondes ; la mémoire ne change que si advance est vrai. Retourne la correction ou null pour des bornes invalides.',
   tripPrimaryPumps:'Déclenche les quatre GMPP sur commande manuelle, sans demander AAR/IS. Coupe la chaleur moteur, mémorise le motif et conserve l’inertie hydraulique.',
   secondaryBreakFlowKgS:'Débit vapeur vers 1 bar : orifice gaz parfait isentropique, étranglé ou sous-critique. Section cm², pression bar absolus, température °C ; résultat kg/s avant limitations du bilan GV.',
   step:'Fait évoluer le modèle sur place ; dt en secondes, borné à 0–0,1. Renvoie state ; reste inactif après une fin de partie.',
