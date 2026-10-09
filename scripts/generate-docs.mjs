@@ -43,6 +43,9 @@ const modules=[
   ,{file:'simulateur/centurion-cc-pzr.js',title:'Consignes PZR',description:'Sélection RCI, limites réalisables du PI et extension des chaînes PZR reconnues.'}
 ];
 const notes={
+  ptPlot:'Lit les bornes et le rectangle pt-plot-area du SVG ; fournit les conversions °C/bar vers coordonnées graphiques, sans modifier le modèle.',
+  bindPtProbe:'Lie survol, clic figé et Défiger au réticule P–T. Convertit les coordonnées du pointeur après zoom/cadrage ; seules les lectures sont envoyées au parent.',
+  releasePtProbe:'Réinitialise le bouton et la lecture P–T puis demande au SVG de libérer le réticule. Aucun effet sur les mesures ou les commandes physiques.',
   make:'Crée {state, controls}, initialise le régime nominal et recalcule la forme axiale. Aucun DOM requis.',
   setManualSetpoint:'Fixe une cible de consigne gcta/pressure/level, bornée en bar ou %. Sélectionne le mode manuel du RCI PZR ; applique immédiatement seulement si la pente est Instantanée. Ne commande pas les actionneurs.',
   updateSetpointRamps:'Avance les trois références indépendantes suivant leur pente en unités/minute et dt en secondes ; les actionneurs restent pilotés par les CC.',

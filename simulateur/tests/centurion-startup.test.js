@@ -67,7 +67,7 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
     URL:{createObjectURL(blob){downloads.push(blob);return 'blob:test';},revokeObjectURL(){}},console});
   vm.runInContext(source,context,{filename:'centurion-app.js'});
   return {get:id=>ids.get(id),query:selector=>document.querySelector(selector),messages,downloads,get pendingFrames(){return frames.length;},
-    receive(data){for(const fn of windowEvents.message||[])fn({data});},
+    receive(data,source){for(const fn of windowEvents.message||[])fn({data,source});},
     key(event){for(const fn of windowEvents.keydown||[])fn(event);},
     click:id=>ids.get(id).fire('click'),consumeCpu:milliseconds=>{now+=milliseconds;},
     frame(milliseconds=100){now+=milliseconds;const callback=frames.shift();

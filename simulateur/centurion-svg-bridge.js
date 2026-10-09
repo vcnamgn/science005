@@ -13,6 +13,69 @@
   const nodes=selector=>Array.from(root.querySelectorAll(selector));
   let gv=1;
 
+  function ptPlot() {
+    const node=document.getElementById("pt-plot-area");
+    const number=(name,fallback)=>node?.hasAttribute(name)?Number(node.getAttribute(name)):fallback;
+    const left=number("x",105),top=number("y",100),width=number("width",1060),height=number("height",610);
+    const tMin=number("data-temperature-min",0),tMax=number("data-temperature-max",370);
+    const pMin=number("data-pressure-min",0),pMax=number("data-pressure-max",180);
+    return {left,top,width,height,tMin,tMax,pMin,pMax,
+      x:t=>left+(t-tMin)/(tMax-tMin)*width,
+      y:p=>top+height-(p-pMin)/(pMax-pMin)*height};
+  }
+  function bindPtProbe() {
+    if(kind!=="pt")return;
+    const group=document.getElementById("pt-probe");
+    if(!group)return;
+    let locked=false,position=null;
+    const publish=()=>window.parent?.postMessage({type:"centurion-pt-probe",kind,locked,
+      temperatureC:position?.temperatureC,pressureBar:position?.pressureBar},"*");
+    const paint=()=>{
+      group.setAttribute("visibility",position?"visible":"hidden");
+      root.setAttribute("data-pt-probe-locked",String(locked));
+      if(!position)return;
+      const plot=ptPlot(),x=plot.x(position.temperatureC),y=plot.y(position.pressureBar);
+      document.getElementById("pt-probe-vertical").setAttribute("d",`M${x} ${plot.top}V${plot.top+plot.height}`);
+      document.getElementById("pt-probe-horizontal").setAttribute("d",`M${plot.left} ${y}H${plot.left+plot.width}`);
+      document.getElementById("pt-probe-point").setAttribute("cx",x);
+      document.getElementById("pt-probe-point").setAttribute("cy",y);
+      const tx=Math.max(plot.left,Math.min(plot.left+plot.width-90,x-45));
+      const py=Math.max(plot.top,Math.min(plot.top+plot.height-27,y-13.5));
+      document.getElementById("pt-probe-temperature").setAttribute("transform",`translate(${tx} ${plot.top+plot.height+7})`);
+      document.getElementById("pt-probe-pressure").setAttribute("transform",`translate(${plot.left-97} ${py})`);
+      set("pt-probe-temperature-value",`${fmt(position.temperatureC,1)} °C`);
+      set("pt-probe-pressure-value",`${fmt(position.pressureBar,1)} bar`);
+    };
+    const locate=event=>{
+      const box=root.getAttribute("viewBox").trim().split(/[\s,]+/).map(Number);
+      const rect=root.getBoundingClientRect(),scale=Math.min(rect.width/box[2],rect.height/box[3]);
+      if(!(scale>0)||!Number.isFinite(event.clientX)||!Number.isFinite(event.clientY))return null;
+      const x=box[0]+(event.clientX-rect.left-(rect.width-box[2]*scale)/2)/scale;
+      const y=box[1]+(event.clientY-rect.top-(rect.height-box[3]*scale)/2)/scale;
+      const p=ptPlot();
+      if(x<p.left||x>p.left+p.width||y<p.top||y>p.top+p.height)return null;
+      return {temperatureC:p.tMin+(x-p.left)/p.width*(p.tMax-p.tMin),
+        pressureBar:p.pMin+(p.top+p.height-y)/p.height*(p.pMax-p.pMin)};
+    };
+    const release=()=>{locked=false;position=null;paint();publish();};
+    root.addEventListener("pointermove",event=>{
+      if(locked||event.buttons)return;
+      position=locate(event);paint();root.style.cursor=position?"crosshair":"grab";
+    });
+    root.addEventListener("pointerleave",()=>{if(!locked){position=null;paint();}});
+    root.addEventListener("wheel",event=>{if(!locked&&event.ctrlKey){position=locate(event);paint();}});
+    root.addEventListener("click",event=>{
+      if(locked||event.button>0)return;
+      const next=locate(event);if(!next)return;
+      position=next;locked=true;paint();publish();
+    });
+    window.addEventListener("message",event=>{
+      if(event.source===window.parent&&event.data?.type==="centurion-pt-probe-command"
+        &&event.data.action==="release")release();
+    });
+    release();
+  }
+
   // Le zoom appartient au document SVG : les événements traversent ainsi
   // correctement les <object>, même avec l'origine opaque de file://.
   function bindViewport() {
@@ -181,7 +244,7 @@
       }
     }
     if(kind==="pt") {
-      const x=t=>105+t/370*1060,y=p=>710-p/180*610;
+      const {x,y}=ptPlot();
       const path=points=>points.map((v,i)=>`${i?"L":"M"}${x(v[0]).toFixed(2)} ${y(v[1]).toFixed(2)}`).join(" ");
       const write=(id,points)=>document.getElementById(id)?.setAttribute("d",path(points));
       const curves=data.ptCurves||{lower:[],upper:[],saturation:[]};
@@ -309,6 +372,8 @@
       if(semantic)updateSemantic(data.snapshot);
       else if(kind==="rods")updateRods(data.snapshot);
       const copy=root.cloneNode(true);
+      // Le réticule est une lecture de l'utilisateur, pas un état physique du certificat.
+      copy.querySelector('[data-pt-probe]')?.setAttribute("visibility","hidden");
       copy.querySelectorAll("script").forEach(node=>node.remove());
       copy.querySelectorAll("*").forEach(node=>{
         // Les métadonnées RDF/Inkscape ne sont pas des SVGElement et ne
@@ -324,6 +389,7 @@
     else if(kind==="rods")updateRods(data);
   });
   bindViewport();
+  bindPtProbe();
   if(semantic)bindNavigation();else bindArrows();
   if(window.parent&&window.parent!==window)
     window.parent.postMessage({type:"centurion-svg-ready",kind},"*");

@@ -130,9 +130,10 @@
     $("diagramFrame").classList.toggle("core-active",name==="core");
     $("diagramZoom").hidden=name==="core";
     if(changed&&name!=="core") {
+      releasePtProbe();
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261009-manual-compact";
+      $("diagramObject").data=svgFiles[name]+"?v=20261009-pt-probe";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -207,6 +208,11 @@
     }
     try { $("diagramObject").contentWindow?.postMessage({type:"centurion-state",
       diagram,...E.instrumentSnapshot(model,selectedGv),...extra},"*"); } catch(_) {}
+  }
+  function releasePtProbe() {
+    $("ptProbeRelease").disabled=true;
+    $("ptProbeStatus").textContent="Survoler · cliquer pour figer";
+    $("diagramObject").contentWindow?.postMessage({type:"centurion-pt-probe-command",action:"release"},"*");
   }
   function renderInventoryBalance() {
     $("inventoryBalance").hidden=diagram!=="inventory";
@@ -1160,6 +1166,7 @@
       model=save.model;regulationActive=save.editors.regul.enabled;protectionActive=save.editors.protect.enabled;
       model.controls.protectionsEnabled=protectionActive;
       restoreStateUi(save.ui);syncInputs();setDiagram(save.ui.diagram,save.ui.selectedGv);
+      releasePtProbe();
       if(save.ui.activeView)activateView(save.ui.activeView);
       if(save.certificateArchive)certificate?.restore(model,save.certificateArchive);
       else certificate?.observe(model);
@@ -1282,6 +1289,7 @@
     $("gvSelect").addEventListener("change",e=>setDiagram("gv",Number(e.target.value)));
     $("coreTrailWindow").addEventListener("change",drawCoreCharts);
     $("ptTrailWindow").addEventListener("change",updateSvg);
+    $("ptProbeRelease").addEventListener("click",releasePtProbe);
     for(const [id,target] of [["allRodsDown",0],["allRodsUp",260],["allRodsRelease",null]])
       $(id).addEventListener("click",()=>{if(E.commandAllRods(model,target)){if(target!==null)running=true;sendEditorTick(0);render();}});
     $("auxiliarySprayInput").addEventListener("input",e=>{
@@ -1338,12 +1346,19 @@
       }
       if(e.source===$("diagramObject").contentWindow&&e.data?.type==="centurion-svg-viewport"
         &&Number.isFinite(e.data.zoom))$("diagramZoomValue").textContent=`${fmt(100*e.data.zoom)} %`;
+      if(e.source===$("diagramObject").contentWindow&&diagram==="pt"&&e.data?.type==="centurion-pt-probe"){
+        const locked=e.data.locked===true&&Number.isFinite(e.data.temperatureC)&&Number.isFinite(e.data.pressureBar);
+        $("ptProbeRelease").disabled=!locked;
+        $("ptProbeStatus").textContent=locked?`Lecture figée · ${fmt(e.data.temperatureC,1)} °C · ${fmt(e.data.pressureBar,1)} bar`
+          :"Survoler · cliquer pour figer";
+      }
       if(e.data?.type==="centurion-svg-navigate") setDiagram(e.data.diagram,e.data.gv||selectedGv);
       if(e.data?.type==="centurion-svg-ready") updateSvg();
       handleEditorMessage(e.data);
     });
     $("runButton").addEventListener("click",()=>{if(model.state.endState)return;running=!running;render();});
     $("resetButton").addEventListener("click",()=>{cancelInitiator();running=false;pendingCcStep=null;model=E.make();
+      releasePtProbe();
       historyView.reset();
       model.controls.protectionGraphMode=true;
       model.controls.protectionsEnabled=protectionActive;

@@ -89,17 +89,18 @@
     // chargé ni du zoom de la vue. Les mêmes courbes alimentent les deux vues.
     const s=model.state,x=t=>105+t/370*1060,y=p=>710-p/180*610;
     const path=points=>points.map((p,i)=>`${i?"L":"M"}${x(p[0]).toFixed(2)} ${y(p[1]).toFixed(2)}`).join(" ");
-    const gridX=[0,50,100,150,180,200,250,300,350,370].map(t=>
-      `<path d="M${x(t)} 100V710" stroke="#e4edf3"/><text x="${x(t)}" y="736" text-anchor="middle">${t}</text>`).join("");
-    const gridY=[0,25,70,100,140,155,180].map(p=>
-      `<path d="M105 ${y(p)}H1165" stroke="#e4edf3"/><text x="87" y="${y(p)+5}" text-anchor="end">${p}</text>`).join("");
+    const temperatures=Array.from({length:38},(_,i)=>i*10),pressures=Array.from({length:19},(_,i)=>i*10);
+    const gridX=temperatures.map(t=>`<path data-grid-temperature="${t}" d="M${x(t)} 100V710" class="grid${t%50===0?' major':''}"/>`).join("");
+    const gridY=pressures.map(p=>`<path data-grid-pressure="${p}" d="M105 ${y(p)}H1165" class="grid${p%50===0?' major':''}"/>`).join("");
+    const labels=temperatures.map(t=>`<text x="${x(t)}" y="734" text-anchor="middle" class="tick">${t}</text>`).join("")
+      +pressures.map(p=>`<text x="88" y="${y(p)+4.5}" text-anchor="end" class="tick">${p}</text>`).join("");
     const operating=E.reactorOperatingState(s),polygon=[...curves.lower,...[...curves.upper].reverse()];
     return `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="850" viewBox="0 0 1280 850">
-      <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#24465c;font-size:15px}.title{font-size:27px;font-weight:700}.small{fill:#587489}</style>
+      <style>text{font-family:Segoe UI,Arial,sans-serif;fill:#24465c;font-size:15px}.title{font-size:27px;font-weight:700}.small{fill:#587489}.tick{font-size:12px}.grid{fill:none;stroke:#7da3b6;stroke-width:.8;stroke-opacity:.24}.grid.major{stroke-width:1.1;stroke-opacity:.4}</style>
       <rect width="1280" height="850" fill="white"/>
       <text x="38" y="45" class="title">Diagramme P–T</text><text x="38" y="74" class="small">Pression primaire absolue · température moyenne · trace historique rouge</text>
       <rect x="1050" y="23" width="178" height="36" rx="8" fill="#eef7fb"/><text x="1066" y="47">État</text><text x="1121" y="48" font-size="21" font-weight="700">${operating.code}</text>
-      ${gridX}${gridY}<path d="M105 100V710H1165" fill="none" stroke="#24465c" stroke-width="2.5"/>
+      ${labels}<path d="M105 100V710H1165" fill="none" stroke="#24465c" stroke-width="2.5"/>
       <text x="40" y="94" font-size="18">bar abs.</text><text x="1108" y="773" font-size="18">TMOY · °C</text>
       <defs><clipPath id="clip"><rect x="105" y="100" width="1060" height="610"/></clipPath></defs><g clip-path="url(#clip)">
       <path d="${path(polygon)} Z" fill="#e4f4ee"/>
@@ -107,6 +108,7 @@
       <path d="${path(curves.saturation)}" fill="none" stroke="#8e9eb0" stroke-width="2" stroke-dasharray="8 5"/>
       <rect x="${x(90)}" y="${y(31)}" width="${x(180)-x(90)}" height="${y(25)-y(31)}" fill="#45ac79" fill-opacity=".55" stroke="#147345" stroke-width="2"/>
       <rect x="${x(297.2)}" y="${y(160)}" width="${x(307.5)-x(297.2)}" height="${y(150)-y(160)}" fill="#74c5e5" fill-opacity=".2" stroke="#50abc9" stroke-dasharray="3 3"/>
+      ${gridX}${gridY}
       <path id="pt-trace" d="${path(ptTrail(model).map(p=>[p.tavg,p.pressure]))}" fill="none" stroke="#e7414d" stroke-width="2.5" stroke-linejoin="round"/>
       <circle id="pt-point" cx="${x(s.tavgC)}" cy="${y(s.pressureBar)}" r="7" fill="#e7414d" stroke="white" stroke-width="2"/></g>
       <text x="425" y="448" font-size="18">AN/GV · Arrêt normal sur GV</text><text x="966" y="145" font-size="18">RP · Production</text>

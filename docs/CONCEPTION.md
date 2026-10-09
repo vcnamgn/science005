@@ -535,6 +535,8 @@ Les alarmes du tableau de bord et les clignotements de domaine ne déclenchent p
 | `centurion-state` | Parent → SVG | Projection instrumentale, courbes/trace P–T si nécessaires |
 | `centurion-svg-ready` | SVG → parent | Vue chargée, demande de rafraîchissement |
 | `centurion-svg-navigate` | SVG → parent | Nom de vue et numéro GV éventuel |
+| `centurion-pt-probe` | SVG P–T → parent | Lecture figée, température °C et pression bar |
+| `centurion-pt-probe-command` | Parent → SVG P–T | `action: release` pour Défiger |
 
 Le dictionnaire `signals` contient des paires `[valeur, unité]`. Les identifiants logiciels (`pow1`, `posg`, etc.) sont des clés de contrat ; un changement de libellé affiché ne doit pas les renommer. `posg` représente désormais des **pas extraits**. `posgInternalPct` reste une compatibilité interne de l'ancien atelier, pas une unité de conduite.
 
@@ -550,6 +552,14 @@ Exemple :
 ```
 
 Une valeur absente/non finie apparaît sous forme de tiret. Les éléments portent aussi `data-current-value`, utile à la vérification de cohérence. La vue Grappes conserve des liaisons par identifiant dans le pont ; toutes les vues ne sont donc pas encore exclusivement sémantiques.
+
+### Diagramme P–T : grille, lecture et retouches
+
+La grille est graduée tous les **10 °C** de 0 à 370 °C et tous les **10 bar** de 0 à 180 bar. Elle se superpose légèrement au domaine autorisé ; les limites vertes et la trace rouge restent distinctes. La même graduation figure sur le certificat.
+
+Le survol affiche un réticule et les coordonnées du pointeur sur les deux axes. Un clic dans le graphique fige cette lecture ; **Défiger** reprend le suivi. Un glissement conserve le déplacement du synoptique et ne fige pas un point. Les coordonnées tiennent compte du zoom et du cadrage. Cette lecture n'altère ni le point physique, ni l'historique, ni les consignes. Une réinitialisation, un chargement d'état ou un changement de synoptique libère le réticule ; il ne figure pas sur les certificats.
+
+`simulateur/synoptiques/Diagramme-PT.svg` conserve huit calques nommés pour Inkscape : fond, domaines, grille, limites, trace, axes, légendes et réticule. Le domaine et les graduations sont présents dans le fichier sans exécuter JavaScript. Les identifiants `pt-*`, les attributs `data-*` et le lien vers le pont SVG portent les liaisons temps réel ; les retouches graphiques doivent les conserver. `pt-plot-area` indique les coordonnées du graphique et les bornes physiques utilisées pour projeter les mesures et lire le pointeur.
 
 ## 8. États, incidents et fin de partie
 
