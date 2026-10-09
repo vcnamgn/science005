@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Centurion · Simulateur REP 1300 pédagogique</title>
-  <link rel="stylesheet" href="centurion.css?v=20261009-charge-v10">
+  <link rel="stylesheet" href="centurion.css?v=20261009-manual-compact">
 </head>
 <body>
   <header class="topbar">
@@ -45,7 +45,7 @@
         <button class="diagram-tab" data-diagram="rods">Grappes</button>
         <button class="diagram-tab" data-diagram="gv">GV</button>
         <span class="toolbar-spacer"></span>
-        <div class="diagram-zoom" id="diagramZoom" role="group" aria-label="Zoom du synoptique" title="Molette : zoom autour du pointeur. Glisser avec le bouton gauche : déplacer.">
+        <div class="diagram-zoom" id="diagramZoom" role="group" aria-label="Zoom du synoptique" title="Ctrl + molette : zoom autour du pointeur. Glisser : déplacer. Espace : cadrer.">
           <button id="diagramZoomOut" type="button" aria-label="Dézoomer le synoptique">−</button>
           <output id="diagramZoomValue">100 %</output>
           <button id="diagramZoomIn" type="button" aria-label="Zoomer le synoptique">+</button>
@@ -184,16 +184,16 @@
                 <div class="safety-actions"><button class="button" id="allRodsDown" type="button">▼ Tous les groupes à 0 pas</button><button class="button" id="allRodsUp" type="button">▲ Tous les groupes à 260 pas</button><button class="button" id="allRodsRelease" type="button">Retour à la conduite</button></div>
                 <small id="allRodsStatus">R, G1, G2, N1, N2 et SA à SD · manœuvre normale, hors ordre AAR</small>
               </details>
-              <details><summary>GV · niveaux et vapeur</summary>
+              <details class="manual-gv"><summary>GV · niveaux et vapeur</summary>
                 <label>Consigne niveau GV <output id="gvSetpointValue">55 %</output><input id="gvSetpoint" data-regulated-control type="range" min="30" max="75" value="55" step="1"></label>
-                <div class="manual-turbine-row">
-                  <label>GCT-A · pression d’ouverture (bar absolus)<input id="gctaOpeningPressure" type="number" min="1" max="100" step="0.1" value="88.6"></label>
-                  <label class="manual-turbine-rate">Pente <select id="gctaOpeningPressureRate" aria-label="Rampe de pression GCT-A">
+                <div class="manual-setpoint-row">
+                  <label for="gctaOpeningPressure">GCT-A · ouverture</label><input id="gctaOpeningPressure" aria-label="Consigne pression GCT-A en bar absolus" type="number" min="1" max="100" step="0.1" value="88.6"><span>bar</span>
+                  <select id="gctaOpeningPressureRate" aria-label="Rampe de pression GCT-A">
                     <option value="0.5">0,5 bar/min</option><option value="1">1 bar/min</option><option value="2">2 bar/min</option><option value="5" selected>5 bar/min</option><option value="10">10 bar/min</option><option value="200">200 bar/min</option><option value="instant">Instantanée</option>
-                  </select></label>
+                  </select>
                 </div>
                 <small id="gctaOpeningPressureProgress">Consigne appliquée 88,6 bar</small>
-                <small>Température de saturation correspondante : <strong id="gctaSaturationTemp">—</strong> · consigne commune aux quatre GV</small>
+                <small>Tsat appliquée <strong id="gctaSaturationTemp">—</strong> → visée <strong id="gctaSaturationTarget">—</strong> · 4 GV</small>
                 <div id="gvFeedControls" class="feed-controls"></div>
               </details>
               <details><summary>GMPP · pompes primaires</summary>
@@ -201,57 +201,62 @@
                 <small id="primaryPumpStatus">GMPP en marche · aucun arrêt sur AAR ou IS</small>
               </details>
               <details><summary>Pressuriseur</summary>
-                <label class="inline-check"><input id="primaryPressureSetpointManual" type="checkbox"> Consigne de pression manuelle · RCI</label>
-                <div class="manual-turbine-row">
-                  <label>Consigne pression primaire (bar absolus)<input id="primaryPressureSetpoint" type="number" min="1" max="180" step="0.1" value="155"></label>
-                  <label class="manual-turbine-rate">Pente <select id="primaryPressureSetpointRate" aria-label="Rampe de pression primaire">
+                <div class="manual-setpoint-row">
+                  <label class="inline-check"><input id="primaryPressureSetpointManual" type="checkbox"> Pression manu</label><input id="primaryPressureSetpoint" aria-label="Consigne pression primaire en bar absolus" type="number" min="1" max="180" step="0.1" value="155"><span>bar</span>
+                  <select id="primaryPressureSetpointRate" aria-label="Rampe de pression primaire">
                     <option value="0.5">0,5 bar/min</option><option value="1">1 bar/min</option><option value="2">2 bar/min</option><option value="5" selected>5 bar/min</option><option value="10">10 bar/min</option><option value="200">200 bar/min</option><option value="instant">Instantanée</option>
-                  </select></label>
+                  </select>
                 </div>
                 <small id="primaryPressureSetpointProgress">Référence CC : 155 bar</small>
-                <label class="inline-check"><input id="pzrLevelSetpointManual" type="checkbox"> Consigne de niveau manuelle · RCI</label>
-                <div class="manual-turbine-row">
-                  <label>Consigne niveau pressuriseur (%)<input id="pzrLevelSetpoint" type="number" min="0" max="100" step="0.1" value="41.8"></label>
-                  <label class="manual-turbine-rate">Pente <select id="pzrLevelSetpointRate" aria-label="Rampe de niveau pressuriseur">
-                    <option value="0.5">0,5 %/min</option><option value="1">1 %/min</option><option value="2">2 %/min</option><option value="5" selected>5 %/min</option><option value="10">10 %/min</option><option value="200">200 %/min</option><option value="instant">Instantanée</option>
-                  </select></label>
-                </div>
-                <small id="pzrLevelSetpointProgress">Référence CC : programme NREF</small>
-                <p class="hint">La saisie sélectionne la consigne manuelle. Décocher rend la main au programme du schéma CC-RÉGUL ; les relais RCI doivent y être reliés.</p>
                 <label>Puissance chaufferettes <output id="heaterValue">288 kW</output><input id="heaterInput" data-regulated-control type="range" min="0" max="2500" value="288" step="1"></label>
                 <label>Aspersion 201VP / 202VP · débit demandé <output id="sprayValue">0 %</output><input id="sprayInput" data-regulated-control type="range" min="0" max="100" value="0" step="0.1"></label>
                 <small>Débit circulant <strong id="sprayActualValue">0,46 m³/h (0,18 %)</strong> · ΔP BF–BC <strong id="sprayDriveValue">3,5 bar</strong></small>
                 <label>Aspersion auxiliaire RCV <output id="auxiliarySprayValue">0,0 m³/h</output><input id="auxiliarySprayInput" type="range" min="0" max="8" step="0.1" value="0"></label>
                 <small>Débit réalisé <strong id="auxiliarySprayActual">0,0 m³/h</strong> · prélevé sur la charge directe, disponible sans HMT GMPP</small>
                 <div class="relief-controls" role="group" aria-label="Ouverture manuelle des soupapes"><span>Soupapes PZR</span><label class="inline-check"><input type="checkbox" data-relief-stage="0"> Étage 1</label><label class="inline-check"><input type="checkbox" data-relief-stage="1"> Étage 2</label><label class="inline-check"><input type="checkbox" data-relief-stage="2"> Étage 3</label></div>
-                <p id="reliefStatus" class="small-note" aria-live="polite"></p>
+                <small id="reliefStatus" aria-live="polite"></small>
               </details>
               <details><summary>RCV</summary>
+                <div class="manual-setpoint-row">
+                  <label class="inline-check"><input id="pzrLevelSetpointManual" type="checkbox"> Niveau PZR manu</label><input id="pzrLevelSetpoint" aria-label="Consigne niveau pressuriseur en pourcent" type="number" min="0" max="100" step="0.1" value="41.8"><span>%</span>
+                  <select id="pzrLevelSetpointRate" aria-label="Rampe de niveau pressuriseur">
+                    <option value="0.5">0,5 %/min</option><option value="1">1 %/min</option><option value="2">2 %/min</option><option value="5" selected>5 %/min</option><option value="10">10 %/min</option><option value="200">200 %/min</option><option value="instant">Instantanée</option>
+                  </select>
+                </div>
+                <small id="pzrLevelSetpointProgress">Référence CC : programme NREF</small>
+                <small id="pzrLevelRate" title="Variation du niveau réel entre deux actualisations, en points de niveau par minute. Le bilan sépare les apports/rejets, le stock vapeur et la densité liquide."></small>
+                <small class="manual-setpoint-help">Saisie : consigne manuelle via RCI. Décocher : référence CC-RÉGUL.</small>
                 <label>QCHARGE · charge totale <output id="chargeValue">36 m³/h</output><input id="chargeInput" data-regulated-control type="range" min="0" max="60" value="36" step="0.1"></label>
-                <p id="chargeHydraulic" class="manual-status"></p>
-                <p class="hint">Dont 6 m³/h vers les joints des GMPP.</p>
+                <small id="chargeHydraulic"></small>
+                <small>Dont 6 m³/h vers les joints des GMPP.</small>
                 <div class="rcv-orifices" role="group" aria-label="Orifices de décharge RCV">
                   <label class="inline-check"><input type="checkbox" data-rcv-orifice="0" checked> Orifice 1 <strong id="rcvOrificeStatus0">ES</strong></label>
                   <label class="inline-check"><input type="checkbox" data-rcv-orifice="1" checked> Orifice 2 <strong id="rcvOrificeStatus1">ES</strong></label>
                   <label class="inline-check"><input type="checkbox" data-rcv-orifice="2"> Orifice 3 <strong id="rcvOrificeStatus2">HS</strong></label>
                 </div>
                 <small id="rcvOrificeAutoStatus">Sélection manuelle des orifices · fermeture possible par CC-RÉGUL</small>
-                <label>CB de charge RCV (ppm)<input id="rcvBoron" type="number" min="0" max="7000" step="50" value="1200"></label>
-                <div class="rcv-dose-controls" role="group" aria-label="Dilution et borication par la charge RCV">
-                  <div><button class="button" id="rcvDilution" type="button" aria-pressed="false">Dilution · 0 ppm</button><output id="rcvDilutionLitres">0,0 L injectés</output></div>
-                  <div><button class="button" id="rcvBorication" type="button" aria-pressed="false">Borication · 7 000 ppm</button><output id="rcvBoricationLitres">0,0 L injectés</output></div>
+                <div class="rcv-boron-row" role="group" aria-label="CB, dilution et borication par la charge RCV">
+                  <label>CB · ppm<input id="rcvBoron" aria-label="Concentration en bore de charge RCV en ppm" type="number" min="0" max="7000" step="50" value="1200"></label>
+                  <div class="rcv-dose-controls">
+                    <div><button class="button" id="rcvDilution" type="button" aria-pressed="false">Dilution · 0 ppm</button><output id="rcvDilutionLitres">0,0 L injectés</output></div>
+                    <div><button class="button" id="rcvBorication" type="button" aria-pressed="false">Borication · 7 000 ppm</button><output id="rcvBoricationLitres">0,0 L injectés</output></div>
+                  </div>
                 </div>
-                <p class="hint">Dilution et borication utilisent QCHARGE. Compteurs cumulés à l’arrivée dans le primaire.</p>
+                <small>Dilution/borication via QCHARGE · compteurs à l’arrivée dans le CPP.</small>
                 <small>QCHARGE <strong id="rcvFlowValue">36 m³/h</strong> · QDEC <strong id="rcvLetdownValue">36 m³/h</strong> · PZR <strong id="pzrLevelValue">42</strong> % · Tmoy <strong id="tavgValue">306,5</strong> °C</small>
               </details>
               <details><summary>ASG · alimentation de secours</summary>
-                <button class="button" id="asgStart" type="button">Démarrer ASG</button>
-                <label class="inline-check"><input id="asgManual" type="checkbox"> ASG en manuel</label>
-                <div class="safety-trains" role="group" aria-label="Trains ASG">
-                  <label class="inline-check"><input type="checkbox" data-asg-train="0"> GV1 · MPS <strong id="asgTrainStatus0">HS</strong></label>
-                  <label class="inline-check"><input type="checkbox" data-asg-train="1"> GV2 · TPS <strong id="asgTrainStatus1">HS</strong></label>
-                  <label class="inline-check"><input type="checkbox" data-asg-train="2"> GV3 · MPS <strong id="asgTrainStatus2">HS</strong></label>
-                  <label class="inline-check"><input type="checkbox" data-asg-train="3"> GV4 · TPS <strong id="asgTrainStatus3">HS</strong></label>
+                <div class="asg-channels" role="group" aria-label="Mise en service des voies ASG">
+                  <button class="button" id="asgStart" type="button">Démarrer</button>
+                  <label class="inline-check"><input id="asgManual" type="checkbox"> Manu</label>
+                  <label class="inline-check"><input id="asgChannelA" type="checkbox" data-asg-channel="0"> Voie A</label>
+                  <label class="inline-check"><input id="asgChannelB" type="checkbox" data-asg-channel="1"> Voie B</label>
+                </div>
+                <div class="safety-trains asg-gv-valves" role="group" aria-label="Alimentation ASG des GV : voie A vers GV1 et GV2, voie B vers GV3 et GV4">
+                  <label class="inline-check"><input type="checkbox" data-asg-train="0"> GV1 <strong id="asgTrainStatus0">HS</strong></label>
+                  <label class="inline-check"><input type="checkbox" data-asg-train="1"> GV2 <strong id="asgTrainStatus1">HS</strong></label>
+                  <label class="inline-check"><input type="checkbox" data-asg-train="2"> GV3 <strong id="asgTrainStatus2">HS</strong></label>
+                  <label class="inline-check"><input type="checkbox" data-asg-train="3"> GV4 <strong id="asgTrainStatus3">HS</strong></label>
                 </div>
                 <small id="asgOrderStatus">En attente d’un ordre CC-PROTECT ou manuel</small>
                 <small>Arrêt &gt; 90 % GE en automatique comme en manuel. Reprise automatique &lt; 10 % GE ; en manuel, nouvel ordre ES. Débits disponibles sur diesel.</small>
@@ -329,12 +334,12 @@
     </section>
 
     <section class="view" id="view-regulation">
-      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261009-charge-v10" title="Éditeur CC-RÉGUL"></iframe>
+      <iframe id="regulationEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=regul&amp;v=20261009-manual-compact" title="Éditeur CC-RÉGUL"></iframe>
     </section>
 
     <section class="view" id="view-protection">
       <div class="protection-toolbar"><label class="inline-check"><input id="protectionsEnabled" type="checkbox" checked> Protection active</label><label class="inline-check"><input id="risEnabled" type="checkbox" checked> RIS disponible</label><button class="button button-danger" id="forceTrip">Forcer l’AAR</button><button class="button button-primary" id="forceRis">Forcer l’IS</button><span class="badge" id="protectionState">Surveillance</span></div>
-      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261009-charge-v10" title="Éditeur CC-PROTECT"></iframe>
+      <iframe id="protectionEditor" class="logic-editor-frame" src="centurion-cc-regul.html?mode=protect&amp;v=20261009-manual-compact" title="Éditeur CC-PROTECT"></iframe>
       <div id="signalCards" class="signal-grid"></div>
       <div class="control-grid two-col">
         <section class="card"><h2>Chaîne RIS</h2><div class="form-row thresholds">
@@ -621,7 +626,7 @@ Q_réalisé = min(Q_demande, Q_max(P))</code></pre>
 <p>Un écart positif insère R, un écart négatif l&#39;extrait. L&#39;inhibition vise l&#39;extraction ; une insertion commandée reste possible. Le tableau de bord affiche le programme TREF instantané, tandis que l&#39;atelier affiche la TREF filtrée utilisée par la boucle. Avec xénon actif après baisse de puissance, la dilution reste une action manuelle.</p>
 <h3 id="detail-correspondance-sorties-commandes">Correspondance sorties → commandes</h3>
 <h4 id="detail-consignes-pzr-et-rampes-de-conduite">Consignes PZR et rampes de conduite</h4>
-<p>Le volet Pressuriseur contient une consigne de pression primaire (1–180 bar absolus) et une consigne de niveau (0–100 %). Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.</p>
+<p>Le volet Pressuriseur contient la consigne de pression primaire (1–180 bar absolus), et le volet RCV porte la consigne de niveau PZR (0–100 %) en première ligne. Case de sélection, valeur, unité et rampe sont alignées. Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.</p>
 <p>Les deux blocs <strong>RCI</strong> (relais de commande intermédiaire) sont placés entre la référence automatique et le sommateur : <code>K(155 bar) → RCI pression → écart MP1−PREF</code>, et <code>programme NREF → RCI niveau → NREF → écart NREF−MN1</code>. E1 porte la référence automatique ; le relais lit la consigne manuelle après rampe et son mode dans les signaux du pupitre. Les valeurs affichées par l&#39;atelier et NREF du synoptique sont celles sélectionnées par ces blocs. Une consigne de pupitre seule ne commande aucun actionneur : il faut relier la chaîne dans CC-RÉGUL et l&#39;activer.</p>
 <p>Les consignes de pression GCT-A, pression primaire et niveau PZR ont des rampes indépendantes : 0,5 ; 1 ; 2 ; 5 ; 10 ; 200 unités/minute, ou Instantanée. L&#39;unité est <strong>bar/min</strong> pour les pressions, <strong>% de niveau/min</strong> pour le PZR ; le défaut est 5. La cible et la consigne appliquée sont distinguées à l&#39;écran. La rampe utilise le temps simulé, reste figée en pause et est conservée dans la sauvegarde. Instantanée change seulement la référence ; la pression et le niveau physiques évoluent avec les actionneurs et les bilans existants.</p>
 <h4 id="detail-correction-du-niveau-pzr-et-saturation-de-la-charge">Correction du niveau PZR et saturation de la charge</h4>
@@ -633,6 +638,20 @@ Q_réalisé = min(Q_demande, Q_max(P))</code></pre>
 <p>Ces extensions sont présentes dans les corrections fournies et ajoutées aux anciennes chaînes PZR identifiables à l&#39;import. Les canevas vides et les schémas sans chaîne de niveau reconnue restent des exercices à construire.</p>
 <div class="table-scroll"><table><thead><tr><th>Sortie CC</th><th>Cible</th><th>Conditions / unité</th></tr></thead><tbody><tr><td><code>posg</code></td><td><code>rGraphPas</code></td><td>CC-RÉGUL actif, pas extraits 0–260, hors surcharge R manuelle</td></tr><tr><td><code>g3Out</code></td><td><code>g3GraphTarget</code></td><td>Compteur de chevauchement ; correction de campagne appliquée par le parent</td></tr><tr><td><code>gv1Out</code> … <code>gv4Out</code></td><td><code>gvGraphFeedPct</code></td><td>Ouverture demandée ARE, %</td></tr><tr><td><code>pchauffOut</code></td><td><code>pressureGraphHeaterKW</code></td><td>Puissance chauffe, kW</td></tr><tr><td><code>qaspOut</code></td><td><code>pressureGraphSprayPct</code></td><td>Ouverture aspersion, %</td></tr><tr><td><code>nrefOut</code></td><td><code>nrefGraphPct</code></td><td>Référence niveau PZR, %</td></tr><tr><td><code>prefOut</code></td><td><code>prefGraphBar</code></td><td>Retour de référence sélectionnée par le RCI pression, bar absolus ; indication uniquement</td></tr><tr><td><code>rcvLetdownCloseOut</code></td><td><code>rcvLetdownCloseGraph</code></td><td>TOR ≥0,5 : ferme tous les orifices sélectionnés ; 0 ou sortie absente : sélection manuelle</td></tr><tr><td><code>qchargeOut</code></td><td><code>rcvChargeGraphM3h</code></td><td>Demande totale de charge 0–60 m³/h, limitée par la courbe Q(P) de la pompe</td></tr><tr><td><code>turbineLimitOut</code></td><td><code>turbineLimitGraphPct</code></td><td>Plafond LIM. TURB., borné à 0–100 % ; demande manuelle ou transitoire conservée</td></tr><tr><td><code>aarOut</code></td><td>demande AAR mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr><tr><td><code>risOut</code></td><td>demande IS mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5 ; implique demande AAR, sans arrêt GMPP</td></tr><tr><td><code>asgOut</code></td><td>demande ASG mémorisée</td><td>CC-PROTECT actif ; signal ≥0,5</td></tr></tbody></table></div>
 <p>Au retour manuel, le pupitre reprend les positions et débits réalisés. Les glissières désactivées continuent à suivre les valeurs appliquées. PTUR, le décalibrage GCP et la CB restent manuels. La case R en manuel neutralise seulement la sortie R ; son intégrateur est suivi sur la position réelle pour limiter le saut à la reprise.</p>
+<h3 id="detail-commandes-compactes-et-navigation-des-synoptiques">Commandes compactes et navigation des synoptiques</h3>
+<p>Les quatre GV occupent quatre colonnes. Les VVP i20VV sont commandées par cases TOR : cochée demande 100 %, décochée demande 0 %. L&#39;ouverture réalisée reste mesurée et peut être intermédiaire pendant le mouvement. Une ancienne sauvegarde contenant une commande partielle affiche une case indéterminée jusqu&#39;à la prochaine commande TOR. ARE affiche sa position réalisée et sa cible ; l&#39;arrêt ARE après AAR ou perte de tension impose une cible nulle. La consigne GCT-A distingue aussi la température de saturation appliquée de celle visée après la rampe.</p>
+<p>La CB et les deux boutons dilution/borication sont alignés. Les voies ASG A et B regroupent respectivement les commandes des admissions GV1/2 et GV3/4 ; chaque GV garde une case indépendante ES/HS. Une voie affiche un état indéterminé si une seule de ses admissions est active. Cette organisation représente les deux voies comportant chacune MPS et TPS, sans changer les quatre admissions équivalentes, leurs lois de débit ni leurs disponibilités dans le moteur. Le blocage GE &gt;90 % reste indépendant par GV, y compris en commande groupée manuelle.</p>
+<p>La variation réelle du niveau PZR est affichée en <strong>points de niveau par minute</strong> (<code>%/min</code>), sur l&#39;intervalle entre deux actualisations. Avec <code>L(Ml, T, P)</code> le niveau calculé par <code>cppInventory</code> depuis la masse liquide <code>Ml = M − Mv</code>, la décomposition est :</p>
+<pre><code>L0 = L(M0 − Mv0, T0, P0)
+L1 = L(M1 − Mv0, T0, P0)     : entrées/sorties du CPP
+L2 = L(M1 − Mv1, T0, P0)     : variation du stock vapeur
+L3 = L(M1 − Mv1, T1, P1)     : variation de densité rho(T,P)
+entrées/sorties = (L1 − L0) × 60 / dt
+phase          = (L2 − L1) × 60 / dt
+densité        = (L3 − L2) × 60 / dt
+total          = (L3 − L0) × 60 / dt</code></pre>
+<p>La contribution « phase » apparaît lorsqu&#39;elle est significative ; elle comprend aussi l&#39;évolution du stock vapeur par ses rejets. Les contributions ferment la variation totale, y compris aux bornes de remplissage, où leur répartition dépend de cet ordre de décomposition. Ce diagnostic reste en lecture seule ; il ne crée pas une régulation. Les valeurs sont maintenues en pause et remises à zéro au chargement ou à la réinitialisation.</p>
+<p>Le zoom au pointeur utilise <strong>Ctrl + molette</strong> ; la molette seule conserve le défilement normal. Glisser avec le bouton gauche déplace la vue. <strong>Espace</strong> rétablit le cadrage initial, dans la page ou lorsque le SVG a le focus. La saisie dans les champs, les boutons, les menus et les renvois garde son fonctionnement clavier. Les boutons de zoom et de cadrage restent disponibles.</p>
 <h3 id="detail-arbitrage">Arbitrage</h3>
 <ol><li>AAR réalisé : chute de tous les groupes et arrêt turbine ; aucune régulation ni commande de levée normale ne peut relever les grappes.</li><li>IS : demande AAR et injection mémorisées, sans arrêt GMPP. Perte de tension, déclenchement manuel ou niveau CPP ≤ 11 m : arrêt GMPP mémorisé ; les manœuvres RIS/ASG prévues restent accessibles.</li><li>Commande manuelle de tous les groupes : priorité de manœuvre sur les sorties de position, sans créer d&#39;AAR ni de CIA par elle-même.</li><li>Surcharge R manuelle : priorité sur R uniquement.</li><li>Sorties CC actives et finies ; puis commandes manuelles de repli.</li></ol>
 <p>Les alarmes du tableau de bord et les clignotements de domaine ne déclenchent pas d&#39;ordres. Les limitations physiques, la temporisation des effets, le GCT-A et la coupure ASG haut niveau demeurent dans le moteur. Un mode de protection interne par seuils existe pour utiliser le moteur seul ; l&#39;application fixe <code>protectionGraphMode=true</code> pour faire provenir les ordres automatiques du graphe CC-PROTECT.</p>
@@ -743,11 +762,11 @@ node scripts/check-docs.mjs</code></pre>
     <img id="certificatePreview" class="certificate-preview" alt="Aperçu du certificat de fin de simulation" hidden>
   </dialog>
   <script src="vendor/html2canvas-1.4.1.min.js"></script>
-  <script src="centurion-engine.js?v=20261009-charge-v10"></script>
-  <script src="centurion-history.js?v=20261009-charge-v10"></script>
-  <script src="centurion-cc-pzr.js?v=20261009-charge-v10"></script>
-  <script src="centurion-state.js?v=20261009-charge-v10"></script>
+  <script src="centurion-engine.js?v=20261009-manual-compact"></script>
+  <script src="centurion-history.js?v=20261009-manual-compact"></script>
+  <script src="centurion-cc-pzr.js?v=20261009-manual-compact"></script>
+  <script src="centurion-state.js?v=20261009-manual-compact"></script>
   <script src="centurion-certificate.js?v=20261007-sauvegarde-capture-3"></script>
-<script src="centurion-app.js?v=20261009-charge-v10"></script>
+<script src="centurion-app.js?v=20261009-manual-compact"></script>
 </body>
 </html>

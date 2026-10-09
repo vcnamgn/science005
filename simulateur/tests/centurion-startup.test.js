@@ -68,6 +68,7 @@ function application(source=app,onPostMessage=null,engine=E,editorBridges={}, {s
   vm.runInContext(source,context,{filename:'centurion-app.js'});
   return {get:id=>ids.get(id),query:selector=>document.querySelector(selector),messages,downloads,get pendingFrames(){return frames.length;},
     receive(data){for(const fn of windowEvents.message||[])fn({data});},
+    key(event){for(const fn of windowEvents.keydown||[])fn(event);},
     click:id=>ids.get(id).fire('click'),consumeCpu:milliseconds=>{now+=milliseconds;},
     frame(milliseconds=100){now+=milliseconds;const callback=frames.shift();
       assert.ok(callback,'une trame doit être programmée');callback(now);},
@@ -343,7 +344,8 @@ test('application complète : haut niveau ASG bloque ES aussi en manuel et affic
   page.get('asgManual').checked=true;page.get('asgManual').fire('change');
   const train=page.query('[data-asg-train="0"]');
   assert.equal(train.disabled,true);assert.equal(train.checked,false);
-  assert.equal(page.get('asgTrainStatus0').textContent,'HS · niveau haut');
+  assert.equal(page.get('asgTrainStatus0').textContent,'HS');
+  assert.match(page.get('asgTrainStatus0').title,/90/);
   train.checked=true;train.fire('change');assert.equal(train.checked,false);
   assert.equal(m.controls.asgTrainEnabled[0],false);
   assert.match(page.get('asgOrderStatus').textContent,/arrêtée sur haut niveau.*GV 1/);

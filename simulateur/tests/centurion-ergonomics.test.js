@@ -9,7 +9,9 @@ test('synoptiques : zoom au pointeur, déplacement sans clic parasite, retour au
     'synoptique-RCPGRAPPES-1300.svg','CPP-inventaire.svg','Diagramme-PT.svg']){
     const svg=svgSurface(file),initial=svg.root.getAttribute('viewBox');
     const box=()=>svg.root.getAttribute('viewBox').split(' ').map(Number),before=box();
-    assert.equal(svg.fire('wheel',{deltaY:-150,deltaMode:0,clientX:400,clientY:300}).prevented,true);
+    assert.equal(svg.fire('wheel',{deltaY:-150,deltaMode:0,clientX:400,clientY:300}).prevented,undefined);
+    assert.deepEqual(box(),before,'la molette seule conserve le zoom et le défilement normal');
+    assert.equal(svg.fire('wheel',{ctrlKey:true,deltaY:-150,deltaMode:0,clientX:400,clientY:300}).prevented,true);
     const zoomed=box();assert.ok(zoomed[2]<before[2],file);
     assert.ok(Math.abs(zoomed[0]+zoomed[2]/2-before[0]-before[2]/2)<1e-8,'point sous le pointeur conservé');
     svg.fire('pointerdown',{button:0,pointerId:1,clientX:400,clientY:300});
@@ -26,6 +28,13 @@ test('synoptiques : zoom au pointeur, déplacement sans clic parasite, retour au
     assert.equal(svg.root.getAttribute('viewBox'),before.join(' '));
     assert.equal(svg.messages.at(-1).zoom,1);
     svg.receive({type:'centurion-svg-viewport-command',action:'in'});assert.ok(box()[2]<before[2]);
+    const keyboardView=box();
+    assert.equal(svg.fire('keydown',{key:' ',code:'Space',target:{localName:'input'}}).prevented,undefined);
+    assert.deepEqual(box(),keyboardView,'Espace dans un champ ne cadre pas');
+    assert.equal(svg.fire('keydown',{key:' ',code:'Space',target:{localName:'g',getAttribute:()=> 'link'}}).prevented,undefined);
+    assert.deepEqual(box(),keyboardView,'Espace sur un renvoi reste une activation du lien');
+    assert.equal(svg.fire('keydown',{key:' ',code:'Space'}).prevented,true);
+    assert.deepEqual(box(),before,'Espace recadre aussi lorsque le SVG a le focus');
     assert.ok(initial);
   }
 });

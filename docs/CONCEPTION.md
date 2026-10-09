@@ -448,7 +448,7 @@ Un écart positif insère R, un écart négatif l'extrait. L'inhibition vise l'e
 
 #### Consignes PZR et rampes de conduite
 
-Le volet Pressuriseur contient une consigne de pression primaire (1–180 bar absolus) et une consigne de niveau (0–100 %). Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.
+Le volet Pressuriseur contient la consigne de pression primaire (1–180 bar absolus), et le volet RCV porte la consigne de niveau PZR (0–100 %) en première ligne. Case de sélection, valeur, unité et rampe sont alignées. Une saisie, les flèches du champ ou la molette sélectionnent le mode manuel de cette référence. Décocher la case rend la main à la référence automatique du schéma : constante PREF de 155 bar ou programme NREF en fonction de TMOY. Le passage en manuel par la case reprend la référence courante, sans échelon.
 
 Les deux blocs **RCI** (relais de commande intermédiaire) sont placés entre la référence automatique et le sommateur : `K(155 bar) → RCI pression → écart MP1−PREF`, et `programme NREF → RCI niveau → NREF → écart NREF−MN1`. E1 porte la référence automatique ; le relais lit la consigne manuelle après rampe et son mode dans les signaux du pupitre. Les valeurs affichées par l'atelier et NREF du synoptique sont celles sélectionnées par ces blocs. Une consigne de pupitre seule ne commande aucun actionneur : il faut relier la chaîne dans CC-RÉGUL et l'activer.
 
@@ -485,6 +485,29 @@ Ces extensions sont présentes dans les corrections fournies et ajoutées aux an
 | `asgOut` | demande ASG mémorisée | CC-PROTECT actif ; signal ≥0,5 |
 
 Au retour manuel, le pupitre reprend les positions et débits réalisés. Les glissières désactivées continuent à suivre les valeurs appliquées. PTUR, le décalibrage GCP et la CB restent manuels. La case R en manuel neutralise seulement la sortie R ; son intégrateur est suivi sur la position réelle pour limiter le saut à la reprise.
+
+### Commandes compactes et navigation des synoptiques
+
+Les quatre GV occupent quatre colonnes. Les VVP i20VV sont commandées par cases TOR : cochée demande 100 %, décochée demande 0 %. L'ouverture réalisée reste mesurée et peut être intermédiaire pendant le mouvement. Une ancienne sauvegarde contenant une commande partielle affiche une case indéterminée jusqu'à la prochaine commande TOR. ARE affiche sa position réalisée et sa cible ; l'arrêt ARE après AAR ou perte de tension impose une cible nulle. La consigne GCT-A distingue aussi la température de saturation appliquée de celle visée après la rampe.
+
+La CB et les deux boutons dilution/borication sont alignés. Les voies ASG A et B regroupent respectivement les commandes des admissions GV1/2 et GV3/4 ; chaque GV garde une case indépendante ES/HS. Une voie affiche un état indéterminé si une seule de ses admissions est active. Cette organisation représente les deux voies comportant chacune MPS et TPS, sans changer les quatre admissions équivalentes, leurs lois de débit ni leurs disponibilités dans le moteur. Le blocage GE >90 % reste indépendant par GV, y compris en commande groupée manuelle.
+
+La variation réelle du niveau PZR est affichée en **points de niveau par minute** (`%/min`), sur l'intervalle entre deux actualisations. Avec `L(Ml, T, P)` le niveau calculé par `cppInventory` depuis la masse liquide `Ml = M − Mv`, la décomposition est :
+
+```text
+L0 = L(M0 − Mv0, T0, P0)
+L1 = L(M1 − Mv0, T0, P0)     : entrées/sorties du CPP
+L2 = L(M1 − Mv1, T0, P0)     : variation du stock vapeur
+L3 = L(M1 − Mv1, T1, P1)     : variation de densité rho(T,P)
+entrées/sorties = (L1 − L0) × 60 / dt
+phase          = (L2 − L1) × 60 / dt
+densité        = (L3 − L2) × 60 / dt
+total          = (L3 − L0) × 60 / dt
+```
+
+La contribution « phase » apparaît lorsqu'elle est significative ; elle comprend aussi l'évolution du stock vapeur par ses rejets. Les contributions ferment la variation totale, y compris aux bornes de remplissage, où leur répartition dépend de cet ordre de décomposition. Ce diagnostic reste en lecture seule ; il ne crée pas une régulation. Les valeurs sont maintenues en pause et remises à zéro au chargement ou à la réinitialisation.
+
+Le zoom au pointeur utilise **Ctrl + molette** ; la molette seule conserve le défilement normal. Glisser avec le bouton gauche déplace la vue. **Espace** rétablit le cadrage initial, dans la page ou lorsque le SVG a le focus. La saisie dans les champs, les boutons, les menus et les renvois garde son fonctionnement clavier. Les boutons de zoom et de cadrage restent disponibles.
 
 ### Arbitrage
 

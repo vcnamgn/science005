@@ -132,7 +132,7 @@
     if(changed&&name!=="core") {
       svgDoc=null;
       $("diagramZoomValue").textContent="100 %";
-      $("diagramObject").data=svgFiles[name]+"?v=20261008-pzr-piston";
+      $("diagramObject").data=svgFiles[name]+"?v=20261009-manual-compact";
     } else if(name!=="core") {
       decorateSvg();
       updateSvg();
@@ -670,7 +670,7 @@
     const asgHighLevel=s.gv.filter(g=>g.levelPct>90+1e-9);
     $("asgOrderStatus").textContent=asgHighLevel.length
       ?`ASG arrêtée sur haut niveau · GV ${asgHighLevel.map(g=>g.index).join(", ")} · y compris en manuel`
-      :u.asgManual?"Quatre trains commandés manuellement"
+      :u.asgManual?"Voie A → GV1/2 · voie B → GV3/4 · vannes en manuel"
       :s.asgAt!==null?`Ordre ASG exécuté à ${tLabel(s.asgAt)}`
       :s.asgDemandAt!==null?"Ordre ASG reçu · démarrage après 5 s":"En attente d’un ordre CC-PROTECT ou manuel";
     $("asgOrderStatus").classList.toggle("alarm-blink",asgHighLevel.length>0);
@@ -682,8 +682,16 @@
       const i=Number(box.dataset.asgTrain),high=s.gv[i].levelPct>90+1e-9;
       const enabled=!high&&(u.asgManual?u.asgTrainEnabled[i]:s.gv[i].asgRunning);
       box.disabled=!u.asgManual||high;box.checked=enabled;
-      box.title=high?"Arrêt ASG : niveau GE supérieur à 90 %":"Commande manuelle du train ASG";
-      $(`asgTrainStatus${i}`).textContent=high?"HS · niveau haut":enabled?"ES":"HS";
+      box.title=high?"Arrêt ASG : niveau GE supérieur à 90 %":"Commande manuelle de la vanne d’alimentation ASG du GV";
+      $(`asgTrainStatus${i}`).textContent=enabled?"ES":"HS";
+      $(`asgTrainStatus${i}`).title=high?"Niveau GE supérieur à 90 %":box.title;
+    }
+    for(const box of document.querySelectorAll("[data-asg-channel]")){
+      const first=2*Number(box.dataset.asgChannel),indices=[first,first+1];
+      const enabled=indices.map(i=>s.gv[i].levelPct<=90+1e-9&&(u.asgManual?u.asgTrainEnabled[i]:s.gv[i].asgRunning));
+      box.checked=enabled.every(Boolean);box.indeterminate=enabled.some(Boolean)&&!box.checked;
+      box.disabled=!u.asgManual||indices.every(i=>s.gv[i].levelPct>90+1e-9);
+      box.title=`Commande groupée des vannes GV${first+1} et GV${first+2} · arrêt indépendant au-dessus de 90 % GE`;
     }
     $("risSource").value=u.risSourceMode;
     $("risManualStatus").textContent=`Pompes : ${u.risPumpMode==="off"?"arrêt manuel":u.risPumpMode==="on"?"marche manuelle":"sur demande IS"} · livré ${fmt(s.risDeliveredKgS,1)} kg/s`
@@ -713,8 +721,8 @@
     $("sprayActualValue").textContent=
       `${fmt(s.sprayFlowM3h,2)} m³/h (${fmt(s.sprayFlowPct,2)} %)`;
     $("sprayDriveValue").textContent=`${fmt(s.sprayDriveBar,2)} bar`;
-    $("gctaSaturationTemp").textContent=`${fmt(E.saturationTemperatureC(u.gctAOpeningPressureBar),1)} °C`;
     renderSetpointControls();
+    renderPzrLevelTrend();
     if(regulationActive){
       if(!u.rManualOverride){
         $("rManualInput").value=s.rods.R;
@@ -733,8 +741,20 @@
       $("chargeInput").value=s.rcvChargeM3h;
     }
     for(let i=0;i<4;i++){
+      const g=s.gv[i],graphTarget=u.gvGraphFeedPct[i];
+      const feedTarget=s.lossOfVoltage||s.tripAt!==null?0:Math.max(0,Math.min(100,
+        Number.isFinite(graphTarget)?graphTarget:u.gvManualFeedPct[i]));
+      const feedOutput=$(`gvManualOut${i}`);
+      if(feedOutput){
+        feedOutput.textContent=`${fmt(g.feedValvePct,1)} → ${fmt(feedTarget,1)} %`;
+        feedOutput.title=`ARE : réalisée ${fmt(g.feedValvePct,1)} % · visée ${fmt(feedTarget,1)} %`;
+      }
+      const steamInput=document.querySelector(`input[data-kind="steam"][data-gv="${i+1}"]`);
+      if(steamInput){steamInput.checked=u.gvSteamValvePct[i]>=50;
+        steamInput.indeterminate=u.gvSteamValvePct[i]>0&&u.gvSteamValvePct[i]<100;}
       const output=$(`gvSteamOut${i}`);
-      if(output)output.textContent=`${fmt(s.gv[i].steamValvePct,1)} %`;
+      if(output){output.textContent=`${fmt(g.steamValvePct,1)} %`;
+        output.title=`Ouverture réalisée · visée ${u.gvSteamValvePct[i]>=50?"ouverte":"fermée"}`;}
     }
     document.querySelectorAll("[data-regulated-control]").forEach(input=>{
       input.disabled=input.id==="rManualInput"&&u.allRodsTargetPas!==null
@@ -1166,6 +1186,33 @@
     renderAlarmTable();
   }
   const SETPOINT_INPUTS={gcta:"gctaOpeningPressure",pressure:"primaryPressureSetpoint",level:"pzrLevelSetpoint"};
+  // Diagnostic d'affichage : décomposition exacte, sur l'intervalle entre
+  // actualisations, du niveau calculé par cppInventory. Aucune commande physique.
+  let pzrTrendModel=null,pzrTrendPrevious=null,pzrTrendRates={mass:0,phase:0,density:0,total:0};
+  function renderPzrLevelTrend(){
+    const s=model.state,current={time:s.time,mass:s.primaryMassKg,vapor:s.vaporMassKg,
+      temp:s.tavgC,pressure:s.pressureBar};
+    if(pzrTrendModel!==model){
+      pzrTrendModel=model;pzrTrendPrevious=null;
+      pzrTrendRates={mass:0,phase:0,density:0,total:0};
+    }
+    const previous=pzrTrendPrevious,dt=previous?current.time-previous.time:0;
+    if(dt>1e-9){
+      const level=(mass,vapor,temp,pressure)=>E.cppInventory(Math.max(0,mass-vapor),temp,pressure).components.pzr.fillPct;
+      const start=level(previous.mass,previous.vapor,previous.temp,previous.pressure);
+      const balance=level(current.mass,previous.vapor,previous.temp,previous.pressure);
+      const phase=level(current.mass,current.vapor,previous.temp,previous.pressure);
+      const end=level(current.mass,current.vapor,current.temp,current.pressure),perMinute=60/dt;
+      pzrTrendRates={mass:(balance-start)*perMinute,phase:(phase-balance)*perMinute,
+        density:(end-phase)*perMinute,total:(end-start)*perMinute};
+    }
+    pzrTrendPrevious=current;
+    const signed=value=>`${value>=0?"+":""}${fmt(value,2)}`;
+    $("pzrLevelRate").textContent=`Niveau PZR ${signed(pzrTrendRates.total)} %/min · entrées/sorties ${signed(pzrTrendRates.mass)}`
+      +` · densité ${signed(pzrTrendRates.density)}`
+      +(Math.abs(pzrTrendRates.phase)>.005?` · phase ${signed(pzrTrendRates.phase)}`:"")
+      +" (%/min)";
+  }
   function renderSetpointControls(){
     const u=model.controls;
     for(const [name,id] of Object.entries(SETPOINT_INPUTS)){
@@ -1179,6 +1226,9 @@
         ?`Référence CC : ${fmt(name==="level"?model.state.nrefPct:model.state.prefBar,1)} ${unit}`
         :`Consigne appliquée ${fmt(actual,1)} ${unit}${Math.abs(target-actual)>.001?` → ${fmt(target,1)} ${unit}`:""}`;
     }
+    const gctaTarget=u.setpointRamps.gcta.target??u.gctAOpeningPressureBar;
+    $("gctaSaturationTemp").textContent=`${fmt(E.saturationTemperatureC(u.gctAOpeningPressureBar),1)} °C`;
+    $("gctaSaturationTarget").textContent=`${fmt(E.saturationTemperatureC(gctaTarget),1)} °C`;
   }
   function bindSetpointControls(){
     for(const [name,id] of Object.entries(SETPOINT_INPUTS)){
@@ -1250,6 +1300,14 @@
         model.controls.asgTrainEnabled[i]=e.target.checked&&model.state.gv[i].levelPct<=90+1e-9;
         render();
       });
+    for(const box of document.querySelectorAll("[data-asg-channel]"))
+      box.addEventListener("change",e=>{
+        if(!model.controls.asgManual)return;
+        const first=2*Number(e.target.dataset.asgChannel);
+        for(const i of [first,first+1])
+          model.controls.asgTrainEnabled[i]=e.target.checked&&model.state.gv[i].levelPct<=90+1e-9;
+        render();
+      });
     for(const [id,mode] of [["risPumpStart","on"],["risPumpStop","off"],["risPumpAuto","auto"]])
       $(id).addEventListener("click",()=>{E.setRisOperation(model,mode);render();});
     $("risSource").addEventListener("change",e=>{model.controls.risSourceMode=e.target.value;render();});
@@ -1261,6 +1319,15 @@
     for(const [id,action] of [["diagramZoomOut","out"],["diagramZoomIn","in"],["diagramZoomFit","fit"]])
       $(id).addEventListener("click",()=>$("diagramObject").contentWindow?.postMessage({
         type:"centurion-svg-viewport-command",action},"*"));
+    window.addEventListener("keydown",event=>{
+      if((event.code!=="Space"&&event.key!==" ")||event.repeat||event.ctrlKey||event.altKey||event.metaKey
+        ||activeView!=="synoptiques"||diagram==="core")return;
+      const target=event.target;
+      if(target?.isContentEditable||target?.closest?.("input,select,textarea,button,a,summary,[contenteditable='true']")
+        ||["input","select","textarea","button","a","summary"].includes(target?.localName))return;
+      event.preventDefault();
+      $("diagramObject").contentWindow?.postMessage({type:"centurion-svg-viewport-command",action:"fit"},"*");
+    });
     for(const [mode,id] of [["regul","regulationEditor"],["protect","protectionEditor"]])
       $(id).addEventListener("load",()=>connectEditor(mode,id));
     window.addEventListener("message",e=>{
@@ -1322,12 +1389,14 @@
     $("gvSetpoint").addEventListener("input",e=>{model.controls.gvLevelSetpointPct=Number(e.target.value);$("gvSetpointValue").textContent=`${e.target.value} %`;});
     $("gvFeedControls").addEventListener("input",e=>{
       const n=Number(e.target.dataset.gv)-1;if(n<0||n>3)return;
-      if(e.target.dataset.kind==="steam"){
-        model.controls.gvSteamValvePct[n]=Number(e.target.value);
-      } else if(e.target.dataset.kind==="manual"){
+      if(e.target.dataset.kind==="manual"){
         model.controls.gvManualFeedPct[n]=Number(e.target.value);
-        const output=$(`gvManualOut${n}`);if(output)output.textContent=`${fmt(model.controls.gvManualFeedPct[n])} %`;
+        render();
       }
+    });
+    $("gvFeedControls").addEventListener("change",e=>{
+      const n=Number(e.target.dataset.gv)-1;if(n<0||n>3||e.target.dataset.kind!=="steam")return;
+      model.controls.gvSteamValvePct[n]=e.target.checked?100:0;render();
     });
     $("heaterInput").addEventListener("input",e=>{model.controls.manualHeaterKW=Number(e.target.value);$("heaterValue").textContent=`${fmt(e.target.value)} kW`;});
     $("sprayInput").addEventListener("input",e=>{model.controls.manualSprayPct=Number(e.target.value);$("sprayValue").textContent=`${e.target.value} %`;});
@@ -1390,10 +1459,10 @@
     $("gvSetpoint").value=u.gvLevelSetpointPct;
     $("gvSetpointValue").textContent=`${u.gvLevelSetpointPct} %`;
     $("gvFeedControls").innerHTML=[1,2,3,4].map((n)=>`<div class="feed-block"><strong>GV ${n}</strong>
-      <label>Vanne ARE <output id="gvManualOut${n-1}">${fmt(u.gvManualFeedPct[n-1],1)} %</output>
-      <input type="range" data-regulated-control data-kind="manual" data-gv="${n}" min="0" max="100" step="0.1" value="${u.gvManualFeedPct[n-1]}"></label>
-      <label>VVP${n}20VV · ouverture <output id="gvSteamOut${n-1}">${fmt(model.state.gv[n-1].steamValvePct,1)} %</output>
-      <input type="range" data-kind="steam" data-gv="${n}" min="0" max="100" step="1" value="${u.gvSteamValvePct[n-1]}"></label></div>`).join("");
+      <label>ARE <output id="gvManualOut${n-1}">${fmt(u.gvManualFeedPct[n-1],1)} %</output>
+      <input type="range" aria-label="Ouverture ARE GV${n}" data-regulated-control data-kind="manual" data-gv="${n}" min="0" max="100" step="0.1" value="${u.gvManualFeedPct[n-1]}"></label>
+      <label class="inline-check vvp-check"><input type="checkbox" data-kind="steam" data-gv="${n}" ${u.gvSteamValvePct[n-1]>=50?"checked":""}> VVP${n}20VV</label>
+      <output id="gvSteamOut${n-1}" class="vvp-position">${fmt(model.state.gv[n-1].steamValvePct,1)} %</output></div>`).join("");
     $("heaterInput").value=u.manualHeaterKW;
     $("heaterValue").textContent=`${fmt(u.manualHeaterKW)} kW`;
     $("sprayInput").value=u.manualSprayPct;
