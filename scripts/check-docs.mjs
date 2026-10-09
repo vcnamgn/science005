@@ -16,16 +16,34 @@ for(const module of index.modules){
     checked++;
   }
 }
-const doc=path.join(root,'docs/index.html'),html=fs.readFileSync(doc,'utf8');
-const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
-for(const [,href] of html.matchAll(/\bhref="([^"]+)"/g)){
-  if(/^(?:https?:|mailto:)/.test(href))continue;
-  const [file,fragment]=href.split('#');
-  if(!file){if(fragment&&!ids.has(fragment))throw new Error(`Ancre absente : ${href}`);continue;}
-  const target=path.resolve(path.dirname(doc),decodeURIComponent(file));
-  if(!target.startsWith(root+path.sep)||!fs.existsSync(target))throw new Error(`Lien local absent : ${href}`);
-  if(fragment&&target===doc&&!ids.has(fragment))throw new Error(`Ancre absente : ${href}`);
+if(!index.documentationPages?.length)throw new Error('Pages HTML de documentation absentes : régénérer.');
+let linkCount=0;
+function checkLinks(html,file){
+  const doc=path.join(root,file);
+  for(const [,href] of html.matchAll(/\bhref="([^"]+)"/g)){
+    if(/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(href))continue;
+    const [url,fragment]=href.split('#'),local=url.split('?')[0];
+    if(/\.md$/i.test(local))throw new Error(`Lecture Markdown brute : ${file} → ${href}`);
+    const target=local?path.resolve(path.dirname(doc),decodeURIComponent(local)):doc;
+    if(!target.startsWith(root+path.sep)||!fs.existsSync(target))throw new Error(`Lien local absent : ${file} → ${href}`);
+    if(fragment&&/\.html$/i.test(target)){
+      const targetHtml=target===doc?html:fs.readFileSync(target,'utf8');
+      const ids=new Set([...targetHtml.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+      if(!ids.has(decodeURIComponent(fragment)))throw new Error(`Ancre absente : ${file} → ${href}`);
+    }
+    linkCount++;
+  }
 }
+for(const page of index.documentationPages){
+  const markdown=fs.readFileSync(path.join(root,page.source),'utf8');
+  if(digest(markdown)!==page.sha256)throw new Error(`Document modifié : régénérer ${page.source}.`);
+  const html=fs.readFileSync(path.join(root,page.output),'utf8');
+  if(!html.includes('<html lang="fr">')||!/<h1\b/.test(html))throw new Error(`Page HTML incomplète : ${page.output}`);
+  checkLinks(html,page.output);
+}
+const simulatorHtml=fs.readFileSync(path.join(root,'simulateur/centurion.html'),'utf8');
+checkLinks(simulatorHtml,'simulateur/centurion.html');
+if(!simulatorHtml.includes('href="../docs/index.html#api"'))throw new Error('Lien Modèle vers l’API incorrect.');
 const obsolete=JSON.parse(fs.readFileSync(path.join(root,'scripts/publication-exclusions.json'),'utf8')).obsolete;
 const activeFiles=['simulateur/centurion.html','simulateur/centurion-cc-regul.html','simulateur/centurion-app.js','simulateur/centurion-svg-bridge.js'];
 for(const file of activeFiles){
@@ -35,4 +53,4 @@ for(const file of activeFiles){
     if(text.includes(basename))throw new Error(`Dépendance obsolète : ${file} → ${basename}`);
   }
 }
-console.log(`Documentation cohérente : ${checked} ancres de fonctions, liens locaux présents, aucun ancien actif référencé.`);
+console.log(`Documentation cohérente : ${index.documentationPages.length} pages HTML, ${linkCount} liens locaux et fragments, ${checked} ancres de fonctions, aucun lien de lecture Markdown brut.`);

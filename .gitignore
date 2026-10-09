@@ -1,6 +1,7 @@
 # Références et archives conservées dans l'espace de travail local.
 /support/*
 !/support/README.md
+!/support/README.html
 /corbeille/
 /propositions/
 /tmp/

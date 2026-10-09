@@ -1928,7 +1928,7 @@
       "file": "simulateur/centurion-cc-regul.html",
       "title": "Ateliers CC",
       "description": "Édition, évaluation, stockage et code hérité inactif.",
-      "sha256": "1ab1022b36d6b06fd396cc8cff488c149572b376961395cf8a5e333e1c60f3e1",
+      "sha256": "fcdbb0da4d57caffd37e2eb1e72143a7c92ee507d634c9d611c0cd8c8f9ce770",
       "functions": [
         {
           "name": "saturationPressureMPa",
@@ -3413,5 +3413,49 @@
     "SETPOINT_RATES",
     "SETPOINT_CONTROLS",
     "SPIN_FXY32"
+  ],
+  "documentationPages": [
+    {
+      "source": "README.md",
+      "output": "README.html",
+      "title": "Présentation du projet",
+      "sha256": "98a6fa723ad897a1512911cd1c316379fabe39c354cbcfe10224e04b49f6319b"
+    },
+    {
+      "source": "simulateur/README.md",
+      "output": "simulateur/README.html",
+      "title": "Mode d’emploi",
+      "sha256": "d24a8910aa39cbaa0786487a374941c87be763d7ae1bcdafd3896c1ca4ba1d71"
+    },
+    {
+      "source": "simulateur/METHODE-CENTURION.md",
+      "output": "simulateur/METHODE-CENTURION.html",
+      "title": "Équations et hypothèses",
+      "sha256": "2f16927da87db643296f3d2f290f9f68fefe3cf231cbe455e8c68aeb57013377"
+    },
+    {
+      "source": "simulateur/ACCES-WEB.md",
+      "output": "simulateur/ACCES-WEB.html",
+      "title": "Accès web",
+      "sha256": "dfbc7fb8f308510d0e8ffc972d1b5e2df6358f384a214916b484541a003575ef"
+    },
+    {
+      "source": "support/README.md",
+      "output": "support/README.html",
+      "title": "Références locales",
+      "sha256": "19fbea02e3a8c703344e66bcd89216d9a5470fee831903e5fa0d4cc1723dd694"
+    },
+    {
+      "source": "docs/NETTOYAGE.md",
+      "output": "docs/NETTOYAGE.html",
+      "title": "Journal de nettoyage",
+      "sha256": "8bddb2c3b9dc868496fcc8f5bb58f8ceded25c412965853e9c1711fba63dfbc6"
+    },
+    {
+      "source": "docs/CONCEPTION.md",
+      "output": "docs/index.html",
+      "title": "Conception et API",
+      "sha256": "05475ace1bd43a3b99ef4036c545299e1db99fa7b4a3d1fb62d29123b7c91c0b"
+    }
   ]
 }
